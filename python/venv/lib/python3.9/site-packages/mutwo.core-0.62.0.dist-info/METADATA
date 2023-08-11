@@ -1,0 +1,30 @@
+Metadata-Version: 2.1
+Name: mutwo.core
+Version: 0.62.0
+Summary: core library for event based framework mutwo
+Home-page: https://github.com/mutwo-org/mutwo
+Author: Tim Pauli,  Levin Eric Zimmermann
+Author-email: tim.pauli@folkwang-uni.de, levin.eric.zimmermann@posteo.eu
+License: GPL
+Project-URL: Documentation, https://mutwo.readthedocs.io/en/latest/
+Requires-Python: >=3.9, <4
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy (<2.00,>=1.18)
+Requires-Dist: scipy (<2.0.0,>=1.4.1)
+Requires-Dist: python-ranges (<2.0.0,>=1.2.0)
+Provides-Extra: testing
+Requires-Dist: nose ; extra == 'testing'
+
+# mutwo.core
+
+[![Build Status](https://circleci.com/gh/mutwo-org/mutwo.core.svg?style=shield)](https://circleci.com/gh/mutwo-org/mutwo.core)
+[![docs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://mutwo.readthedocs.io/en/latest/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![PyPI version](https://badge.fury.io/py/mutwo.core.svg)](https://badge.fury.io/py/mutwo.core)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+This is the `core` package of the [mutwo eco system](https://github.com/mutwo-org/.github/blob/main/profile/README.md).
+It mainly implements general purpose event abstractions, parameter base classes and other shared utility functions.
+Its independent from specific medias, aesthetics or interfaces and only provides a common base library.
+Any mutwo package depends on this core package.
