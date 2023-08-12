@@ -7,6 +7,9 @@ import { IGame } from './interfaces/IGame';
 import { Button, Box } from '@mui/material';
 import { useForm } from "react-hook-form";
 
+declare module "*.module.css";
+declare module "*.module.scss";
+
 function App() {
   // const inputRef: any = useRef();
   const [audioReady, setAudioReady] = useState(false);
@@ -46,8 +49,7 @@ function App() {
 
   return (
     <div className="App">
-        <>
-         
+        <>       
           <Box>
               <Button onClick={()=> handleAudioReady(true)}>
                 <span className="display-4 fw-bold">WebChucK</span>
@@ -58,10 +60,8 @@ function App() {
             <input 
               type="file" 
               {...register("file") } />
-
             <input type="submit" />
           </form>
-
           )}
           <CreateChuck audioReady={audioReady} game={game} datas={datas} />
         </>

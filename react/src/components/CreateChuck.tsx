@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef} from 'react';
-import { Box } from '@mui/material';
 import Chuck from '../Chuck';
 import axios, { AxiosResponse } from 'axios';
 import { FLASK_API_URL } from '../helpers/constants';
+import Box from '@mui/material/Box';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+
 var Blob = require('blob');
 
 declare global {
@@ -17,6 +24,9 @@ export default function CreateChuck(props: any) {
     const theChuck = useRef<any>(undefined);
     const [loaded, setLoaded] = useState(false);
     const [keysReady, setKeysReady] = useState(false);
+    const [octave, setOctave] = React.useState('4');
+    const [audioKey, setAudioKey] = React.useState('C:maj')
+
     const ranChuckInit = useRef(false);
     ranChuckInit.current = false;
     console.log('datas: ', datas);
@@ -53,6 +63,14 @@ export default function CreateChuck(props: any) {
     if (!game.audioContext) {
         game.audioContext = new AudioContext();  
     }
+
+    const handleChangeAudioKey = (event: SelectChangeEvent) => {
+        setAudioKey(event.target.value as string);
+    };
+
+    const handleChangeOctave = (event: SelectChangeEvent) => {
+        setOctave(event.target.value as string);
+    };
 
     const loadChuck = async (theChuck: any) => {
         console.log('thos 1 ');
@@ -124,22 +142,24 @@ export default function CreateChuck(props: any) {
         return null;
     };
 
+    const organizeRows = async(rowNum: number) => {
+        const noteReady = await awaitNote(note);
+        const parsedNote = note.charAt(1) === '♯' ? note.slice(0, 2) + "-" + note.slice(2) : note.slice(0, 1) + "-" + note.slice(1);
+        const el: any = await document.getElementById(parsedNote);
+        if (el && !el['data-midiNote'] && !el['data-midiHz']) {
+            el.classList.add(`keyRow_${rowNum}`);
+            el.setAttribute('data-midiNote', await noteReady.midiNote);
+            el.setAttribute('data-midiHz', await noteReady.midiHz);
+            el.setAttribute('onClick', playChuckNote(noteReady.midiHz));
+        }
+    }
+
     const createKeys = () => {
         const octaves: Array<any> = [];
-        for (let i = 0; i < 10; i++) {
-
+        // range from 0 to 10
+        for (let i = 2; i < 4; i++) {
             [`C${i}`, `C♯${i}`, `D${i}`, `D♯${i}`, `E${i}`, `F${i}`, `F♯${i}`, `G${i}`, `G♯${i}`, `A${i}`, `A♯${i}`, `B${i}`].forEach((note) => {
-                (async () => {
-
-                    const noteReady = await awaitNote(note);
-                    const parsedNote = note.charAt(1) === '♯' ? note.slice(0, 2) + "-" + note.slice(2) : note.slice(0, 1) + "-" + note.slice(1);
-                    const el: any = await document.getElementById(parsedNote);
-                    if (el && !el['data-midiNote'] && !el['data-midiHz']) {
-                        el.setAttribute('data-midiNote', await noteReady.midiNote);
-                        el.setAttribute('data-midiHz', await noteReady.midiHz);
-                        el.setAttribute('onClick', playChuckNote(noteReady.midiHz));
-                    }
-                })();
+                organizeRows(i);
             });
 
             const octave = (
@@ -171,6 +191,75 @@ export default function CreateChuck(props: any) {
                     <>
                         <div id="keyboardControlsWrapper">
                             Controls
+                            <TableRow>
+                                <TableCell sx={{ minWidth: 120, background: 'blue' }}>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
+                                        <Select
+                                            labelId="audioKey-simple-select-label"
+                                            id="audioKey-simple-select"
+                                            value={audioKey}
+                                            label="Key"
+                                            onChange={handleChangeAudioKey}
+                                        >
+                                            <MenuItem value={'C'}>C</MenuItem>
+                                            <MenuItem value={'C♯'}>C♯</MenuItem>
+                                            <MenuItem value={'D'}>D</MenuItem>
+                                            <MenuItem value={'D♯'}>D♯</MenuItem>
+                                            <MenuItem value={'E'}>E</MenuItem>
+                                            <MenuItem value={'F'}>F</MenuItem>
+                                            <MenuItem value={'F♯'}>F♯</MenuItem>
+                                            <MenuItem value={'G'}>G</MenuItem>
+                                            <MenuItem value={'G♯'}>G♯</MenuItem>
+                                            <MenuItem value={'A'}>A</MenuItem>
+                                            <MenuItem value={'A♯'}>A♯</MenuItem>
+                                            <MenuItem value={'B'}>B</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </TableCell>
+                                <TableCell sx={{ minWidth: 120, background: 'green' }}>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="octave-simple-select-label">Octave</InputLabel>
+                                        <Select
+                                            labelId="octave-simple-select-label"
+                                            id="octave-simple-select"
+                                            value={octave}
+                                            label="Octave"
+                                            onChange={handleChangeOctave}
+                                        >
+                                            <MenuItem value={'1'}>1</MenuItem>
+                                            <MenuItem value={'2'}>2</MenuItem>
+                                            <MenuItem value={'3'}>3</MenuItem>
+                                            <MenuItem value={'4'}>4</MenuItem>
+                                            <MenuItem value={'5'}>5</MenuItem>
+                                            <MenuItem value={'6'}>6</MenuItem>
+                                            <MenuItem value={'7'}>7</MenuItem>
+                                            <MenuItem value={'8'}>8</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </TableCell>
+                                <TableCell sx={{ minWidth: 120, background: 'green' }}>
+                                    <FormControl fullWidth>
+                                        <InputLabel id="octave-simple-select-label">Octave</InputLabel>
+                                        <Select
+                                            labelId="octave-simple-select-label"
+                                            id="octave-simple-select"
+                                            value={octave}
+                                            label="Octave"
+                                            onChange={handleChangeOctave}
+                                        >
+                                            <MenuItem value={'1'}>1</MenuItem>
+                                            <MenuItem value={'2'}>2</MenuItem>
+                                            <MenuItem value={'3'}>3</MenuItem>
+                                            <MenuItem value={'4'}>4</MenuItem>
+                                            <MenuItem value={'5'}>5</MenuItem>
+                                            <MenuItem value={'6'}>6</MenuItem>
+                                            <MenuItem value={'7'}>7</MenuItem>
+                                            <MenuItem value={'8'}>8</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </TableCell>
+                            </TableRow>
                         </div>
                         
                         <ul id="keyboard">
