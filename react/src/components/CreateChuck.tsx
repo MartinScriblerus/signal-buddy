@@ -7,10 +7,11 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-
-var Blob = require('blob');
+import Example from './XYChartWrapper';
+import ParentSize from '@visx/responsive/lib/components/ParentSize';
+import { Button } from '@mui/material';
+import styles from '../styles/KeyControls.module.css';
+import { DARK_GRAY_1, WHITE_TEXT } from '../helpers/constants'
 
 declare global {
     interface HTMLLIElement {
@@ -20,12 +21,15 @@ declare global {
 
 export default function CreateChuck(props: any) {
     const {game, datas} = props;
-    // const [theChuck, setTheChuck] = useState<any>(undefined);
     const theChuck = useRef<any>(undefined);
     const [loaded, setLoaded] = useState(false);
     const [keysReady, setKeysReady] = useState(false);
-    const [octave, setOctave] = React.useState('4');
-    const [audioKey, setAudioKey] = React.useState('C:maj')
+    const [octave, setOctave] = useState('4');
+    const [audioKey, setAudioKey] = useState('C');
+    const [audioScale, setAudioScale] = useState('Major');
+    const [audioChord, setAudioChord] = useState('None');
+    const [mingusData, setMingusData] = useState<any>([]);
+    const [mingusChordsData, setMingusChordsData] = useState<any>([]);
 
     const ranChuckInit = useRef(false);
     ranChuckInit.current = false;
@@ -41,24 +45,6 @@ export default function CreateChuck(props: any) {
             key: game.key
         }
     };
-    const serverFilesToPreload = [
-        {
-            serverFilename: '/midi.ck',
-            virtualFilename: 'midi.ck'
-        },
-        {
-            serverFilename: '/readData.ck',
-            virtualFilename: 'readData.ck'
-        },
-        {
-            serverFilename: '/readData.txt',
-            virtualFilename: 'readData.txt'
-        },
-        {
-            serverFilename: '/writeData.ck',
-            virtualFilename: 'writeData.ck'
-        },
-    ];
 
     if (!game.audioContext) {
         game.audioContext = new AudioContext();  
@@ -72,12 +58,18 @@ export default function CreateChuck(props: any) {
         setOctave(event.target.value as string);
     };
 
+    const handleChangeScale = (event: SelectChangeEvent) => {
+        setAudioScale(event.target.value as string);
+    };
+
+    const handleChangeChord = (event: SelectChangeEvent) => {
+        console.log('WHAT IS EVENT? ', event);
+        setAudioChord(event.target.value as string);
+    };
+
     const loadChuck = async (theChuck: any) => {
-        console.log('thos 1 ');
         theChuck.loadFile('readData.ck').then(async () => {
-            console.log('thos 1 ');
             await theChuck.loadFile('readData.txt').then(async () => {
-                console.log('thos 2 ');
                 theChuck.runFile('readData.ck');
             });
         });
@@ -85,6 +77,24 @@ export default function CreateChuck(props: any) {
     }
 
     useMemo(() => {  
+        const serverFilesToPreload = [
+            {
+                serverFilename: '/midi.ck',
+                virtualFilename: 'midi.ck'
+            },
+            {
+                serverFilename: '/readData.ck',
+                virtualFilename: 'readData.ck'
+            },
+            {
+                serverFilename: '/readData.txt',
+                virtualFilename: 'readData.txt'
+            },
+            {
+                serverFilename: '/writeData.ck',
+                virtualFilename: 'writeData.ck'
+            },
+        ];
         if (ranChuckInit.current === true || theChuck.current) {
             return;
         }
@@ -100,7 +110,7 @@ export default function CreateChuck(props: any) {
             }
             theChuck.current = theChuckTemp;
         })();
-    }, [game]); 
+    }, [game]);
 
     useEffect(() => {
         if (!theChuck.current || !datas) {
@@ -113,12 +123,12 @@ export default function CreateChuck(props: any) {
             datas[0].data.times.map((time: any, idx: number) => {
                 if (idx === datas[0].data.times.length - 1) {
                     console.log('DATA: ', datas[0].data);
-                    return null;
+                    return datas[0].data;
                 }
             })
 
         }
-    }, [datas, theChuck.current, loaded]);
+    }, [datas, theChuck, loaded]);
     
     const awaitNote = async (note: string) => {
         if(keysReady) {
@@ -129,7 +139,6 @@ export default function CreateChuck(props: any) {
             resolve(getVals);
         }).then(async (res: any) => {
             return await res.data;
-            setKeysReady(true);
         });
     };
 
@@ -139,11 +148,16 @@ export default function CreateChuck(props: any) {
         }
         const noteReady = note.target.attributes[3].value;
         theChuck.current.runCode(` SinOsc osc => dac; 0.2 => osc.gain; ${noteReady} => osc.freq; 3::second => now; `);
-        return null;
+        return noteReady;
     };
 
-    const organizeRows = async(rowNum: number) => {
+    const organizeRows = async(rowNum: number, note: string) => {
         const noteReady = await awaitNote(note);
+        if (noteReady) {
+            setKeysReady(true);
+        } else {
+            return;
+        }
         const parsedNote = note.charAt(1) === '♯' ? note.slice(0, 2) + "-" + note.slice(2) : note.slice(0, 1) + "-" + note.slice(1);
         const el: any = await document.getElementById(parsedNote);
         if (el && !el['data-midiNote'] && !el['data-midiHz']) {
@@ -159,7 +173,7 @@ export default function CreateChuck(props: any) {
         // range from 0 to 10
         for (let i = 2; i < 4; i++) {
             [`C${i}`, `C♯${i}`, `D${i}`, `D♯${i}`, `E${i}`, `F${i}`, `F♯${i}`, `G${i}`, `G♯${i}`, `A${i}`, `A♯${i}`, `B${i}`].forEach((note) => {
-                organizeRows(i);
+                organizeRows(i, note);
             });
 
             const octave = (
@@ -183,92 +197,211 @@ export default function CreateChuck(props: any) {
         return octaves;
     }
     
-    return (
-        <Box id="keyboardWrapper">
-            {
-                theChuck.current && Object.values(theChuck.current).length
-                ?
-                    <>
-                        <div id="keyboardControlsWrapper">
-                            Controls
-                            <TableRow>
-                                <TableCell sx={{ minWidth: 120, background: 'blue' }}>
-                                    <FormControl fullWidth>
-                                        <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
-                                        <Select
-                                            labelId="audioKey-simple-select-label"
-                                            id="audioKey-simple-select"
-                                            value={audioKey}
-                                            label="Key"
-                                            onChange={handleChangeAudioKey}
-                                        >
-                                            <MenuItem value={'C'}>C</MenuItem>
-                                            <MenuItem value={'C♯'}>C♯</MenuItem>
-                                            <MenuItem value={'D'}>D</MenuItem>
-                                            <MenuItem value={'D♯'}>D♯</MenuItem>
-                                            <MenuItem value={'E'}>E</MenuItem>
-                                            <MenuItem value={'F'}>F</MenuItem>
-                                            <MenuItem value={'F♯'}>F♯</MenuItem>
-                                            <MenuItem value={'G'}>G</MenuItem>
-                                            <MenuItem value={'G♯'}>G♯</MenuItem>
-                                            <MenuItem value={'A'}>A</MenuItem>
-                                            <MenuItem value={'A♯'}>A♯</MenuItem>
-                                            <MenuItem value={'B'}>B</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </TableCell>
-                                <TableCell sx={{ minWidth: 120, background: 'green' }}>
-                                    <FormControl fullWidth>
-                                        <InputLabel id="octave-simple-select-label">Octave</InputLabel>
-                                        <Select
-                                            labelId="octave-simple-select-label"
-                                            id="octave-simple-select"
-                                            value={octave}
-                                            label="Octave"
-                                            onChange={handleChangeOctave}
-                                        >
-                                            <MenuItem value={'1'}>1</MenuItem>
-                                            <MenuItem value={'2'}>2</MenuItem>
-                                            <MenuItem value={'3'}>3</MenuItem>
-                                            <MenuItem value={'4'}>4</MenuItem>
-                                            <MenuItem value={'5'}>5</MenuItem>
-                                            <MenuItem value={'6'}>6</MenuItem>
-                                            <MenuItem value={'7'}>7</MenuItem>
-                                            <MenuItem value={'8'}>8</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </TableCell>
-                                <TableCell sx={{ minWidth: 120, background: 'green' }}>
-                                    <FormControl fullWidth>
-                                        <InputLabel id="octave-simple-select-label">Octave</InputLabel>
-                                        <Select
-                                            labelId="octave-simple-select-label"
-                                            id="octave-simple-select"
-                                            value={octave}
-                                            label="Octave"
-                                            onChange={handleChangeOctave}
-                                        >
-                                            <MenuItem value={'1'}>1</MenuItem>
-                                            <MenuItem value={'2'}>2</MenuItem>
-                                            <MenuItem value={'3'}>3</MenuItem>
-                                            <MenuItem value={'4'}>4</MenuItem>
-                                            <MenuItem value={'5'}>5</MenuItem>
-                                            <MenuItem value={'6'}>6</MenuItem>
-                                            <MenuItem value={'7'}>7</MenuItem>
-                                            <MenuItem value={'8'}>8</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </TableCell>
-                            </TableRow>
-                        </div>
-                        
-                        <ul id="keyboard">
-                            {createKeys()}
-                        </ul>
-                    </>
-                :
-                    <div id="loadingScreen">Loading!</div>
+    const vizComponent = <Example width={500} height={500} />
+
+    const submitMingus = async () => {
+        axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {audioKey, audioScale, octave}, {
+            headers: {
+              'Content-Type': 'application/json'
             }
-        </Box>
+          }).then(({data}) => setMingusData(data));
+
+          axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, audioKey}, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }).then(({data}) => setMingusChordsData(data));
+    }
+
+    useEffect(() => {
+        if (mingusData) {
+            console.log('MINGUS DATA: ', mingusData);
+        }
+    }, [mingusData]);
+
+    useEffect(() => {
+        if (mingusChordsData) {
+            console.log('MINGUS CHORDS DATA: ', mingusChordsData);
+        }
+    }, [mingusChordsData]);
+
+    return (
+        <>
+        <ParentSize>{({ width, height }) => vizComponent}</ParentSize>
+        {
+            theChuck.current && Object.values(theChuck.current).length
+                ?
+            <Box id="keyboardWrapper">
+                <div id="keyboardControlsWrapper">
+                    <Box sx={{ minWidth: 120, background: DARK_GRAY_1 }}>
+                        <FormControl fullWidth>
+                            <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
+                            <Select
+                                sx={{color: WHITE_TEXT, fontWeight: 'bold', fontSize: '2rem'}}
+                                labelId="audioKey-simple-select-label"
+                                id="audioKey-simple-select"
+                                value={audioKey}
+                                label="Key"
+                                onChange={handleChangeAudioKey}
+                            >
+                                <MenuItem value={'C'}>C</MenuItem>
+                                <MenuItem value={'C♯'}>C♯</MenuItem>
+                                <MenuItem value={'D'}>D</MenuItem>
+                                <MenuItem value={'D♯'}>D♯</MenuItem>
+                                <MenuItem value={'E'}>E</MenuItem>
+                                <MenuItem value={'F'}>F</MenuItem>
+                                <MenuItem value={'F♯'}>F♯</MenuItem>
+                                <MenuItem value={'G'}>G</MenuItem>
+                                <MenuItem value={'G♯'}>G♯</MenuItem>
+                                <MenuItem value={'A'}>A</MenuItem>
+                                <MenuItem value={'A♯'}>A♯</MenuItem>
+                                <MenuItem value={'B'}>B</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Box sx={{ minWidth: 120, background: DARK_GRAY_1 }}>
+                        <FormControl fullWidth>
+                            <InputLabel id="octave-simple-select-label">Octave</InputLabel>
+                            <Select
+                                sx={{color: WHITE_TEXT, fontWeight: 'bold', fontSize: '2rem'}}
+                                labelId="octave-simple-select-label"
+                                id="octave-simple-select"
+                                value={octave}
+                                label="Octave"
+                                onChange={handleChangeOctave}
+                            >
+                                <MenuItem value={'1'}>1</MenuItem>
+                                <MenuItem value={'2'}>2</MenuItem>
+                                <MenuItem value={'3'}>3</MenuItem>
+                                <MenuItem value={'4'}>4</MenuItem>
+                                <MenuItem value={'5'}>5</MenuItem>
+                                <MenuItem value={'6'}>6</MenuItem>
+                                <MenuItem value={'7'}>7</MenuItem>
+                                <MenuItem value={'8'}>8</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Box sx={{ minWidth: 120, background: DARK_GRAY_1  }}>
+                        <FormControl fullWidth>
+                            <InputLabel id="scale-simple-select-label">Scale</InputLabel>
+                            <Select
+                                sx={{color: WHITE_TEXT, fontWeight: 'bold', fontSize: '2rem'}}
+                                labelId="scale-simple-select-label"
+                                id="scale-simple-select"
+                                value={audioScale}
+                                label="Scale"
+                                onChange={handleChangeScale}
+                            >
+                                <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
+                                <MenuItem value={'Major'}>Major</MenuItem>
+                                <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
+                                <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
+                                <MenuItem value={'Harmonic Minor'}>Harmonic Minor</MenuItem>
+                                <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
+                                <MenuItem value={'Bachian'}>Bachian</MenuItem>
+                                <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
+                                <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
+                                <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
+                                <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
+                                <MenuItem value={'Ionian'}>Ionian</MenuItem>
+                                <MenuItem value={'Dorian'}>Dorian</MenuItem>
+                                <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
+                                <MenuItem value={'Lydian'}>Lydian</MenuItem>
+                                <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
+                                <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
+                                <MenuItem value={'Locrian'}>Locrian</MenuItem>
+                                <MenuItem value={'Fifths'}>Fifths</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Box sx={{ minWidth: 120, background: DARK_GRAY_1 }}>
+                        <FormControl fullWidth>
+                            <InputLabel id="chord-simple-select-label">Scale</InputLabel>
+                            <Select
+                                labelId="chord-simple-select-label"
+                                id="chord-simple-select"
+                                value={audioChord}
+                                label="Chord"
+                                onChange={handleChangeChord}
+                                sx={{
+                                    color: WHITE_TEXT, 
+                                    fontWeight: 'bold', 
+                                    fontSize: '2rem',
+                                    '& .MuiList-root': {
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      background: 'var(--black-20)',
+                                      color: 'var(--white-20)',
+                                    }
+                                  }}
+                            >
+                                <MenuItem value={'None'}>None</MenuItem>
+                                <MenuItem value={'M'}>Major Triad</MenuItem>
+                                <MenuItem value={'m'}>Minor Triad</MenuItem>
+                                <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
+                                <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
+                                <MenuItem value={'dim'}>Diminished Triad</MenuItem>
+                                <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
+                                <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
+                                <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
+                                <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
+                                <MenuItem value={'5'}>Perfect Fifth</MenuItem>
+                                <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
+                                <MenuItem value={'6'}>Major Sixth 1</MenuItem>
+                                <MenuItem value={'67'}>Dominant Sixth</MenuItem>
+                                <MenuItem value={'69'}>Sixth Ninth</MenuItem>
+                                <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
+                                <MenuItem value={'m6'}>Minor Sixth</MenuItem>
+                                <MenuItem value={'M7'}>Major Seventh</MenuItem>
+                                <MenuItem value={'m7'}>Minor Seventh</MenuItem>
+                                <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
+                                <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
+                                <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
+                                <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
+                                <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
+                                <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
+                                <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
+                                <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
+                                <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
+                                <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
+                                <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
+                                <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
+                                <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
+                                <MenuItem value={'M9'}>Major Ninth</MenuItem>
+                                <MenuItem value={'m9'}>Minor Ninth</MenuItem>
+                                <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
+                                <MenuItem value={'maddb9'}>Minor Add Flat Ninth</MenuItem>
+                                <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
+                                <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
+                                <MenuItem value={'9'}>Dominant Ninth</MenuItem>
+                                <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
+                                <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
+                                <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
+                                <MenuItem value={'madd9'}>Minor Add Ninth</MenuItem>
+                                <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
+                                <MenuItem value={'11'}>Eleventh</MenuItem>
+                                <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
+                                <MenuItem value={'add11'}>Add Eleventh</MenuItem>
+                                <MenuItem value={'madd11'}>Minor Add Eleventh</MenuItem>
+                                <MenuItem value={'maddb11'}>Minor Add Flat Eleventh</MenuItem>
+                                <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
+                                <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
+                                <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
+                                <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
+                                <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
+                                <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
+                                <MenuItem value={'madd13'}>Minor Add Thirteenth</MenuItem>
+                                <MenuItem value={'maddb13'}>Minor Add Flat Thirteenth</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
+                </div>
+                <ul id="keyboard">
+                    {createKeys()}
+                </ul>
+            </Box>
+            : null}
+        </>
     )
 } 

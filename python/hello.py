@@ -11,6 +11,16 @@ import codecs
 import pandas as pd
 import matplotlib, matplotlib.pyplot as plt
 import sys
+import mingus.core.intervals as intervals
+import mingus.core.notes as notes
+import mingus.core.scales as scales
+import mingus.core.chords as chords
+import mingus.core.progressions as progressions
+import mingus.core.keys as keys
+
+# from mingus.core.notes import augment, diminish, reduce_accidentals
+# from mingus.core.keys import keys, get_notes
+# from mingus.core.mt_exceptions import NoteFormatError, FormatError, RangeError
 
 matplotlib.use('agg')
 
@@ -114,6 +124,205 @@ def midi(number):
         
         print("NUMBER: ", number)
         return {"midiNote": lib_note, "midiHz": lib_hz}
+
+@app.route('/api/mingus_scales', methods=['POST', 'GET'])
+def mingus_scales():
+    data = request.get_json()
+    print(data)
+    scales_to_return = []
+    if data['audioScale'] == 'Major':
+        scales_to_return.append(scales.Major(data['audioKey']).ascending())
+        scales_to_return.append(scales.Major(data['audioKey']).descending())       
+        print('Diatonic ', scales_to_return)
+    elif data['audioScale'] == 'HarmonicMajor':
+        scales_to_return.append(scales.HarmonicMajor(data['audioKey']).ascending())
+        scales_to_return.append(scales.HarmonicMajor(data['audioKey']).descending())  
+        print('HarmonicMajor ', scales_to_return)
+    elif data['audioScale'] == 'NaturalMinor':
+        scales_to_return.append(scales.NaturalMinor(data['audioKey']).ascending())
+        scales_to_return.append(scales.NaturalMinor(data['audioKey']).descending())  
+        print('NaturalMinor ', scales_to_return)
+    elif data['audioScale'] == 'HarmonicMinor':
+        scales_to_return.append(scales.HarmonicMinor(data['audioKey']).ascending())
+        scales_to_return.append(scales.HarmonicMinor(data['audioKey']).descending())  
+        print('HarmonicMinor ', scales_to_return)
+    elif data['audioScale'] == 'MelodicMinor':
+        scales_to_return.append(scales.MelodicMinor(data['audioKey']).ascending())
+        scales_to_return.append(scales.MelodicMinor(data['audioKey']).descending())  
+        print('MelodicMinor ', scales_to_return)
+    elif data['audioScale'] == 'Bachian':
+        scales_to_return.append(scales.Bachian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Bachian(data['audioKey']).descending())  
+        print('Bachian ', scales_to_return)
+    elif data['audioScale'] == 'MinorNeapolitan':
+        scales_to_return.append(scales.MinorNeapolitan(data['audioKey']).ascending())
+        scales_to_return.append(scales.MinorNeapolitan(data['audioKey']).descending())  
+        print('MinorNeapolitan ', scales_to_return)
+    elif data['audioScale'] == 'Chromatic':
+        scales_to_return.append(scales.Chromatic(data['audioKey']).ascending())
+        scales_to_return.append(scales.Chromatic(data['audioKey']).descending())  
+        print('Chromatic ', scales_to_return)
+    elif data['audioScale'] == 'WholeTone':
+        scales_to_return.append(scales.WholeTone(data['audioKey']).ascending())
+        scales_to_return.append(scales.WholeTone(data['audioKey']).descending())  
+        print('WholeTone ', scales_to_return)
+    elif data['audioScale'] == 'Octatonic':
+        scales_to_return.append(scales.Octatonic(data['audioKey']).ascending())
+        scales_to_return.append(scales.Octatonic(data['audioKey']).descending())  
+        print('Octatonic ', scales_to_return)
+    elif data['audioScale'] == 'Ionian':
+        scales_to_return.append(scales.Ionian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Ionian(data['audioKey']).descending())  
+        print('Ionian ', scales_to_return)
+    elif data['audioScale'] == 'Dorian':
+        scales_to_return.append(scales.Dorian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Dorian(data['audioKey']).descending())  
+        print('Dorian ', scales_to_return)
+    elif data['audioScale'] == 'Phyrygian':
+        scales_to_return.append(scales.Phrygian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Phrygian(data['audioKey']).descending())  
+        print('Phyrygian ', scales_to_return)
+    elif data['audioScale'] == 'Lydian':
+        scales_to_return.append(scales.Lydian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Lydian(data['audioKey']).descending())  
+        print('Lydian ', scales_to_return)
+    elif data['audioScale'] == 'Mixolydian':
+        scales_to_return.append(scales.Mixolydian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Mixolydian(data['audioKey']).descending())  
+        print('Mixolydian ', scales_to_return)
+    elif data['audioScale'] == 'Aeolian':
+        scales_to_return.append(scales.Aeolian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Aeolian(data['audioKey']).descending())  
+        print('Aeolian ', scales_to_return)
+    elif data['audioScale'] == 'Locrian':
+        scales_to_return.append(scales.Locrian(data['audioKey']).ascending())
+        scales_to_return.append(scales.Locrian(data['audioKey']).descending())  
+        print('Locrian')
+    elif data['audioScale'] == 'Fifths':
+        scales_to_return.append(notes.fifths(data['audioKey']).ascending())
+        scales_to_return.append(notes.fifths(data['audioKey']).descending())  
+        print('Locrian')
+    return [{"data": data}]
+
+@app.route('/api/mingus_chords', methods=['POST', 'GET'])
+def mingus_chords():
+    data = request.get_json()
+    print('mingus_chords data: ', data)
+    
+    if data['audioChord'] == 'None':     
+        print('None')
+        return data['audioKey']
+    elif data['audioChord'] == 'M':
+        print('Major Triad')
+        return chords.major_triad(data['audioKey'] )
+    elif data['audioChord'] == 'm':
+        print('Minor Triad')
+        return chords.minor_triad(data['audioKey'] )
+    elif data['audioChord'] == 'aug' or data['audioKey'] == '+':
+        print('Augmented Triad')
+        return chords.augmented_triad(data['audioKey'] )
+    elif data['audioChord'] == 'dim':
+        print('Diminished Triad')
+        return chords.diminished_triad(data['audioKey'] )
+    elif data['audioChord'] == 'dim7':
+        print('Diminished Seventh')
+        return chords.diminished_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'sus2':
+        print('Suspended Second Triad')
+        return chords.suspended_second_triad(data['audioKey'] )
+    elif data['audioChord'] == 'sus':
+        print('Suspended Triad')
+        return chords.suspended_fourth_triad(data['audioKey'] )
+    elif data['audioChord'] == '7b5':
+        print('Dominant Flat Five')
+        return chords.dominant_flat_five(data['audioKey'] )
+    elif data['audioChord'] == '6' or data['audioChord'] == 'M6':
+        print('Major Sixth')
+        return chords.major_sixth(data['audioKey'] )
+    elif data['audioChord'] == 'm6':
+        print('Minor Sixth')
+        return chords.minor_sixth(data['audioKey'] )
+    elif data['audioChord'] == '67':
+        print('Dominant Sixth')
+        return chords.dominant_sixth(data['audioKey'] )
+    elif data['audioChord'] == '69':
+        print('Sixth Ninth')
+        return chords.sixth_ninth(data['audioKey'] )
+    elif data['audioChord'] == '7' or data['audioChord'] == 'M7':
+        print('Major Seventh')
+        return chords.major_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'm7':
+        print('Minor Seventh')
+        return chords.minor_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'M7+':
+        print('Augmented Major Seventh ', chords.augmented_major_seventh(data['audioKey']))
+        return chords.augmented_major_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'm7+' or data['audioChord'] == 'm7+5':
+        print('Augmented Minor Seventh')
+        return chords.augmented_minor_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'sus47' or data['audioChord'] == '7sus4':
+        print('Suspended Seventh')
+        return chords.suspended_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'm7b5':
+        print('Half Diminished Seventh')
+        return chords.half_diminished_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'dom7':
+        print('Dominant Seventh')
+        return chords.dominant_seventh(data['audioKey'] )  
+    elif data['audioChord'] == 'mM7':
+        print('Minor/Major Seventh')
+        return chords.minor_major_seventh(data['audioKey'] )
+    elif data['audioChord'] == '7+':
+        print('Augmented Major Seventh')
+        return chords.augmented_major_seventh(data['audioKey'] )
+    elif data['audioChord'] == '7#5':
+        print('Augmented Minor Seventh')
+        return chords.augmented_minor_seventh(data['audioKey'] )
+    elif data['audioChord'] == '7#11':
+        print('Lydian Dominant Seventh')
+        return chords.lydian_dominant_seventh(data['audioKey'] )
+    elif data['audioChord'] == 'M9':
+        print('Major Ninth')
+        return chords.major_ninth(data['audioKey'] )
+    elif data['audioChord'] == 'm9':
+        print('Minor Ninth')
+        return chords.minor_ninth(data['audioKey'] )
+    elif data['audioChord'] == 'add9' or data['audioChord'] == '9':
+        print('Dominant Ninth')
+        return chords.dominant_ninth(data['audioKey'] )
+    elif data['audioChord'] == '7_#9':
+        print('Dominant Sharp Ninth')
+        return chords.dominant_sharp_ninth(data['audioKey'] )
+    elif data['audioChord'] == '7b9':
+        print('Dominant Sharp Ninth')
+        return chords.dominant_flat_ninth(data['audioKey'] )
+    elif data['audioChord'] == 'susb9' or data['audioChord'] == 'sus4b9':
+        print('Suspended Fourth Ninth')
+        return chords.suspended_fourth_ninth(data['audioKey'] )
+    elif data['audioChord'] == 'M9':
+        print('Major Ninth')
+        return chords.major_ninth(data['audioKey'] )
+    elif data['audioChord'] == '6/9':
+        print('Sixth Ninth')
+        return chords.sixth_ninth(data['audioKey'] )
+    elif data['audioChord'] == '11' or data['audioChord'] == 'add11':
+        print('Eleventh')
+        return chords.eleventh(data['audioKey'] ) 
+    elif data['audioChord'] == 'm11':
+        print('Minor Eleventh')
+        return chords.minor_eleventh(data['audioKey'] )
+    elif data['audioChord'] == '7b12' or data['audioChord'] == 'hendrix':
+        print('Hendrix Chord')
+        return chords.hendrix_chord(data['audioKey'] )
+    elif data['audioChord'] == 'M13':
+        print('Major Thirteeenth')
+        return chords.major_thirteenth(data['audioKey'] )
+    elif data['audioChord'] == 'm13':
+        print('Minor Thirteenth')
+        return chords.minor_thirteenth(data['audioKey'] )
+    elif data['audioChord'] == '13':
+        print('Dominant Thirteenth')
+        return chords.dominant_thirteenth(data['audioKey'] )
 
 @app.route('/api/note/<name>', methods=['POST', 'GET'])
 def note_name(name):

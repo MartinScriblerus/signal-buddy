@@ -22,15 +22,6 @@
   background-color: rgba(0,0,0,0.9);
 }
 
-#toggleCameraBtn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 5;
-  width: 96px;
-  height : 48px;
-}
-
 #myFile {
   position: absolute;
   top: 12px;
@@ -78,14 +69,7 @@ body{
   min-height: 100vh;
 } */
 
-.toggleCameraBtn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 5;
-  width: 96px;
-  height : 48px;
-}
+
 
 canvas {
   flex: 1 1 auto;
@@ -151,8 +135,6 @@ canvas {
 
 ul {
   display: inline-flex;
-  padding: 60px;
-  padding-top: 180px;
   border-radius: 24px;
   overflow: scroll;
 }
@@ -162,13 +144,40 @@ ul {
   max-width: 100vw;
   height: 100vh;
   overflow: scroll;
-  background-color: var(--black-60);
+  background-color: transparent;
+  position: absolute;
+  top: 4vh;
 }
 
 #keyboardControlsWrapper {
   color: violet;
   max-width: 100vw;
   width: 100vw;
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+
+.MuiList-root, .MuiPaper-root {
+  display: flex !important;
+  flex-direction: column !important;
   position: fixed;
-  text-align: center;
+  top: 4vh;
+  display: flex;
+  color: var(--white-80);
+  background: var(--black-20) !important;
+}
+
+.MuiFormLabel-root, .MuiInputLabel-root {
+  color: var(--white-50) !important;
+}
+
+#introClickBox {
+  height: 100vh;
+  width: 100vw;
+  background: var(--black-20)
+}
+
+.invisible {
+  visibility: hidden;
 }

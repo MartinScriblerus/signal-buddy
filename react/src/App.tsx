@@ -38,8 +38,9 @@ function App() {
       }
     }).then(({data}) => setDatas(data));
   }
-    
-  function handleAudioReady(audioReadyMsg: boolean) {
+
+  
+  async function handleAudioReady(audioReadyMsg: boolean) {
     if (audioReady === false && audioReadyMsg === true) {
       setAudioReady(true);
     } else {
@@ -50,11 +51,11 @@ function App() {
   return (
     <div className="App">
         <>       
-          <Box>
+          {!audioReady && (<Box id="introClickBox">
               <Button onClick={()=> handleAudioReady(true)}>
-                <span className="display-4 fw-bold">WebChucK</span>
+                <span className="display-4 fw-bold">Signal Buddy</span>
               </Button>   
-          </Box>
+          </Box>)}
           {audioReady && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <input 
