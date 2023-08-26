@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/accessible-emoji */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { lightTheme, darkTheme, XYChartTheme } from '@visx/xychart';
 import { PatternLines } from '@visx/pattern';
 import { GlyphProps } from '@visx/xychart/lib/types';
@@ -86,7 +86,7 @@ type ControlsProps = {
   children: (props: ProvidedProps) => React.ReactNode;
 };
 
-export default function ExampleControls({ children }: ControlsProps) {
+export default function ExampleControls({ children }: ControlsProps ) {
   const [useAnimatedComponents, setUseAnimatedComponents] = useState(!userPrefersReducedMotion());
   const [theme, setTheme] = useState<XYChartTheme>(darkTheme);
   const [animationTrajectory, setAnimationTrajectory] = useState<AnimationTrajectory | undefined>(
@@ -122,7 +122,8 @@ export default function ExampleControls({ children }: ControlsProps) {
   const [missingValues, setMissingValues] = useState(false);
   const [glyphComponent, setGlyphComponent] = useState<'star' | 'cross' | 'circle' | '🍍'>('star');
   const [curveType, setCurveType] = useState<'linear' | 'cardinal' | 'step'>('linear');
-  
+
+
   const data = cityTemperature.slice(225, 275);
   const dataMissingValues = data.map((d, i) =>
     i === 10 || i === 11
@@ -345,30 +346,22 @@ export default function ExampleControls({ children }: ControlsProps) {
         ...getAnimatedOrUnanimatedComponents(useAnimatedComponents),
       })}
       {/** This style is used for annotated elements via colorAccessor. */}
-      <svg className="pattern-lines">
-        <PatternLines
-          id={selectedDatumPatternId}
-          width={6}
-          height={6}
-          orientation={['diagonalRightToLeft']}
-          stroke={theme?.axisStyles.x.bottom.axisLine.stroke}
-          strokeWidth={1.5}
-        />
-      </svg>
-      <div id="vizControls" 
+
+
+      <div id="vizControls"
+        className="invisible"
         style={{
           position: 'absolute', 
           textAlign: 'left',
           background: 'rgba(0,0,0,.7)',
           color: 'white',
           bottom: 0,
-          height: '400px',
-          width:'600px',
+          height: '300px',
+          width:'400px',
           left: '0px',
           margin: 'auto',
           right: '0',
           top: '0',
-
         }}
       >
         {/** data */}
@@ -767,6 +760,7 @@ export default function ExampleControls({ children }: ControlsProps) {
           </label>
         </div>
       </div>
+
     </>
   );
 }

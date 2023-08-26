@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { CityTemperature } from '@visx/mock-data/lib/mocks/cityTemperature';
-
+import Button from '@mui/material/Button'
 import ExampleControls from './ExampleControls';
 import CustomChartBackground from './CustomChartBackground';
 import BaseBrush from '@visx/brush/lib/BaseBrush';
@@ -13,8 +13,24 @@ export type XYChartProps = {
 type City = 'San Francisco' | 'New York' | 'Austin';
 
 export default function Example({ height }: XYChartProps) {
+    const [dataVizControlsOpen, setDataVizControlsOpen] = useState(true);  
+
+    const handleChangeDataVizControls = async () => {
+      console.log('here!');
+      const el = await document.getElementById('vizControls');
+      if (dataVizControlsOpen) {
+        el?.classList.add('invisible');
+      } else {
+        el?.classList.remove('invisible');
+      }
+      setDataVizControlsOpen(!dataVizControlsOpen);
+    }
+
     return (
-    <ExampleControls>
+    <>
+      <Button id="btnDataVizControls" onClick={handleChangeDataVizControls}>Data Controls</Button>
+      {<h1>{dataVizControlsOpen}</h1>}
+      <ExampleControls >
       {({
         accessors,
         animationTrajectory,
@@ -344,6 +360,7 @@ export default function Example({ height }: XYChartProps) {
         </XYChart>
         </>
       )}
-    </ExampleControls>
+      </ExampleControls>
+    </>
   );
 }

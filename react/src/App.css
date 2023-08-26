@@ -11,14 +11,14 @@
   --black-20: hsla(0, 0%, 0%, 0.2);
   --black-30: hsla(0, 0%, 0%, 0.3);
   --black-50: hsla(0, 0%, 0%, 0.5);
-  --black-60: hsla(0, 0%, 0%, 0.6);
+  --black-60: hsla(0, 0%, 0%, 0.8);
   --white-20: hsla(0, 0%, 100%, 0.2);
   --white-50: hsla(0, 0%, 100%, 0.5);
   --white-80: hsla(0, 0%, 100%, 0.8);
 }
 #loadingScreen, #root {
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
   background-color: rgba(0,0,0,0.9);
 }
 
@@ -51,6 +51,7 @@ body{
 .App {
   text-align: center;
 }
+
 #keyboard li:first-child {
   border-radius: 5px 0 5px 5px;
 }
@@ -73,7 +74,7 @@ body{
 
 canvas {
   flex: 1 1 auto;
-  background-color:pink;
+  background-color: var(--black-60);
 }
 
 #gameCanvas {
@@ -146,7 +147,23 @@ ul {
   overflow: scroll;
   background-color: transparent;
   position: absolute;
-  top: 4vh;
+  top: 20vh;
+  margin-top: 20vh;
+  margin-bottom: 20vh;
+}
+
+#inputFileWrapper {
+  color: violet;
+  display: flex;
+  position: absolute;
+  background: var(--black-80);
+  height: 25vh;
+  top: 25vh;
+  width: 50vw;
+  float: center;
+  left: 25vw;
+  justify-content: center;
+  padding-top: 24px;
 }
 
 #keyboardControlsWrapper {
@@ -165,12 +182,22 @@ ul {
   top: 4vh;
   display: flex;
   color: var(--white-80);
-  background: var(--black-20) !important;
+  background: var(--black-60);
+  /* background: var(--black-20) !important; */
 }
 
-.MuiFormLabel-root, .MuiInputLabel-root {
-  color: var(--white-50) !important;
+.MuiPaper-root {
+  color: var(--white-80) !important;
+  background: var(--black-60) !important; 
 }
+
+.MuiFormLabel-root {
+  color: var(--black-50) !important;
+}
+
+/* .MuiBox-root {
+  z-index: 20;
+} */
 
 #introClickBox {
   height: 100vh;
@@ -178,6 +205,119 @@ ul {
   background: var(--black-20)
 }
 
+#sequencerWrapperInner {
+  justify-content: center; 
+  color: white; 
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+#sequencerWrapperOuter {
+  display: inline-flex; 
+  position: absolute;
+  top: 20vh;
+  left: 5vw;
+  width: 90vw;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--black-60);
+}
+
+.sequencer-dropdown {
+  min-width: 80px; 
+}
+
+#submitMingus {
+  height: 80px;
+  position: relative;
+  min-height: 80px;  
+  z-index: 22;
+}
+
 .invisible {
   visibility: hidden;
+}
+
+.startButton > * {
+  font-size: 6rem;
+  /* font-family: '' */
+}
+
+#audioKey-simple-select-label #octave-simple-select-label #audioScale-simple-select-label #chord-simple-select-label{
+  color: blue;
+  position: absolute;
+  z-index: 15;
+}
+
+.sequencerWrapper {
+  display: inline-flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 40vh;
+  left: 0;
+  /* position: absolute; */
+  background: rgba(0,0,0,0.4);
+}
+
+
+#synthControlsWrapper {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  top: 10vh !important;
+  position: absolute;
+  background: transparent;
+  position: absolute;
+  left: 10vw;
+  width: 80vw;
+  text-align: center;
+}
+
+#instrumentBuilderWrapper {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  background: var(--black-60);
+  color: var(--white-80);
+  position: absolute;
+  top: 10vh !important;
+  left: 10vw;
+  bottom: 10vh;
+  width: 80vw;
+  height: 80vh;
+  text-align: center;
+}
+
+#instrumentBuilder {
+  display: flex;
+  flex-direction: column;
+}
+
+.instrumentCheckboxWrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center; 
+  align-items: center;
+  left: 10%;
+  top: 10%;
+  height: 80%;
+  width: 80%;
+}
+
+.li-to-drag {
+  height: 80px;
+  min-width: 4vw;
+  padding: 1vw;
+  font-size: 12px;
+  background: rgba(0,0,0,0.4);
+  padding: 0px;
+  margin: 8px;
+  border: solid 0.5px white;
+  border-radius: 4px;
+  margin: 4vw;
+  color: white;
 }

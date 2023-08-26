@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 import CreateChuck from './components/CreateChuck';
-import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
+// import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
 import axios from 'axios';
 import { IGame } from './interfaces/IGame';
 import { Button, Box } from '@mui/material';
@@ -14,17 +14,78 @@ function App() {
   // const inputRef: any = useRef();
   const [audioReady, setAudioReady] = useState(false);
   const [datas, setDatas] = useState<any>([]);
+  const [fileControlsVisible, setFileControlsVisible] = useState(false);
   const { register, handleSubmit } = useForm();
+  // const [midiNotesOn, setMidiNotesOn] = useState([]);
+  // const [midiNotesOff, setMidiNotesOff] = useState([]);
+  // const midiNotesOn: any = useRef([]);
+  // const midiNotesOff: any = useRef([]);
 
-  const nav: any = navigator;
+  // const nav: any = navigator;
   const game: IGame = {
     canvas: HTMLCanvasElement,
     key: "C:maj",
-    midi: nav.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure),
+    midi: 'nav.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure)',
     theLibrosa: undefined,
     theChuck: undefined,
   };
+
+//   let midi = null; // global MIDIAccess object
+
+// const noteOn = (note: any, velocity: any) => {
+//   console.log('NOTE ON! ', note);
+//   console.log('VELOCITY: ', velocity);
+//   midiNotesOn.current.push({note: note, velocity: velocity});
+// } 
+
+// const noteOff = (note: any) => {
+//   console.log('NOTE OFF! ', note);
+//   midiNotesOff.current.push({note: note});
+// }
+
+// function onMIDISuccess(midiAccess: any) {
+//     console.log("MIDI ready!");
+//     midi = midiAccess; // store in the global (in real usage, would probably keep in an object instance)
+//     const inputs = midiAccess.inputs;
+//     const outputs = midiAccess.outputs;
+//     for (const input of midiAccess.inputs.values()) {
+//       input.onmidimessage = getMIDIMessage;
+//       console.log('what is MIDI?? ', input);
+//     }
+    
+//     return midi;
+//   }
   
+// function onMIDIFailure(msg: any) {
+//     console.error(`Failed to get MIDI access - ${msg}`);
+//     return undefined;
+// }
+
+// function getMIDIMessage(message: any) {
+//   const command = message.data[0];
+//   const note = message.data[1];
+//   const velocity = (message.data.length > 2) ? message.data[2] : 0; // a velocity value might not be included with a noteOff command
+//   console.log('MIDI MSG!: ', message);
+//   switch (command) {
+//       case 144: // noteOn
+//           if (velocity > 0) {
+//               noteOn(note, velocity);
+//               // console.log('note ', note);
+//               // console.log('velocity ', velocity);
+//           } else {
+//               noteOff(note);
+//           }
+//           break;
+//       case 128: // noteOff
+//           noteOff(note);
+//           // console.log('note ', note);
+//           break;
+//       // we could easily expand this switch statement to cover other types of commands such as controllers or sysex
+//   }
+// }
+  
+//   game.midi = nav.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure)
+
   const onSubmit = async(files: any) => {
     console.log('data out!!! ', files.file[0]);
     const file = files.file[0];
@@ -39,7 +100,6 @@ function App() {
     }).then(({data}) => setDatas(data));
   }
 
-  
   async function handleAudioReady(audioReadyMsg: boolean) {
     if (audioReady === false && audioReadyMsg === true) {
       setAudioReady(true);
@@ -48,23 +108,34 @@ function App() {
     }
   }
 
+  function handleChangeFileControls() {
+    setFileControlsVisible(!fileControlsVisible);
+  }
+
   return (
     <div className="App">
         <>       
           {!audioReady && (<Box id="introClickBox">
-              <Button onClick={()=> handleAudioReady(true)}>
+              <Button className="startButton" onClick={()=> handleAudioReady(true)}>
                 <span className="display-4 fw-bold">Signal Buddy</span>
               </Button>   
           </Box>)}
-          {audioReady && (
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <input 
-              type="file" 
-              {...register("file") } />
-            <input type="submit" />
-          </form>
+          <Button onClick={handleChangeFileControls}>FILES</Button>
+          {audioReady && fileControlsVisible && (
+          <Box id="inputFileWrapper">
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <input 
+                type="file" 
+                {...register("file") } />
+              <input type="submit" />
+            </form>
+          </Box>
           )}
-          <CreateChuck audioReady={audioReady} game={game} datas={datas} />
+          <CreateChuck 
+            audioReady={audioReady} 
+            game={game} 
+            datas={datas} 
+          />
         </>
     </div>
   );

@@ -141,8 +141,8 @@ export default class Chuck extends win.AudioWorkletNode {
      */
     public runCode(code: string) {
       const callbackID = this.nextDeferID();
-      console.log('o u t m s g: ', OutMessage.RUN_CODE);
-      console.log('c o d e: ', code);
+      // console.log('o u t m s g: ', OutMessage.RUN_CODE);
+      // console.log('c o d e: ', code);
       this.sendMessage(OutMessage.RUN_CODE, { callback: callbackID, code });
       return this.deferredPromises[callbackID];
     }
@@ -783,7 +783,7 @@ export default class Chuck extends win.AudioWorkletNode {
         case InMessage.NEW_SHRED:
           if (event.data.callback in this.deferredPromises) {
             const promise = this.deferredPromises[event.data.callback];
-            console.log('event data: ', event.data);
+            // console.log('event data: ', event.data);
             if (event.data.shred > 0) {
               if (promise.resolve) {
                 promise.resolve(event.data.shred);
@@ -825,7 +825,7 @@ export default class Chuck extends win.AudioWorkletNode {
               }
             }
           }
-          break;
+        break;
         default:
           break;
       }

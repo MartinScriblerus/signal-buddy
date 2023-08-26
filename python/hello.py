@@ -119,7 +119,7 @@ def midi(number):
     if(number and int(number) < 128):
         print("wtf ", int(number))
         # lib_note = librosa.midi_to_note(int(number), octave=True, cents=False, key=dynamic_key, unicode=False)
-        lib_note = librosa.midi_to_note(int(number), unicode=False)
+        lib_note = librosa.midi_to_note(int(number), unicode=True)
         lib_hz = librosa.midi_to_hz(int(number))
         
         print("NUMBER: ", number)
@@ -128,7 +128,11 @@ def midi(number):
 @app.route('/api/mingus_scales', methods=['POST', 'GET'])
 def mingus_scales():
     data = request.get_json()
+    if data['theNote']:
+        data['audioKey'] = data['theNote']
     print(data)
+    if not notes.is_valid_note(data['audioKey']):
+        return [{"data": data['audioKey'] + ' is not a valid note!'}]
     scales_to_return = []
     if data['audioScale'] == 'Major':
         scales_to_return.append(scales.Major(data['audioKey']).ascending())
@@ -208,10 +212,14 @@ def mingus_scales():
 def mingus_chords():
     data = request.get_json()
     print('mingus_chords data: ', data)
-    
-    if data['audioChord'] == 'None':     
-        print('None')
-        return data['audioKey']
+    if 'audioKey' not in data.keys():
+        if 'theNote' not in data.keys():
+            data['audioKey'] = 'C'
+        data['audioKey'] = data['theNote']
+    print('WHAT IS THIS? ', data['audioKey'])
+    if not notes.is_valid_note(data['audioKey']):
+        print('WOULD THIS BE VALID? ', str(data['audioKey']))
+        return [{"data": data['audioKey'] + ' is not a valid note!'}]
     elif data['audioChord'] == 'M':
         print('Major Triad')
         return chords.major_triad(data['audioKey'] )
