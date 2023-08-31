@@ -1,6 +1,5 @@
-<<< me.arg(0) >>>;
+// <<< me.arg(0) >>>;
 me.arg(0) => string codeStr;
-
 // if( Machine.eval( codeStr ) ) {
 //     Machine.eval( codeStr );
 // }
@@ -9,7 +8,7 @@ me.arg(0) => string codeStr;
 if (Machine.shreds().size() <= 1) {
     <<< "RUNNING SHREDS!!! " >>>;
     // <<< Machine.shreds() >>>;
-    <<< Machine.shreds().typeOf() >>>;
+    <<< Machine.shreds() >>>;
 } else {
     <<< "THERE SHOULD BE NO SHREDS BELOW!!! " >>>;
     // <<< Machine.shreds() >>>;

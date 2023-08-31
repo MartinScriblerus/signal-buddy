@@ -387,45 +387,52 @@ export function RHODEY(note: number) {
     )
 }
 
-export function MANDOLIN(note: number) {
+export function MANDOLIN(bpm: number, noteDivisions: number, note: number, velocity: number, bodySize: number, pluckPos: number, stringDamping: number, stringDetune: number, reverbMix: number, rtChords: Array<any>, rtScales: Array<any>) {
+    console.log('WOO HOO GOT CHORDS: ', rtChords);
+    console.log('WOO HOO GOT SCALES: ', rtScales);
     return (
         `
         // STK Mandolin
 
         // patch
         Mandolin m => JCRev r => dac;
-        // .75 => r.gain;
         .025 => r.mix;
         
+        // set bpm
+        ${bpm} => float bpm;
+        
+        (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+
+        me.dir() + "/ByronGlacier.wav" => string filePath;
+
         // our notes
-        [ ${note}, ${note + 2}, ${note + 4}, ${note + 5}, ${note + 7}, ${note + 5}, ${note + 4}, ${note + 2} ] @=> int notes[];
+        [ ${note}, ${note + 2}, ${note + 4}, ${note + 5}, ${note + 7}, ${note + 9}, ${note + 11}, ${note + 12} ] @=> int notes[];
         
-        // infinite time-loop
-        while( true )
+        public void theSpork()
         {
-            // set
-            Math.random2f( 0, 1 ) => m.bodySize;
-            Math.random2f( 0, 1 ) => m.pluckPos;
-            // Math.random2f( 0, 1 ) => m.stringDamping;
-            // Math.random2f( 0, 1 ) => m.stringDetune;
-        
-            // print
-            // <<< "---", "" >>>;
-            // <<< "body size:", m.bodySize() >>>;
-            // <<< "pluck position:", m.pluckPos() >>>;
-            // <<< "string damping:", m.stringDamping() >>>;
-            // <<< "string detune:", m.stringDetune() >>>;
-        
-            // factor
-            Math.random2f( 1, 4 ) => float factor;
-        
-            for( int i; i < notes.size(); i++ )
+            // infinite time-loop
+            while( true )
             {
-                play( Math.random2(0,2)*12 + notes[i], Math.random2f( .6, .9 ) );
-                100::ms * factor => now;
+                // set
+                filePath => m.bodyIR;
+                ${bodySize} => m.bodySize;
+                ${pluckPos} => m.pluckPos;
+                ${stringDamping} => m.stringDamping;
+                ${stringDetune} => m.stringDetune;
+                    
+                for( int i; i < notes.size(); i++ )
+                {
+                    play( notes[i], ${velocity / 100} );
+                    // 1000::ms => now;
+                    noteLengthInSecs::second => now;
+                }
+                <<< Machine.shreds() >>>;
             }
         }
-        
+        spork ~ theSpork();
+        // while(true) .3::second => now; (this is the original but does not control time)
+        while(true) 10::second => now;
+
         // basic play function (add more arguments as needed)
         fun void play( float note, float velocity )
         {

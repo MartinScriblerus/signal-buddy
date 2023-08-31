@@ -61,11 +61,17 @@ export default function CreateChuck(props: any) {
     const [valueLfoDepth, setValueLfoDepth] = useState(0.02);
     const [valueModSpeed, setValueModSpeed] = useState(0.0);
     const [valueModDepth, setValueModDepth] = useState(0.0);
+    const [valueBodySize, setValueBodySize] = useState(0.7);
+    const [valuePluckPos, setValuePluckPos] = useState(0.4);
+    const [valueStringDamping, setValueStringDamping] = useState(0.4);
+    const [valueStringDetune, setValueStringDetune] = useState(0.4);
     const [valueAftertouch, setValueAftertouch] = useState(0.4);
     const [valueOpMode, setValueOpMode] = useState(1);   
 
     const [playing, setPlaying] = useState(false);
     const [playingInstrument, setPlayingInstrument] = useState('');
+    const [realTimeScalesDataObj, setRealTimeScalesDataObj] = useState<any>([]);
+    const [realTimeChordsDataObj, setRealTimeChordsDataObj] = useState<any>([]);
     
 
     let modsDefault: any = [
@@ -154,6 +160,10 @@ export default function CreateChuck(props: any) {
             {
                 serverFilename: '/midiManager.ck',
                 virtualFilename: 'midiManager.ck'
+            },
+            {
+                serverFilename: '/ByronGlacier.wav',
+                virtualFilename: 'ByronGlacier.wav'
             },
             // {
             //     serverFilename: '/readData.ck',
@@ -286,6 +296,7 @@ export default function CreateChuck(props: any) {
     }
 
     const handleInstrumentsVisible = () => {
+        console.log('errrr');
         setInstrumentsVisible(!instrumentsVisible);
     }
 
@@ -356,62 +367,103 @@ export default function CreateChuck(props: any) {
         setModsHook(newList);
     }
 
-    const realTimeMingus = async (note) => {
-        // TODO: convert to redis sockets
-        if (!note) {
-            return;
+    useEffect(() => {
+        if (realTimeChordsDataObj && realTimeChordsDataObj.length > 0) {
+            console.log('REALTIME CHORDS DATA IN USE EFFECT: ', realTimeChordsDataObj);
+            // axios.post(`${process.env.REACT_APP_FLASK_API_URL}/midi_name`, JSON.stringify(realTimeChordsDataObj), {
+            //     headers: {
+            //         'Content-Type': 'application/json'
+            //     }
+            // }).then(({data}) => {
+            //     console.log('WHAT IS DATA@@@??? ', data);
+            //     //setRealTimeChordsDataObj((realTimeChordsDataObj) => [...realTimeChordsDataObj, data])
+            // });
         }
-        axios.post(`${process.env.REACT_APP_FLASK_API_URL}/midi/${note}`, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        }).then(({data}) => { 
-            console.log('REALTIME MINGUS DATA: ', data);
-            const theOctave = data.midiNote[data.midiNote.length - 1];
-            let theNote = data.midiNote.slice(0, -1);
-            console.log('OCTAVE: ', theOctave);
-            console.log('NOTE: ', theNote);
-            console.log('INDEX@!@! ', theNote.indexOf('♯'));
+        if (realTimeScalesDataObj) {
+            console.log('REALTIME SCALES DATA IN USE EFFECT: ', realTimeScalesDataObj);
+        }
+    }, [realTimeChordsDataObj, realTimeScalesDataObj]);
 
-            const index = theNote.indexOf('♯');
-            let convertedNote;
-            if (index !== -1) {
-                convertedNote = theNote.slice(0, -1) + '#';
-                console.log('IS THERE A CONVERTED NOTE??: ', convertedNote);
-            }    
-
-            if (convertedNote) {
-                theNote = convertedNote;
-                console.log('WHAT IS THENOTE NOW? ', theNote);
+    const noteOn = async (note: any, velocity: number) => {
+        const realTimeMingus = async (note) => {
+            // TODO: convert to redis sockets
+            if (!note || note.length === 0) {
+                return;
             }
-            console.log('THE NOTE FINALLY ', theNote);
+            if (note.length > 1) {
+                note = note[0];
+            }
+            console.log('JUST CHECKIN WHAT IS NOTE? ', note);
+            axios.post(`${process.env.REACT_APP_FLASK_API_URL}/midi/${note}`, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(({data}) => { 
+                console.log('REALTIME MINGUS DATA: ', data);
+                const theOctave = data.midiNote[data.midiNote.length - 1];
+                let theNote = data.midiNote.slice(0, -1);
+                // console.log('OCTAVE: ', theOctave);
+                // console.log('NOTE: ', theNote);
+                // console.log('INDEX@!@! ', theNote.indexOf('♯'));
+    
+                const index = theNote.indexOf('♯');
+                let convertedNote;
+                if (index !== -1) {
+                    convertedNote = theNote.slice(0, -1) + '#';
+                }    
+                if (convertedNote) {
+                    theNote = convertedNote;
+                }
+                console.log('THE NOTE IN CREATECHUCK: ', theNote);
                 axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {theNote, audioScale, theOctave}, {
                     headers: {
                     'Content-Type': 'application/json'
                     }
-                }).then(({data}) => console.log("REALTIME SCALES DATA: ", data));
+                }).then(async ({data}) => {
+                    console.log("REALTIME SCALES DATA: ", data);
+                    const gotData = await data;
+                    gotData.forEach((d: any) => {
+                        if (realTimeScalesDataObj.indexOf(d) === -1) {
+                            setRealTimeScalesDataObj((realTimeScalesDataObj) => [...realTimeScalesDataObj, d]);
+                        }
+                    });
+                });
 
-                axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, theNote}, {
+                axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, theNote, theOctave}, {
                     headers: {
                     'Content-Type': 'application/json'
                     }
-                }).then(({data}) => console.log("REALTIME CHORDS DATA: ", data));
-            
-        });
-    }
+                }).then(async ({data}) => {
+                    console.log("REALTIME CHORDS DATA: ", data);
+                    const gotData = await data;
+                    gotData.forEach((d: any) => {
+                        if (realTimeChordsDataObj.indexOf(d) === -1) {
+                            setRealTimeChordsDataObj((realTimeChordsDataObj) => [...realTimeChordsDataObj, d]);
+                        }
+                    });
 
-    const noteOn = async (note: any, velocity: number) => {
+                    mingusChordsData.current = data;
+                });
+                
+            });
+        }
         lastMidiNote.current = note;
         if (midiNotesOn.current.indexOf(note) === -1) {
             midiNotesOn.current.push(note);
         }
         if (chuckHook === undefined || note === undefined) return;
+        const mg = new Promise((resolve, reject) => {
+            try {
+                resolve(realTimeMingus(midiNotesOn.current));
+            } catch {
+                reject('nope');
+            }
+        });
         console.log('CAN WE START USING MINGUS DATA? ', mingusChordsData.current);
-        console.log('whst is nopte here? ', note);
-        if (note) {
-            const realTimeMingusData = realTimeMingus(note);
-        }
-        Promise.resolve(chuckHook).then(function(result: Chuck) {
+
+        console.log('whst is nope here? ', Promise.resolve(mg));
+
+        Promise.resolve(chuckHook).then(async function(result: Chuck) {
             if (playingInstrument === '') {
                 return;
             }
@@ -433,30 +485,25 @@ export default function CreateChuck(props: any) {
                 midiCode.current = MOOG(note, velocity, valueLfoSpeed, valueLfoDepth, valueFilterQ, valueFilterSweepRate, valueVibratoFreq, valueVibratoGain, valueMoogGain, valueAftertouch, valueModSpeed, valueModDepth, valueOpMode);
             }
             if (playingInstrument === 'rhodes') {
-                // result.clearChuckInstance();
                 midiCode.current = RHODEY(note);
             }
-            if (playingInstrument === 'mandolin') {
-                // result.clearChuckInstance();
-                midiCode.current = MANDOLIN(note);
+            if (playingInstrument === 'mandolin' && realTimeScalesDataObj && realTimeChordsDataObj) {
+                await chuckHook.loadFile('ByronGlacier.wav').then(() => {
+                    midiCode.current = MANDOLIN(120, 4, note, velocity, valueBodySize, valuePluckPos, valueStringDamping, valueStringDetune, valueReverbMix, realTimeChordsDataObj, realTimeScalesDataObj);
+                    // result.removeShred(w);
+                });
             }
             if (playingInstrument === 'bandedwave') {
                 // result.clearChuckInstance();
                 midiCode.current = BANDEDWAVE(note);
             }
             // const midiCode.current: any = CHORUS(note);
-            // const midiCode.current: any = MOOG2(note);
-
             
             new Promise(async(resolve) => {
                 const it = await result.isShredActive(1);
                 resolve(it);
             }).then(async (res: any) => {
-                // console.log('WHAT IS CHUCK RES?? ', res);
-                // console.log('WHAT IS CURR MIDICODE> ', midiCode.current);
-                           
                 await chuckHook.loadFile('midiManager.ck', ).then(async () => {
-             
                     Promise.resolve(chuckHook.runFileWithArgs('midiManager.ck', `${midiCode.current.toString()}`)).then((w: any) => {
                     console.log('WHAT IS W? ', w);
                         // result.removeShred(w);
@@ -479,36 +526,20 @@ export default function CreateChuck(props: any) {
                             //     result.removeShred(i);
                             // }
                         });   
-                    });
-                    // await result.loadFile('midiManager.ck').then(async () => {
-             
-                    //     Promise.resolve(result.replaceFileWithArgs('midiManager.ck', `${midiCode.current}`)).then((w: any) => {
-                    //     console.log('WHAT IS W? ', w);
-                    //         // result.removeShred(w);
-                    //     });
-                    // });
-
-                    // result.loadFile('readData.ck').then(async () => {
-                        // await result.loadFile('writeData.ck').then(async () => {
-                        //     Promise.resolve(result.runFileWithArgs('writeData.ck', `${note}`)).then((w: any) => {
-                        //     console.log('WHAT IS W? ', w);
-                        //         // result.removeShred(w);
-                        //     });
-                        // });
-                    // });
+                    });       
                 }
                 setPlaying(true);
             });
 
         });
-        const activeShreds = new Promise((resolve) => {
+        new Promise((resolve) => {
             const s = chuckHook.getIntArray('activeShreds');
             if (s) {
                 resolve(s);
             }
         }
         ).then(async (s) => {
-            console.log('ACTIVE SHREDS!! ', s);
+            console.log('ACTIVE SHREDS in note on!! ', s);
         });
       }
       
@@ -518,6 +549,15 @@ export default function CreateChuck(props: any) {
             midiNotesOn.current.slice(index, 1);
         }
         console.log('MIDI NOTES ON IN OFF: ', midiNotesOn.current);
+        new Promise((resolve) => {
+            const s = chuckHook.getIntArray('activeShreds');
+            if (s) {
+                resolve(s);
+            }
+        }
+        ).then(async (s) => {
+            console.log('ACTIVE SHREDS in off!! ', s);
+        });
         if (chuckHook === undefined) return;
         setPlaying(false);
 
@@ -604,6 +644,7 @@ export default function CreateChuck(props: any) {
 
     const handleUpdateInstrument = (event: React.ChangeEvent<HTMLInputElement>) => {
         setPlayingInstrument((event.target as HTMLInputElement).value);
+        console.log("HERE 1")
         Promise.resolve(chuckHook).then(function(result: Chuck) {
             result.clearChuckInstance();
         });
@@ -619,6 +660,7 @@ export default function CreateChuck(props: any) {
             <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
             {/* <DragDropContext onDragEnd={dragDone}> */}
             <ParentSize>{({ width, height }) => vizComponent}</ParentSize>
+
             {
             chuckHook && Object.values(chuckHook).length && instrumentsVisible
             ?
@@ -640,107 +682,6 @@ export default function CreateChuck(props: any) {
                         <FormControlLabel value="bandedwave" control={<Radio />} label="Banded Wave" />
                     </RadioGroup>
                 </FormControl>
-                
-                {/* <ul id="instrumentBuilder">
-                    <li id="clarinet">
-                        <span>Clarinet</span>
-                        <Checkbox
-                            // defaultChecked
-                            sx={{
-                                color: "yellow",
-                                '&.Mui-checked': {
-                                    color: "blue",
-                                },
-                            }}
-                            onChange={() => handleUpdateInstrument("clarinet")}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </li>
-                    <li id="plucked" onClick={() => handleUpdateInstrument("plucked")}>
-                        <span>Plucked</span>
-                        <Checkbox
-                            // defaultChecked
-                            sx={{
-                                color: "yellow",
-                                '&.Mui-checked': {
-                                    color: "blue",
-                                },
-                            }}
-                            onChange={() => handleUpdateInstrument("plucked")}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </li>
-                    <li id="sitar" onClick={() => handleUpdateInstrument("sitar")}>
-                        <span>Sitar</span>
-                        <Checkbox
-                            // defaultChecked
-                            sx={{
-                                color: "yellow",
-                                '&.Mui-checked': {
-                                    color: "blue",
-                                },
-                            }}
-                            onChange={() => handleUpdateInstrument("sitar")}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </li>
-                    <li id="moog" onClick={() => handleUpdateInstrument("moog")}>
-                        <span>Moog</span>
-                        <Checkbox
-                            // defaultChecked
-                            sx={{
-                                color: "yellow",
-                                '&.Mui-checked': {
-                                    color: "blue",
-                                },
-                            }}
-                            onChange={() => handleUpdateInstrument("moog")}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </li>
-                    <li id="rhodes" onClick={() => handleUpdateInstrument("rhodes")}>
-                        <span>Rhodes</span>
-                        <Checkbox
-                            // defaultChecked
-                            sx={{
-                                color: "yellow",
-                                '&.Mui-checked': {
-                                    color: "blue",
-                                },
-                            }}
-                            onChange={() => handleUpdateInstrument("rhodes")}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </li>
-                    <li id="mandolin" className="instrumentCheckboxWrapper" onClick={() => handleUpdateInstrument("mandolin")}>
-                        <span>Mandolin</span>
-                        <Checkbox
-                            // defaultChecked
-                            sx={{
-                                color: "yellow",
-                                '&.Mui-checked': {
-                                    color: "blue",
-                                },
-                            }}
-                            onChange={() => handleUpdateInstrument("mandolin")}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </li>
-                    <li id="bandedwave" onClick={() => handleUpdateInstrument("bandedwave")}>
-                        <span>Banded Wave</span>
-                        <Checkbox
-                            // defaultChecked
-                            sx={{
-                                color: "yellow",
-                                '&.Mui-checked': {
-                                    color: "blue",
-                                },
-                            }}
-                            onChange={() => handleUpdateInstrument("bandedwave")}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                        />
-                    </li>
-                </ul> */}
             </Box>
             :
             <></>
@@ -1114,254 +1055,394 @@ export default function CreateChuck(props: any) {
                 playingInstrument === 'moog'
                 ?
                     <>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="GAIN"
-                                dataIndex={valueMoogGain * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueMoogGain(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={12}
-                                label="VIBRATO FREQ"
-                                dataIndex={valueVibratoFreq}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
-                                onChange={ (value: any) => { setValueVibratoFreq(value) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="VIBRATO GAIN"
-                                dataIndex={valueVibratoGain * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueVibratoGain(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="SWEEP RATE"
-                                dataIndex={valueFilterSweepRate * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueFilterSweepRate(value/100) } }
-                            />
-                        </div>
-                    </Box>
-                    <br/>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={12}
-                                label="LFO SPEED"
-                                labelFontSize="1rem"
-                                direction={1}
-                                dataIndex={valueLfoSpeed}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
-                                onChange={ (value: any) => { setValueLfoSpeed(value) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="LFO DEPTH"
-                                dataIndex={valueLfoDepth * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueLfoDepth(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="FILTER Q"
-                                dataIndex={valueFilterQ * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueFilterQ(value/100) } }
-                            />
-                        </div>
-                    </Box>
-                    <br/>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="AFTERTOUCH"
-                                dataIndex={valueAftertouch * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueAftertouch(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="MOD SPEED"
-                                dataIndex={valueModSpeed * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueModSpeed(value) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="MOD DEPTH"
-                                dataIndex={valueModDepth * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                onChange={ (value: any) => { setValueModDepth(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={-1}
-                                max={4}
-                                label="OP MODE"
-                                dataIndex={valueOpMode}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
-                                data={[-1,0,1,2,3,4]}
-                                onChange={ (value: any) => { setValueOpMode(value) } }
-                            />
-                        </div>
-                    </Box>
-                </>
+                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="GAIN"
+                                    dataIndex={valueMoogGain * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueMoogGain(value/100) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={12}
+                                    label="VIBRATO FREQ"
+                                    dataIndex={valueVibratoFreq}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
+                                    onChange={ (value: any) => { setValueVibratoFreq(value) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="VIBRATO GAIN"
+                                    dataIndex={valueVibratoGain * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueVibratoGain(value/100) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="SWEEP RATE"
+                                    dataIndex={valueFilterSweepRate * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueFilterSweepRate(value/100) } }
+                                />
+                            </div>
+                        </Box>
+                        <br/>
+                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={12}
+                                    label="LFO SPEED"
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    dataIndex={valueLfoSpeed}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
+                                    onChange={ (value: any) => { setValueLfoSpeed(value) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="LFO DEPTH"
+                                    dataIndex={valueLfoDepth * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueLfoDepth(value/100) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="FILTER Q"
+                                    dataIndex={valueFilterQ * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueFilterQ(value/100) } }
+                                />
+                            </div>
+                        </Box>
+                        <br/>
+                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="AFTERTOUCH"
+                                    dataIndex={valueAftertouch * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueAftertouch(value/100) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="MOD SPEED"
+                                    dataIndex={valueModSpeed * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueModSpeed(value) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={0}
+                                    max={100}
+                                    label="MOD DEPTH"
+                                    dataIndex={valueModDepth * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    onChange={ (value: any) => { setValueModDepth(value/100) } }
+                                />
+                            </div>
+                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={140}
+                                    min={-1}
+                                    max={4}
+                                    label="OP MODE"
+                                    dataIndex={valueOpMode}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="yellow"
+                                    knobColor="yellow"
+                                    progressColorFrom="yellow"
+                                    progressColorTo="yellow"
+                                    data={[-1,0,1,2,3,4]}
+                                    onChange={ (value: any) => { setValueOpMode(value) } }
+                                />
+                            </div>
+                        </Box>
+                    </>
                 :
                     null
-            } 
-
+            }
+            { 
+            playingInstrument === 'mandolin'
+            ?
+            <>
+                <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
+                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                        <CircularSlider
+                            width={140}
+                            min={0}
+                            max={100}
+                            label="BODY SIZE"
+                            dataIndex={valueBodySize * 100}
+                            labelFontSize="1rem"
+                            direction={1}
+                            knobPosition="bottom"
+                            appendToValue=""
+                            valueFontSize="1.7rem"
+                            trackColor="#eeeeee"
+                            trackDraggable={true}
+                            labelColor="yellow"
+                            knobColor="yellow"
+                            progressColorFrom="yellow"
+                            progressColorTo="yellow"
+                            onChange={ (value: any) => { setValueBodySize(value/100) } }
+                        />
+                    </div>
+                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                        <CircularSlider
+                            width={140}
+                            min={0}
+                            max={100}
+                            label="PLUCK"
+                            dataIndex={valuePluck * 100}
+                            labelFontSize="1rem"
+                            direction={1}
+                            knobPosition="bottom"
+                            appendToValue=""
+                            valueFontSize="1.7rem"
+                            trackColor="#eeeeee"
+                            trackDraggable={true}
+                            labelColor="yellow"
+                            knobColor="yellow"
+                            progressColorFrom="yellow"
+                            progressColorTo="yellow"
+                            onChange={ (value: any) => { setValuePluck(value/100) } }
+                        />
+                    </div>
+                    <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
+                        <CircularSlider
+                            width={140}
+                            min={0}
+                            max={100}
+                            label="PLUCK POS"
+                            dataIndex={valuePluckPos * 100}
+                            labelFontSize="1rem"
+                            direction={1}
+                            knobPosition="bottom"
+                            appendToValue=""
+                            valueFontSize="1.7rem"
+                            trackColor="#eeeeee"
+                            trackDraggable={true}
+                            labelColor="yellow"
+                            knobColor="yellow"
+                            progressColorFrom="yellow"
+                            progressColorTo="yellow"
+                            onChange={ (value: any) => { setValuePluckPos(value/100) } }
+                        />
+                    </div>
+                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                        <CircularSlider
+                            width={140}
+                            min={0}
+                            max={100}
+                            label="STRING DAMPING"
+                            dataIndex={valueStringDamping * 100}
+                            labelFontSize="1rem"
+                            direction={1}
+                            knobPosition="bottom"
+                            appendToValue=""
+                            valueFontSize="1.7rem"
+                            trackColor="#eeeeee"
+                            trackDraggable={true}
+                            labelColor="yellow"
+                            knobColor="yellow"
+                            progressColorFrom="yellow"
+                            progressColorTo="yellow"
+                            onChange={ (value: any) => { setValueStringDamping(value/100) } }
+                        />
+                    </div>
+                </Box>
+                <br/>
+                <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
+                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                        <CircularSlider
+                            width={140}
+                            min={0}
+                            max={12}
+                            label="STRING DETUNE"
+                            labelFontSize="1rem"
+                            direction={1}
+                            dataIndex={valueStringDetune * 100}
+                            knobPosition="bottom"
+                            appendToValue=""
+                            valueFontSize="1.7rem"
+                            trackColor="#eeeeee"
+                            trackDraggable={true}
+                            labelColor="yellow"
+                            knobColor="yellow"
+                            progressColorFrom="yellow"
+                            progressColorTo="yellow"
+                            onChange={ (value: any) => { setValueStringDetune(value / 100) } }
+                        />
+                    </div>
+                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                            <CircularSlider
+                                width={140}
+                                min={0}
+                                max={100}
+                                label="REVERB MIX"
+                                dataIndex={valueReverbMix * 100}
+                                labelFontSize="1rem"
+                                direction={1}
+                                knobPosition="bottom"
+                                appendToValue=""
+                                valueFontSize="1.7rem"
+                                trackColor="#eeeeee"
+                                trackDraggable={true}
+                                labelColor="yellow"
+                                knobColor="yellow"
+                                progressColorFrom="yellow"
+                                progressColorTo="yellow"
+                                onChange={ (value: any) => { setValueReverbMix(value/100) } }
+                            />
+                        </div>
+                </Box> 
+            </>
+            :
+                null
+            }
             </Box>
+
+
 
             <Box id="sequencerWrapperOuter" className="invisible">
                 
@@ -1380,7 +1461,7 @@ export default function CreateChuck(props: any) {
                                     // return (
                                     return (<Draggable key={`draggableKey_${idx}`} draggableId={`draggableId_${idx}`} index={idx}>
                                         {(provided) => (
-                                        <li key={`draggableId_${idx}`} ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                        <li className="li-to-drag-wrapper" key={`draggableId_${idx}`} ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                                             <div id={`draggableId_${idx}`} className="li-to-drag">
                                                 {`${modsHook[idx].id}`}
                                                 <br/>

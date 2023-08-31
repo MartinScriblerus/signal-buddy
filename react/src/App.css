@@ -310,7 +310,24 @@ ul {
 
 .li-to-drag {
   height: 80px;
-  min-width: 4vw;
+  min-width: 1vw;
+  padding: 1vw;
+  font-size: 12px;
+  background: rgba(0,0,0,0.4);
+  padding: 0px;
+  margin: 8px;
+  border: solid 0.5px white;
+  border-radius: 4px;
+  margin: 4vw;
+  color: white;
+}
+.li-to-drag-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 80px;
+  min-width: 1vw;
   padding: 1vw;
   font-size: 12px;
   background: rgba(0,0,0,0.4);
