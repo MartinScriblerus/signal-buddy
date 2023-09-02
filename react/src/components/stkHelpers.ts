@@ -104,84 +104,146 @@ export function STFKRP(
     )
 }
 
-export function SITAR(note: number, velocity: number, pluck: number, reverbMix: number) {
+export function SITAR(running: number, bpm: number, noteDivisions: number, note: number, velocity: number, pluck: number, reverbMix: number, rtChords: Array<any>, rtScales: Array<any>) {
 
     return(`
+    ${running} => int running;
     // patch
     Sitar sit => Dyno dyno => NRev r => dac;
     ${reverbMix} => r.mix;
     0::ms => dyno.attackTime;
     0.8 => dyno.thresh;
+    
+    // set bpm
+    ${bpm} => float bpm;
+    
+    (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+
+    // scale
+    [${note}, ${note + 5}, ${note}, ${note - 5}] @=> int scale[];
 
     // time loop
-    while( true )
+    // while( true )
+    // {
+    public void theSpork()
     {
+        // infinite time-loop
+        while( running > 0 )
+        {
+            for (0 => int i; i < scale.size(); i++) {
+                ${note} + scale[i] => int newNote;
+                // set freq
+                newNote => sit.freq;
+
+                play( newNote, ${velocity / 100} );
+                noteLengthInSecs::second => now;
+            }
+            <<< Machine.shreds() >>>;
+        }
+    }
+    spork ~ theSpork();
+
+    public void unSpork()
+    {
+        0 => running;
+    }
+
+    // while(true) .3::second => now; (this is the original but does not control time)
+    while(true) 1::ms => now;
+
+    // basic play function (add more arguments as needed)
+    fun void play( float note, float velocity )
+    {
+        // start the note
         // freq
         Std.mtof( ${note} ) => sit.freq;
 
         // pluck!
         ${pluck} => sit.noteOn;
-
-        // advance time
-        // note: Math.randomf() returns value between 0 and 1
-        if( Math.randomf() > .5 ) {
-            .5::second => now;
-        } else { 
-            0.25::second => now;
-        }
     }
     `)
 }
 
-export function MOOG(note: number, velocity: number, valueLfoSpeed: number, valueLfoDepth: number, valueFilterQ: number, valueFilterSweepRate: number, valueVibratoFreq: number, valueVibratoGain: number, valueMoogGain: number, valueAftertouch: number, valueModSpeed: number, valueModDepth: number, valueOpMode: number) {
+export function MOOG(running: number, bpm: number, noteDivisions: number, note: number, velocity: number, valueLfoSpeed: number, valueLfoDepth: number, valueFilterQ: number, valueFilterSweepRate: number, valueVibratoFreq: number, valueVibratoGain: number, valueMoogGain: number, valueAftertouch: number, valueModSpeed: number, valueModDepth: number, valueOpMode: number, rtChords: Array<any>, rtScales: Array<any>) {
     return (
         `
         // STK ModalBar
-        Moog.help();
+        // Moog.help();
         // patch
+        ${running} => int running;
         Moog moog => Dyno dyno => Gain g => dac;
 
         0.5 => g.gain;
 
         0::ms => dyno.attackTime;
         0.7 => dyno.thresh;
+        
+        // set bpm
+        ${bpm} => float bpm;
+        
+        (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+
+        // me.dir() + "/ByronGlacier.wav" => string filePath;
 
         // scale
-        [0, 5, 0, -5] @=> int scale[];
+        [${note}, ${note + 5}, ${note}, ${note - 5}] @=> int scale[];
 
         // infinite time loop
 
         // while(true) {
-            // ding!
-            ${valueFilterQ} => moog.filterQ;
-            ${valueFilterSweepRate} => moog.filterSweepRate;
-            ${valueLfoSpeed} => moog.lfoSpeed;
-            ${valueLfoDepth} => moog.lfoDepth;
-            ${valueVibratoFreq} => moog.vibratoFreq;
-            ${valueVibratoGain} => moog.vibratoGain;
-            ${valueMoogGain} => moog.volume;
-            ${valueModSpeed} => moog.modSpeed;
-            ${valueModDepth} => moog.modDepth;
-            ${valueAftertouch} => moog.afterTouch;
-            moog.op(${valueOpMode});
+        public void theSpork()
+        {
+            // infinite time-loop
+            while( running > 0 )
+            {
+                // ding!
+                ${valueFilterQ} => moog.filterQ;
+                ${valueFilterSweepRate} => moog.filterSweepRate;
+                ${valueLfoSpeed} => moog.lfoSpeed;
+                ${valueLfoDepth} => moog.lfoDepth;
+                ${valueVibratoFreq} => moog.vibratoFreq;
+                ${valueVibratoGain} => moog.vibratoGain;
+                ${valueMoogGain} => moog.volume;
+                ${valueModSpeed} => moog.modSpeed;
+                ${valueModDepth} => moog.modDepth;
+                ${valueAftertouch} => moog.afterTouch;
+                moog.op(${valueOpMode});
 
-            Math.random2f( 0, 1 ) => moog.volume;
-            0.2 => moog.volume;
-            // 0.02 => moog.lfoDepth;
-            // 0.02 => moog.filterQ;
+                Math.random2f( 0, 1 ) => moog.volume;
+                0.2 => moog.volume;
+                // 0.02 => moog.lfoDepth;
+                // 0.02 => moog.filterQ;
 
-            for (0 => int i; i < scale.size(); i++) {
-                ${note} + scale[i] => int newNote;
-                // set freq
-                newNote => moog.freq;
+                for (0 => int i; i < scale.size(); i++) {
+                    ${note} + scale[i] => int newNote;
+                    // set freq
+                    newNote => moog.freq;
 
-                // go
-                .6 => moog.noteOn;
-
-                // advance time
-                2000::ms => now;
+                    // go
+                    // .6 => moog.noteOn;
+                    play( newNote, ${velocity / 100} );
+                    noteLengthInSecs::second => now;
+                }
+                <<< Machine.shreds() >>>;
             }
-            // }
+        }
+        spork ~ theSpork();
+
+        public void unSpork()
+        {
+            0 => running;
+        }
+
+        // while(true) .3::second => now; (this is the original but does not control time)
+        while(true) 1::ms => now;
+
+        // basic play function (add more arguments as needed)
+        fun void play( float note, float velocity )
+        {
+            // start the note
+            Std.mtof( note ) => moog.freq;
+            velocity => moog.noteOn;
+        }
         `
     )
 }
@@ -294,23 +356,31 @@ export function BANDEDWAVE(note: number) {
     )
 }
 
-export function RHODEY(note: number) {
+export function RHODEY(running: number, bpm: number, noteDivisions: number, note: number, rtChords: Array<any>, rtScales: Array<any>) {
     return (
         `
         // more music for replicants
-
+        ${running} => int running;
         // patch
         Rhodey voc => Dyno dyno => JCRev r => Echo a => Echo b => Echo c => dac;
 
         0::ms => dyno.attackTime;
         0.8 => dyno.thresh;
+        // set bpm
+        ${bpm} => float bpm;
+        
+        (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+
+
+
         Std.mtof(${note}) => voc.freq;
+
         0.8 => voc.gain;
         // .8 => r.gain;
         .02 => r.mix;
-        1000::ms => a.max => b.max => c.max;
-        750::ms => a.delay => b.delay => c.delay;
-        .50 => a.mix => b.mix => c.mix;
+        noteLengthInSecs::second => a.max => b.max => c.max;
+        (.75 * noteLengthInSecs)::second => a.delay => b.delay => c.delay;
+        (.5 * noteLengthInSecs) => a.mix => b.mix => c.mix;
 
         // shred to modulate the mix
         fun void vecho_Shred( )
@@ -340,7 +410,7 @@ export function RHODEY(note: number) {
                     1::ms => now;
                 }
                 mix => old;
-                Math.random2(2,6)::second => now;
+                (0.5 * noteLengthInSecs),(2 * noteLengthInSecs)::second => now;
             }
         }
 
@@ -351,37 +421,58 @@ export function RHODEY(note: number) {
         // scale
         [ 0, 2, 4, 7, 9 ] @=> int scale[];
 
-        // our main loop
-        while( true )
-        { 
-            // pentatonic
-            scale[Math.random2(0,scale.size()-1)] => int freq;
-
-            Std.mtof( ( ${note} + Math.random2(0,1) * 12 + freq ) ) => voc.freq;
-            Math.random2f( 0.6, 0.8 ) => voc.noteOn;
-
-            // note: Math.randomf() returns value between 0 and 1
-            if( Math.randomf() > 0.85 )
-            { 1000::ms => now; }
-            else if( Math.randomf() > .85 )
-            { 500::ms => now; }
-            else if( Math.randomf() > .1 )
-            { .250::second => now; }
-            else
+        public void theSpork()
+        {
+            // our main loop
+            while( running > 0 )
             {
-                0 => int i;
-                2 * Math.random2( 1, 3 ) => int pick;
-                0 => int pick_dir;
-                0.0 => float pluck;
 
-                for( ; i < pick; i++ )
+                // pentatonic
+                scale[Math.random2(0,scale.size()-1)] => int freq;
+
+                Std.mtof( ( ${note} + Math.random2(0,1) * 12 + freq ) ) => voc.freq;
+                Math.random2f( 0.6, 0.8 ) => voc.noteOn;
+
+                // note: Math.randomf() returns value between 0 and 1
+                if( Math.randomf() > 0.85 )
+                { noteLengthInSecs::second => now; }
+                // else if( Math.randomf() > .85 )
+                // { (0.5 * noteLengthInSecs)::second => now; }
+                // else if( Math.randomf() > .1 )
+                // { (0.25 * noteLengthInSecs)::second => now; }
+                else
                 {
-                    Math.random2f(.4,.6) + i*.035 => pluck;
-                    pluck + -0.02 * (i * pick_dir) => voc.noteOn;
-                    !pick_dir => pick_dir;
-                    250::ms => now;
+                    0 => int i;
+                    2 * Math.random2( 1, 3 ) => int pick;
+                    0 => int pick_dir;
+                    0.0 => float pluck;
+
+                    for( ; i < pick; i++ )
+                    {
+                        Math.random2f(.4,.6) + i*.035 => pluck;
+                        pluck + -0.02 * (i * pick_dir) => voc.noteOn;
+                        !pick_dir => pick_dir;
+                        (0.25 * noteLengthInSecs)::second => now;
+                    }
                 }
             }
+        }
+        spork ~ theSpork();
+
+        public void unSpork()
+        {
+            0 => running;
+        }
+
+        // while(true) .3::second => now; (this is the original but does not control time)
+        while(true) 1::ms => now;
+
+        // basic play function (add more arguments as needed)
+        fun void play( float note, float velocity )
+        {
+            // start the note
+            Std.mtof( note ) => voc.freq;
+            velocity => voc.noteOn;
         }
         `
     )
@@ -395,15 +486,13 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
         // STK Mandolin
 
         ${running} => int running;
-        // 0 =>
-
-        // if (running == 0) {
-        //     <<< "HIT RHIIIIIS" >>>;
-        //     me.exit();
-        // }
         
         // patch
-        Mandolin m => JCRev r => dac;
+        Mandolin m => Dyno dyno => Gain g => JCRev r => dac;
+        0.5 => g.gain;
+
+        0::ms => dyno.attackTime;
+        0.7 => dyno.thresh;
         .015 => r.mix;
         
         // set bpm
@@ -418,7 +507,6 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
         
         public void theSpork()
         {
-            // <<< notes >>>
             // infinite time-loop
             while( running > 0 )
             {
@@ -432,7 +520,6 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
                 for( int i; i < notes.size(); i++ )
                 {
                     play( notes[i], ${velocity / 100} );
-                    // 1000::ms => now;
                     noteLengthInSecs::second => now;
                 }
                 <<< Machine.shreds() >>>;

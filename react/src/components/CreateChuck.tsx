@@ -483,16 +483,22 @@ export default function CreateChuck(props: any) {
                 midiCode.current = STFKRP(note, velocity, valuePickupPosition, valueSustain, valueStretch, valuePluck, valueBaseLoopGain, valueReverbMix);
             }
             if (playingInstrument === 'sitar') {
-                // result.clearChuckInstance();
                 console.log('IN SITAR AT LEAST');
-                midiCode.current = SITAR(note, velocity, valuePluck, valueReverbMix);
+                setLastNote(note);
+                await noteOff(note);
+                midiCode.current = SITAR(1, bpm, timeSignature, note, velocity, valuePluck, valueReverbMix, realTimeChordsDataObj, realTimeScalesDataObj);
             }
-            if (playingInstrument === 'moog') {
-                console.log("IN MOOG ", note)
-                midiCode.current = MOOG(note, velocity, valueLfoSpeed, valueLfoDepth, valueFilterQ, valueFilterSweepRate, valueVibratoFreq, valueVibratoGain, valueMoogGain, valueAftertouch, valueModSpeed, valueModDepth, valueOpMode);
+            if (playingInstrument === 'moog' && realTimeScalesDataObj && realTimeChordsDataObj) {
+                console.log("IN MOOG ", note);
+                setLastNote(note);
+                await noteOff(note);
+                midiCode.current = MOOG(1, bpm, timeSignature, note, velocity, valueLfoSpeed, valueLfoDepth, valueFilterQ, valueFilterSweepRate, valueVibratoFreq, valueVibratoGain, valueMoogGain, valueAftertouch, valueModSpeed, valueModDepth, valueOpMode, realTimeChordsDataObj, realTimeScalesDataObj);
             }
             if (playingInstrument === 'rhodes') {
-                midiCode.current = RHODEY(note);
+                console.log("IN RHODEY ", note);
+                setLastNote(note);
+                await noteOff(note);
+                midiCode.current = RHODEY(1, bpm, timeSignature, note, realTimeChordsDataObj, realTimeScalesDataObj);
             }
             if (playingInstrument === 'mandolin' && realTimeScalesDataObj && realTimeChordsDataObj) {
                 setLastNote(note);
