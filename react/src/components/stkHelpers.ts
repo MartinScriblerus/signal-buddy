@@ -387,16 +387,24 @@ export function RHODEY(note: number) {
     )
 }
 
-export function MANDOLIN(bpm: number, noteDivisions: number, note: number, velocity: number, bodySize: number, pluckPos: number, stringDamping: number, stringDetune: number, reverbMix: number, rtChords: Array<any>, rtScales: Array<any>) {
+export function MANDOLIN(running: number, bpm: number, noteDivisions: number, note: number, velocity: number, bodySize: number, pluckPos: number, stringDamping: number, stringDetune: number, reverbMix: number, rtChords: Array<any>, rtScales: Array<any>) {
     console.log('WOO HOO GOT CHORDS: ', rtChords);
     console.log('WOO HOO GOT SCALES: ', rtScales);
     return (
         `
         // STK Mandolin
 
+        ${running} => int running;
+        // 0 =>
+
+        // if (running == 0) {
+        //     <<< "HIT RHIIIIIS" >>>;
+        //     me.exit();
+        // }
+        
         // patch
         Mandolin m => JCRev r => dac;
-        .025 => r.mix;
+        .015 => r.mix;
         
         // set bpm
         ${bpm} => float bpm;
@@ -410,8 +418,9 @@ export function MANDOLIN(bpm: number, noteDivisions: number, note: number, veloc
         
         public void theSpork()
         {
+            // <<< notes >>>
             // infinite time-loop
-            while( true )
+            while( running > 0 )
             {
                 // set
                 filePath => m.bodyIR;
@@ -430,8 +439,14 @@ export function MANDOLIN(bpm: number, noteDivisions: number, note: number, veloc
             }
         }
         spork ~ theSpork();
+
+        public void unSpork()
+        {
+            0 => running;
+        }
+
         // while(true) .3::second => now; (this is the original but does not control time)
-        while(true) 10::second => now;
+        while(true) 1::ms => now;
 
         // basic play function (add more arguments as needed)
         fun void play( float note, float velocity )

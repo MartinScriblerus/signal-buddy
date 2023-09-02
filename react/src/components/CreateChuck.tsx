@@ -9,6 +9,7 @@ import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Example from './XYChartWrapper';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
+import { useDeferredPromise } from './DefereredPromiseHook';
 import { Button, Checkbox, FormControlLabel, FormLabel, Radio, RadioGroup } from '@mui/material';
 import { DragDropContext, Draggable } from 'react-beautiful-dnd';
 import { StrictModeDroppable } from './Droppable';
@@ -16,6 +17,8 @@ import CLARINET, { CHORUS, STFKRP, SITAR, MOOG, MOOG2, RHODEY, BANDEDWAVE, MANDO
 // import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
 import styles from '../styles/KeyControls.module.css';
 import CircularSlider from '@fseehawer/react-circular-slider';
+
+var Deferred = require('promise-deferred');
 
 declare global {
     interface HTMLLIElement {
@@ -72,7 +75,11 @@ export default function CreateChuck(props: any) {
     const [playingInstrument, setPlayingInstrument] = useState('');
     const [realTimeScalesDataObj, setRealTimeScalesDataObj] = useState<any>([]);
     const [realTimeChordsDataObj, setRealTimeChordsDataObj] = useState<any>([]);
-    
+    const [lastNote, setLastNote] = useState(0);
+
+    const [bpm, setBpm] = useState(120);
+    const [timeSignature, setTimeSignature] = useState(5/4);
+    const { defer, deferRef } = useDeferredPromise<boolean>();
 
     let modsDefault: any = [
         {
@@ -488,8 +495,11 @@ export default function CreateChuck(props: any) {
                 midiCode.current = RHODEY(note);
             }
             if (playingInstrument === 'mandolin' && realTimeScalesDataObj && realTimeChordsDataObj) {
+                setLastNote(note);
+                console.log('NOTE . LAST => ', note, lastNote);
+                await noteOff(note);
                 await chuckHook.loadFile('ByronGlacier.wav').then(() => {
-                    midiCode.current = MANDOLIN(120, 4, note, velocity, valueBodySize, valuePluckPos, valueStringDamping, valueStringDetune, valueReverbMix, realTimeChordsDataObj, realTimeScalesDataObj);
+                    midiCode.current = MANDOLIN(1, bpm, timeSignature, note, velocity, valueBodySize, valuePluckPos, valueStringDamping, valueStringDetune, valueReverbMix, realTimeChordsDataObj, realTimeScalesDataObj);
                     // result.removeShred(w);
                 });
             }
@@ -497,7 +507,6 @@ export default function CreateChuck(props: any) {
                 // result.clearChuckInstance();
                 midiCode.current = BANDEDWAVE(note);
             }
-            // const midiCode.current: any = CHORUS(note);
             
             new Promise(async(resolve) => {
                 const it = await result.isShredActive(1);
@@ -505,41 +514,26 @@ export default function CreateChuck(props: any) {
             }).then(async (res: any) => {
                 await chuckHook.loadFile('midiManager.ck', ).then(async () => {
                     Promise.resolve(chuckHook.runFileWithArgs('midiManager.ck', `${midiCode.current.toString()}`)).then((w: any) => {
-                    console.log('WHAT IS W? ', w);
-                        // result.removeShred(w);
+                        console.log('WHAT IS RESPONSE FROM MIDIMANAGER? ', w);
                     });
                 });
 
                 if (res === 0) {
                     Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
-                            await Promise.resolve(w).then((i) => { 
-                                // if (i) {
-                                //     result.removeShred(i);
-                                // }
-                            });                        
-                    });
-                } else {
-                    // await result.removeLastCode();
-                    Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
                         await Promise.resolve(w).then((i) => { 
-                            // if (i) {
-                            //     result.removeShred(i);
-                            // }
-                        });   
+                            console.log('WHAT IS I (RUNNING CODE / RES IS ZERO) ', i);
+                        });                        
+                    });
+                } 
+                else {
+                    Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
+                        console.log('WHAT WAS RESPONSE: ', res);
+                        console.log('WHAT IS W (RUNNING CODE)? ', w);
                     });       
                 }
                 setPlaying(true);
             });
 
-        });
-        new Promise((resolve) => {
-            const s = chuckHook.getIntArray('activeShreds');
-            if (s) {
-                resolve(s);
-            }
-        }
-        ).then(async (s) => {
-            console.log('ACTIVE SHREDS in note on!! ', s);
         });
       }
       
@@ -549,27 +543,15 @@ export default function CreateChuck(props: any) {
             midiNotesOn.current.slice(index, 1);
         }
         console.log('MIDI NOTES ON IN OFF: ', midiNotesOn.current);
-        new Promise((resolve) => {
-            const s = chuckHook.getIntArray('activeShreds');
-            if (s) {
-                resolve(s);
-            }
-        }
-        ).then(async (s) => {
-            console.log('ACTIVE SHREDS in off!! ', s);
-        });
         if (chuckHook === undefined) return;
         setPlaying(false);
 
-        Promise.resolve(chuckHook).then(function(result: Chuck) {
-            result.removeLastCode();
+        chuckHook.isShredActive(1).promise.then(async (i: any) => {
+            chuckHook.removeLastCode();
         });
-        // const index = midiNotesOn.current.indexOf(note)
-        // midiNotesOn.current.slice(index, 1);
       }
-      
+
       function onMIDISuccess(midiAccess: any) {
-        //   console.log("MIDI ready!");
           midi = midiAccess;
           
           const inputs = midiAccess.inputs;

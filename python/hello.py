@@ -47,30 +47,6 @@ CHORD = {
     '1MIN': {},
     'I7': {},
     '1MIN7': {},
-    'II': {},
-    '2MIN': {},
-    'II7': {},
-    '2MIN7': {},
-    'III': {},
-    '3MIN': {},
-    'III7': {},
-    '3MIN7': {},
-    'IV': {},
-    '4MIN': {},
-    'IV7': {},
-    '4MIN7': {},
-    'V': {},
-    '5MIN': {},
-    'V7': {},
-    '5MIN7': {},
-    'VI': {},
-    '6MIN': {},
-    'VI7': {},
-    '6MIN7': {},
-    'VII': {},
-    '7MIN': {},
-    'VII7': {},
-    '7MIN7': {},
 }
 
 def detect_pitch(y, sr, times):
@@ -144,14 +120,6 @@ def onsets(file_path):
             'beats': beat_times.tolist(),
             'times': times.tolist(),
         }}]
-
-def simple_midi_name_to_num(orig_key, note):
-    start = notes.note_to_int(orig_key)
-    end = notes.note_to_int(note)
-    note_num_in_key = end - start
-    if (note_num_in_key < 0):
-        note_num_in_key = note_num_in_key + 12
-    return note_num_in_key
 
 def midi_name_to_num_helper(idx, scale):
     start = notes.note_to_int(scale[0])
@@ -280,8 +248,8 @@ def progression_num_helper(note):
     ### FIFTH / DOMINANT --------------------- //
     ### SIXTH / SUBMEDIANT --------------------- //
     ### SEVENTH / LEADING TONE - SUBTONIC ------ //
-
-    for idx in range(0, 7):
+    print('NOTE IS: ', note)
+    for idx in range(0, 1):
         for variation in range(0, 4):
             cm = get_chord_method(idx, variation)
             if cm is None:
@@ -311,9 +279,9 @@ def progression_num_helper(note):
                     CHORD[scale_degree]['MINOR_SEVENTH'] = []
                     CHORD[scale_degree]['MINOR_SEVENTH'].append(i[0])
                 CHORD[scale_degree]['MAJ_SECOND'] = []
-                CHORD[scale_degree]['MAJ_SECOND'].append(chords.major_seventh(i)[0])
+                CHORD[scale_degree]['MAJ_SECOND'].append(chords.major_seventh(i))
                 CHORD[scale_degree]['MIN_SECOND'] = []
-                CHORD[scale_degree]['MIN_SECOND'].append(chords.minor_seventh(i)[0])
+                CHORD[scale_degree]['MIN_SECOND'].append(chords.minor_seventh(i))
                     # CHORD[scale_degree]['MAJ_THIRD'].append(midi_name_to_num_prog_helper(index, chords.I(note[0]), intervals.major_third(i)))
                 CHORD[scale_degree]['MAJ_THIRD'] = []
                 CHORD[scale_degree]['MAJ_THIRD'].append(progressions.to_chords('III', key=note[0][0]))
@@ -322,9 +290,9 @@ def progression_num_helper(note):
                 CHORD[scale_degree]['MAJ_FOURTH'] = []
                 CHORD[scale_degree]['MAJ_FOURTH'].append(progressions.to_chords('IV', key=note[0][0]))
                 CHORD[scale_degree]['PERFECT_FOURTH'] = []
-                CHORD[scale_degree]['PERFECT_FOURTH'].append(i)
+                CHORD[scale_degree]['PERFECT_FOURTH'].append(intervals.perfect_fourth(note[0]))
                 CHORD[scale_degree]['PERFECT_FIFTH'] = []
-                CHORD[scale_degree]['PERFECT_FIFTH'].append(i)
+                CHORD[scale_degree]['PERFECT_FIFTH'].append(intervals.perfect_fifth(note[0]))
                 CHORD[scale_degree]['MAJ_FIFTH'] = []
                 CHORD[scale_degree]['MAJ_FIFTH'].append(progressions.to_chords('V', key=note[0][0]))
                 CHORD[scale_degree]['MIN_FIFTH'] = []
@@ -351,54 +319,55 @@ def progression_num_helper(note):
                     # CHORD[scale_degree]['AUGMENTED'].append(midi_name_to_num_prog_helper(index, chords.I(note[0]), chords.augmented_triad(i)))
                 CHORD[scale_degree]['AUGMENTED'] = []
                 CHORD[scale_degree]['DIMINISHED'] = []
-                CHORD[scale_degree]['AUGMENTED'].append(chords.augmented_triad(i))
-                CHORD[scale_degree]['DIMINISHED'].append(chords.diminished_triad(i))
+                # print('INDEX IS ', index)
+                CHORD[scale_degree]['AUGMENTED'].append(chords.augmented_triad(note[0]))
+                CHORD[scale_degree]['DIMINISHED'].append(chords.diminished_triad(note[0]))
             
                 CHORD[scale_degree]['DOMINANT_SIXTH'] = []
-                CHORD[scale_degree]['DOMINANT_SIXTH'].append(chords.dominant_sixth(i))
+                CHORD[scale_degree]['DOMINANT_SIXTH'].append(chords.dominant_sixth(note[0]))
                 CHORD[scale_degree]['HALF_DIMINISHED_SEVENTH'] = []
-                CHORD[scale_degree]['HALF_DIMINISHED_SEVENTH'].append(chords.half_diminished_seventh(i))
+                CHORD[scale_degree]['HALF_DIMINISHED_SEVENTH'].append(chords.half_diminished_seventh(note[0]))
                 CHORD[scale_degree]['SIXTH_NINTH'] = []
-                CHORD[scale_degree]['SIXTH_NINTH'].append(chords.sixth_ninth(i))
+                CHORD[scale_degree]['SIXTH_NINTH'].append(chords.sixth_ninth(note[0]))
                 CHORD[scale_degree]['AUGMENTED_MAJ_SEVENTH'] = []
-                CHORD[scale_degree]['AUGMENTED_MAJ_SEVENTH'].append(chords.augmented_major_seventh(i))
+                CHORD[scale_degree]['AUGMENTED_MAJ_SEVENTH'].append(chords.augmented_major_seventh(note[0]))
                 CHORD[scale_degree]['AUGMENTED_MIN_SEVENTH'] = []
-                CHORD[scale_degree]['AUGMENTED_MIN_SEVENTH'].append(chords.augmented_minor_seventh(i))
+                CHORD[scale_degree]['AUGMENTED_MIN_SEVENTH'].append(chords.augmented_minor_seventh(note[0]))
                 CHORD[scale_degree]['LYDIAN_DOMINANT_SEVENTH'] = []
-                CHORD[scale_degree]['LYDIAN_DOMINANT_SEVENTH'].append(chords.lydian_dominant_seventh(i))
+                CHORD[scale_degree]['LYDIAN_DOMINANT_SEVENTH'].append(chords.lydian_dominant_seventh(note[0]))
                 CHORD[scale_degree]['MAJOR_NINTH'] = []
-                CHORD[scale_degree]['MAJOR_NINTH'].append(chords.major_ninth(i))
+                CHORD[scale_degree]['MAJOR_NINTH'].append(chords.major_ninth(note[0]))
                 CHORD[scale_degree]['MINOR_NINTH'] = []
-                CHORD[scale_degree]['MINOR_NINTH'].append(chords.minor_ninth(i))
+                CHORD[scale_degree]['MINOR_NINTH'].append(chords.minor_ninth(note[0]))
                 CHORD[scale_degree]['DOMINANT_NINTH'] = []
-                CHORD[scale_degree]['DOMINANT_NINTH'].append(chords.dominant_ninth(i))
+                CHORD[scale_degree]['DOMINANT_NINTH'].append(chords.dominant_ninth(note[0]))
                 CHORD[scale_degree]['DOMINANT_SHARP_NINTH'] = []
-                CHORD[scale_degree]['DOMINANT_SHARP_NINTH'].append(chords.dominant_sharp_ninth(i))
+                CHORD[scale_degree]['DOMINANT_SHARP_NINTH'].append(chords.dominant_sharp_ninth(note[0]))
                 CHORD[scale_degree]['DOMINANT_FLAT_NINTH'] = []
-                CHORD[scale_degree]['DOMINANT_FLAT_NINTH'].append(chords.dominant_flat_ninth(i))
+                CHORD[scale_degree]['DOMINANT_FLAT_NINTH'].append(chords.dominant_flat_ninth(note[0]))
                 if variation < 2 and idx != 0 and idx != 3 and idx != 4 and idx != 6:
                     CHORD[scale_degree]['MAJOR_ELEVENTH'] = []
-                    CHORD[scale_degree]['MAJOR_ELEVENTH'].append(chords.eleventh(i))
+                    CHORD[scale_degree]['MAJOR_ELEVENTH'].append(chords.eleventh(note[0]))
                     CHORD[scale_degree]['MINOR_ELEVENTH'] = []
-                    CHORD[scale_degree]['MINOR_ELEVENTH'].append(chords.minor_eleventh(i))
+                    CHORD[scale_degree]['MINOR_ELEVENTH'].append(chords.minor_eleventh(note[0]))
                     CHORD[scale_degree]['CHORDS_HENDRIX'] = []
-                    CHORD[scale_degree]['CHORDS_HENDRIX'].append(chords.hendrix_chord(i))
+                    CHORD[scale_degree]['CHORDS_HENDRIX'].append(chords.hendrix_chord(note[0]))
                     CHORD[scale_degree]['DOMINANT_THIRTEENTH'] = []
-                    CHORD[scale_degree]['DOMINANT_THIRTEENTH'].append(chords.dominant_thirteenth(i))
+                    CHORD[scale_degree]['DOMINANT_THIRTEENTH'].append(chords.dominant_thirteenth(note[0]))
                     CHORD[scale_degree]['MAJOR_THIRTEENTH'] = []
-                    CHORD[scale_degree]['MAJOR_THIRTEENTH'].append(chords.major_thirteenth(i))
+                    CHORD[scale_degree]['MAJOR_THIRTEENTH'].append(chords.major_thirteenth(note[0]))
                     CHORD[scale_degree]['MINOR_THIRTEENTH'] = []
-                    CHORD[scale_degree]['MINOR_THIRTEENTH'].append(chords.minor_thirteenth(i))
+                    CHORD[scale_degree]['MINOR_THIRTEENTH'].append(chords.minor_thirteenth(note[0]))
                     CHORD[scale_degree]['SUSPENDED_TRIAD'] = []
-                    CHORD[scale_degree]['SUSPENDED_TRIAD'].append(chords.suspended_triad(i))
+                    CHORD[scale_degree]['SUSPENDED_TRIAD'].append(chords.suspended_triad(note[0]))
                     CHORD[scale_degree]['SUSPENDED_SECOND_TRIAD'] = []
-                    CHORD[scale_degree]['SUSPENDED_SECOND_TRIAD'].append(chords.suspended_second_triad(i))
+                    CHORD[scale_degree]['SUSPENDED_SECOND_TRIAD'].append(chords.suspended_second_triad(note[0]))
                     CHORD[scale_degree]['SUSPENDED_FOURTH_TRIAD'] = []
-                    CHORD[scale_degree]['SUSPENDED_FOURTH_TRIAD'].append(chords.suspended_fourth_triad(i))
+                    CHORD[scale_degree]['SUSPENDED_FOURTH_TRIAD'].append(chords.suspended_fourth_triad(note[0]))
                     CHORD[scale_degree]['SUSPENDED_SEVENTH'] = []
-                    CHORD[scale_degree]['SUSPENDED_SEVENTH'].append(chords.suspended_seventh(i))
+                    CHORD[scale_degree]['SUSPENDED_SEVENTH'].append(chords.suspended_seventh(note[0]))
                     CHORD[scale_degree]['SUSPENDED_FOURTH_NINTH'] = []
-                    CHORD[scale_degree]['SUSPENDED_FOURTH_NINTH'].append(chords.suspended_triad(i))
+                    CHORD[scale_degree]['SUSPENDED_FOURTH_NINTH'].append(chords.suspended_triad(note[0]))
 
       
     return {
