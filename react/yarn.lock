@@ -2444,6 +2444,11 @@
   resolved "https://registry.npmjs.org/@types/d3-format/-/d3-format-3.0.1.tgz"
   integrity sha512-5KY70ifCCzorkLuIkDe0Z9YTf9RR2CjBX1iaJG+rgM/cPP+sO+q9YdQ9WdhQcgPj1EQiJ2/0+yUkkziTG6Lubg==
 
+"@types/d3-hierarchy@^1.1.6":
+  version "1.1.8"
+  resolved "https://registry.npmjs.org/@types/d3-hierarchy/-/d3-hierarchy-1.1.8.tgz"
+  integrity sha512-AbStKxNyWiMDQPGDguG2Kuhlq1Sv539pZSxYbx4UZeYkutpPwXCcgyiRrlV4YH64nIOsKx7XVnOMy9O7rJsXkg==
+
 "@types/d3-interpolate@3.0.1":
   version "3.0.1"
   resolved "https://registry.npmjs.org/@types/d3-interpolate/-/d3-interpolate-3.0.1.tgz"
@@ -3032,6 +3037,18 @@
     "@types/react" "*"
     classnames "^2.3.1"
     prop-types "^15.6.2"
+
+"@visx/hierarchy@^3.3.0":
+  version "3.3.0"
+  resolved "https://registry.npmjs.org/@visx/hierarchy/-/hierarchy-3.3.0.tgz"
+  integrity sha512-nPOZDsSst95+eZOQjZQbq1cuVywriiNAOQp2yXDkZov/32b7Qj0aakXvwU1Yd2DhriuSxlNzMecwVX7L6azrIg==
+  dependencies:
+    "@types/d3-hierarchy" "^1.1.6"
+    "@types/react" "*"
+    "@visx/group" "3.3.0"
+    classnames "^2.3.1"
+    d3-hierarchy "^1.1.4"
+    prop-types "^15.6.1"
 
 "@visx/mock-data@^3.3.0":
   version "3.3.0"
@@ -4632,6 +4649,11 @@ d3-delaunay@6.0.2:
   version "3.1.0"
   resolved "https://registry.npmjs.org/d3-format/-/d3-format-3.1.0.tgz"
   integrity sha512-YyUI6AEuY/Wpt8KWLgZHsIU86atmikuoOmCfommt0LYHiQSPjvX2AcFc38PX0CBpr2RCyZhjex+NS/LPOv6YqA==
+
+d3-hierarchy@^1.1.4:
+  version "1.1.9"
+  resolved "https://registry.npmjs.org/d3-hierarchy/-/d3-hierarchy-1.1.9.tgz"
+  integrity sha512-j8tPxlqh1srJHAtxfvOUwKNYJkQuBFdM1+JAUfq6xqH5eAqf93L7oG1NVqDa4CpFZNvnNKtCYEUC8KY9yEn9lQ==
 
 d3-interpolate-path@2.2.1:
   version "2.2.1"

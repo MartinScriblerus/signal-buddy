@@ -504,12 +504,21 @@ def mingus_scales():
         print('Locrian')
     print("SCALES TO REETYRN 111 ", scales_to_return)
     if is_sharp:
-        for scale in scales_to_return:
+        for scale in scales_to_return[0]:
             for idx, note in enumerate(scale):
-                if idx == 0:
-                    scale[idx] = notes.augment(note)
-                if idx == 1:
-                    scale[idx] = notes.diminish(note)
+                print('SCALE IS!@#$%^&* ', scale)
+                fix_sharp = False 
+                fix_flat = False
+                if(scale.find('#') != -1):
+                    fix_sharp = True
+                if(scale.find('b') != -1):
+                    fix_flat = True
+                if fix_sharp is True:
+                    fixed_note = scale[0]
+                    scale = notes.augment(fixed_note)
+                if fix_flat is True:
+                    fixed_note = scale[0]
+                    scale = notes.diminish(fixed_note)
     print("SCALES TO REETYRN 222 ", scales_to_return)        
     return [{"data": scales_to_return}]
 

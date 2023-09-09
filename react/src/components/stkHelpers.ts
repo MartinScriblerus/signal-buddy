@@ -1,4 +1,7 @@
 export default function CLARINET(
+    running: number, 
+    bpm: number, 
+    noteDivisions: number,
     note: number, 
     velocity: number,
     reed: number,
@@ -8,9 +11,12 @@ export default function CLARINET(
     pressure: number,
     reverbMix: number,
     reverbGain: number,
+    rtChords: Array<any>, 
+    rtScales: Array<any>
     ) {  
         return (
         `
+        ${running} => int running;
         // STK Clarinet
         // (also see examples/event/polyfony2.ck)
         
@@ -22,29 +28,48 @@ export default function CLARINET(
         0::ms => dyno.attackTime;
         0.8 => dyno.thresh;
 
+        // set bpm
+        ${bpm} => float bpm;
+        
+        (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+
         // our notes
         [ ${note} ] @=> int notes[];
-        // infinite time-loop
-        while( true )
-        {
-            ${reed} => clair.reed;
-            ${noiseGain} => clair.noiseGain;
-            ${vibratoFreq} => clair.vibratoFreq;
-            ${vibratoGain} => clair.vibratoGain;
-            ${pressure} => clair.pressure;
         
-            for( int i; i < notes.size(); i++ )
+        public void theSpork()
+        {
+            // infinite time-loop
+            while( running > 0 )
             {
-                spork ~ play( notes[i], ${velocity/100} );
-                1000::ms => now;
+                ${reed} => clair.reed;
+                ${noiseGain} => clair.noiseGain;
+                ${vibratoFreq} => clair.vibratoFreq;
+                ${vibratoGain} => clair.vibratoGain;
+                ${pressure} => clair.pressure;
+        
+                for( int i; i < notes.size(); i++ )
+                {
+                    spork ~ play( notes[i], ${velocity/100} );
+                    noteLengthInSecs::second => now;
+                }
             }
         }
     
+        spork ~ theSpork();
+
+        public void unSpork()
+        {
+            0 => running;
+        }
+
+        // while(true) .3::second => now; (this is the original but does not control time)
+        while(true) 1::ms => now;
+
         // basic play function (add more arguments as needed)
         fun void play( float note, float velocity )
         {
-            // start the note
-            Std.mtof( note ) => clair.freq;
+            // start note
+            Std.mtof( ${note} ) => clair.freq;
             velocity => clair.noteOn;
         }
     `)
@@ -52,6 +77,9 @@ export default function CLARINET(
 
 
 export function STFKRP(
+    running: number, 
+    bpm: number, 
+    noteDivisions: number, 
     note: number, 
     velocity: number, 
     pickupPosition: number,
@@ -60,45 +88,68 @@ export function STFKRP(
     pluck: number,
     baseLoopGain: number,
     reverbMix: number,
+    rtChords: Array<any>, 
+    rtScales: Array<any>
     ) {
     return (
         `
         // STK StifKarp
-
+        StifKarp.help();
+        ${running} => int running;
         // patch
-        StifKarp m => Dyno dyno => JCRev r => dac;
+        StifKarp m => Dyno dyno => Gain g => JCRev r => dac;
+        0.05 => g.gain;
+
+        5::ms => dyno.attackTime;
+        0.7 => dyno.thresh;
+        
+        // set bpm
+        ${bpm} => float bpm;
+        
+        (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+
         ${reverbMix} => r.mix;
-        0::ms => dyno.attackTime;
-        0.8 => dyno.thresh;
 
         // our notes
         [ ${note} ] @=> int notes[];
 
         
-        // infinite time-loop
-        while( true )
+        public void theSpork()
         {
-            ${pickupPosition} => m.pickupPosition;
-            ${sustain} => m.sustain;
-            ${stretch} => m.stretch;
-            ${pluck} => m.pluck;
-            ${baseLoopGain} => m.baseLoopGain;
-        
-
-            for( int i; i < notes.size(); i++ )
+            // infinite time-loop
+            while( running > 0 )
             {
-                play( Std.mtof(notes[i]), ${velocity/100} );
-                // 100::ms => now;
-                10000::ms => now;
+                ${pickupPosition} => m.pickupPosition;
+                ${sustain} => m.sustain;
+                ${stretch} => m.stretch;
+                ${pluck} => m.pluck;
+                ${baseLoopGain} => m.baseLoopGain;
+                
+                for( int i; i < notes.size(); i++ )
+                {
+                    play( Std.mtof(notes[i]), ${velocity/100} );
+                    // 100::ms => now;
+                    noteLengthInSecs::second => now;
+                }
             }
         }
+
+        spork ~ theSpork();
+
+        public void unSpork()
+        {
+            0 => running;
+        }
+
+        // while(true) .3::second => now; (this is the original but does not control time)
+        while(true) 1::ms => now;
 
         // basic play function (add more arguments as needed)
         fun void play( float note, float velocity )
         {
-            // start the note
-            Std.mtof( ${note} ) => m.freq;
-            velocity => m.pluck;
+            // start note *** octave adjustment to balance with other instruments
+            Std.mtof( ${note} ) / 2 => m.freq;
+            velocity => m.noteOn;
         }
         `
     )
@@ -288,72 +339,80 @@ export function MOOG2(note: number) {
     )
 }
 
-export function BANDEDWAVE(note: number) {
+export function FRNCHRN(
+    running: number, 
+    bpm: number, 
+    noteDivisions: number, 
+    note: number, 
+    velocity: number,
+    lfoSpeed: number,
+    lfoDepth: number,
+    controlOne: number,
+    controlTwo: number,  
+    reverbMix: number, 
+    rtChords: Array<any>, 
+    rtScales: Array<any>) {
     return (
         `
-        // banded waveguide sample
+        // STK FrencHrn
+    
+        ${running} => int running;
 
-        // the patch
-        BandedWG band => JCRev r => dac;
-
-        // presets
-        0.95 => band.gain;
-        1 => band.preset;
-        Std.mtof( ${note} ) => band.freq;
-        // .8 => r.gain;
-        .02 => r.mix;
-
-        // scale
-        [ 0, 2, 4, 7, 9 ] @=> int scale[];
-
-        // our main time loop
-        while( true )
+        // patch
+        FrencHrn f => Dyno dyno => Gain g => JCRev r => dac;
+        0.2 => g.gain;
+    
+        0::ms => dyno.attackTime;
+        0.7 => dyno.thresh;
+        ${reverbMix/100} => r.mix;
+            
+        // set bpm
+        ${bpm} => float bpm;
+            
+        (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+    
+        // our notes
+        [ ${note} ] @=> int notes[];
+            
+        public void theSpork()
         {
-            Math.random2f( 0.1, 0.9 ) => band.bowRate;
-            Math.random2f( 0.2, 0.35 ) => band.bowPressure;
-            Math.random2f( 0.6, 0.8 ) => band.startBowing;
+            // // infinite time-loop
+            // while( running > 0 )
+            // {
+                // set
+                //  Now play a proper French Horn solo
+                ${controlOne} => f.controlOne; 
+                ${controlTwo} => f.controlTwo;
+                ${lfoSpeed} => f.lfoSpeed;
+                ${lfoDepth} => f.lfoDepth;
 
-            // note: Math.randomf() returns value between 0 and 1
-            if( Math.randomf() > 0.85 )
-            { 1000::ms => now; }
-            else if( Math.randomf() > .85 )
-            { 500::ms => now; }
-            else if( Math.randomf() > 0.6 )
-            { .250::second => now; }
-            else
-            {
-                0 => int i;
-                4 * Math.random2( 1, 4 ) => int pick;
-                0 => int pick_dir;
-                0.0 => float pluck;
-                Math.random2f( 50.0, 200.0 ) => float d;
-
-                for( ; i < pick; 1 +=> i )
+                for( int i; i < notes.size(); i++ )
                 {
-                    Math.random2f(.4,.6) + i*.35/pick => pluck;
-                    pluck + 0.1 * pick_dir => band.pluck;
-                    !pick_dir => pick_dir;
-                    d::ms => now;
+                    play( notes[i], ${velocity / 100} );
+                    noteLengthInSecs::second => now;
                 }
-            }
+                <<< Machine.shreds() >>>;
+            // }
+        }
+        spork ~ theSpork();
 
-            // note: Math.randomf() returns value bewteen 0 and 1
-            if( Math.randomf() > 0.2 )
-            { 
-                1::second => now;
-                0.001 => band.stopBowing;
-                0.5::second *  Math.random2(1,3) => now;
+        public void unSpork()
+        {
+            0 => running;
+        }
 
-                // scale
-                scale[Math.random2(0, scale.size()-1)] => int freq;
-                Std.mtof( 21 + Math.random2(0,5) * 12 + freq ) => band.freq;
-                // note: Math.randomf() returns value between 0 and 1
-                if( Math.randomf() > 0.85 ) 
-                    Math.random2(0,3) => band.preset;
-            }
+        // while(true) .3::second => now; (this is the original but does not control time)
+        while(true) 1::ms => now;
+
+        // basic play function (add more arguments as needed)
+        fun void play( float note, float velocity )
+        {
+            // start the note
+            Std.mtof( note ) => f.freq;
+            velocity => f.noteOn;
         }
         `
-    )
+        )
 }
 
 export function RHODEY(running: number, bpm: number, noteDivisions: number, note: number, rtChords: Array<any>, rtScales: Array<any>) {
@@ -371,52 +430,14 @@ export function RHODEY(running: number, bpm: number, noteDivisions: number, note
         
         (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
 
-
-
         Std.mtof(${note}) => voc.freq;
 
         0.8 => voc.gain;
         // .8 => r.gain;
-        .02 => r.mix;
+        .1 => r.mix;
         noteLengthInSecs::second => a.max => b.max => c.max;
         (.75 * noteLengthInSecs)::second => a.delay => b.delay => c.delay;
         (.5 * noteLengthInSecs) => a.mix => b.mix => c.mix;
-
-        // shred to modulate the mix
-        fun void vecho_Shred( )
-        {
-            0.0 => float decider;
-            0.0 => float mix;
-            0.0 => float old;
-            0.0 => float inc;
-            0 => int n;
-
-            // time loop
-            while( true )
-            {
-                Math.random2f( 0, 1 ) => decider;
-                if( decider < .3 ) 0.0 => mix;
-                else if( decider < .6 ) .08 => mix;
-                else if( decider < .8 ) .5 => mix;
-                else .15 => mix;
-
-                // find the increment
-                (mix-old)/1000.0 => inc;
-                1000 => n;
-                while( n-- )
-                {
-                    old + inc => old;
-                    old => a.mix => b.mix => c.mix;
-                    1::ms => now;
-                }
-                mix => old;
-                (0.5 * noteLengthInSecs),(2 * noteLengthInSecs)::second => now;
-            }
-        }
-
-
-        // let echo shred go
-        spork ~ vecho_Shred();
 
         // scale
         [ 0, 2, 4, 7, 9 ] @=> int scale[];
@@ -430,16 +451,12 @@ export function RHODEY(running: number, bpm: number, noteDivisions: number, note
                 // pentatonic
                 scale[Math.random2(0,scale.size()-1)] => int freq;
 
-                Std.mtof( ( ${note} + Math.random2(0,1) * 12 + freq ) ) => voc.freq;
+                Std.mtof( ( ${note} + freq ) ) => voc.freq;
                 Math.random2f( 0.6, 0.8 ) => voc.noteOn;
 
                 // note: Math.randomf() returns value between 0 and 1
                 if( Math.randomf() > 0.85 )
                 { noteLengthInSecs::second => now; }
-                // else if( Math.randomf() > .85 )
-                // { (0.5 * noteLengthInSecs)::second => now; }
-                // else if( Math.randomf() > .1 )
-                // { (0.25 * noteLengthInSecs)::second => now; }
                 else
                 {
                     0 => int i;
@@ -484,7 +501,7 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
     return (
         `
         // STK Mandolin
-
+        <<< "GETTING TO CHUCK" >>>;
         ${running} => int running;
         
         // patch
@@ -493,7 +510,7 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
 
         0::ms => dyno.attackTime;
         0.7 => dyno.thresh;
-        .015 => r.mix;
+        ${reverbMix/100} => r.mix;
         
         // set bpm
         ${bpm} => float bpm;
@@ -508,7 +525,7 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
         public void theSpork()
         {
             // infinite time-loop
-            while( running > 0 )
+            while( running > 0  )
             {
                 // set
                 filePath => m.bodyIR;
@@ -539,8 +556,176 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
         fun void play( float note, float velocity )
         {
             // start the note
+            <<< "HELLO!" >>>;
             Std.mtof( note ) => m.freq;
             velocity => m.pluck;
+        }
+        `
+    )
+} 
+
+export function SAXOFONY(
+    running: number, 
+    bpm: number, 
+    noteDivisions: number, 
+    note: number,
+    velocity: number,
+    stiffness: number, 
+    aperture: number, 
+    noiseGain: number, 
+    blowPosition: number, 
+    vibratoFreq: number, 
+    vibratoGain: number, 
+    pressure: number,
+    reverbMix: number,
+    rtChords: Array<any>, 
+    rtScales: Array<any>
+) {
+    return (
+        `
+        // STK Saxofony
+
+        ${running} => int running;
+        
+        // patch
+        Saxofony sax => Dyno dyno => Gain g => JCRev r => dac;
+        0.03 => g.gain;
+
+        0::ms => dyno.attackTime;
+        0.7 => dyno.thresh;
+        ${reverbMix/100} => r.mix;
+        
+        // set bpm
+        ${bpm} => float bpm;
+        
+        (60.0 / bpm) / ${noteDivisions} => float noteLengthInSecs;
+
+        // our notes
+        [ ${note}, ${note + 2}, ${note + 4}, ${note + 5}, ${note + 7}, ${note + 9}, ${note + 11}, ${note + 12} ] @=> int notes[];
+        
+        public void theSpork()
+        {
+            // infinite time-loop
+            while( running > 0 )
+            {
+                // // set
+                ${stiffness} => sax.stiffness;
+                ${aperture} => sax.aperture;
+                ${noiseGain} => sax.noiseGain;
+                ${blowPosition} => sax.blowPosition;
+                ${vibratoFreq} => sax.vibratoFreq;
+                ${vibratoGain} => sax.vibratoGain;
+                ${pressure} => sax.pressure;
+                    
+                for( int i; i < notes.size(); i++ )
+                {
+                    play( notes[i], ${velocity / 100} );
+                    noteLengthInSecs::second => now;
+                }
+                <<< Machine.shreds() >>>;
+            }
+        }
+        spork ~ theSpork();
+
+        public void unSpork()
+        {
+            0 => running;
+        }
+
+        // while(true) .3::second => now; (this is the original but does not control time)
+        while(true) 1::ms => now;
+
+        // basic play function (add more arguments as needed)
+        fun void play( float note, float velocity )
+        {
+            // start the note
+            Std.mtof( note ) => sax.freq;
+            velocity => sax.noteOn;
+        }
+        `
+    )
+}
+
+// export function SAMPLER(running: number, bpm: number, noteDivisions: number, note: number, file: ArrayBuffer, reverbMix: number)
+export async function SAMPLER(
+    running: number, 
+    bpm: number, 
+    noteDivisions: number, 
+    note: number, 
+    file: any, 
+) {
+    // function cloneAudioBuffer(fromAudioBuffer: any) {
+    //     const audioBuffer = new AudioBuffer({
+    //       length:fromAudioBuffer.length, 
+    //       numberOfChannels:fromAudioBuffer.numberOfChannels, 
+    //       sampleRate:fromAudioBuffer.sampleRate
+    //     });
+    //     for(let channelI = 0; channelI < audioBuffer.numberOfChannels; ++channelI) {
+    //       const samples = fromAudioBuffer.getChannelData(channelI);
+    //       audioBuffer.copyToChannel(samples, channelI);
+    //     }
+    //     return audioBuffer;
+    //   }
+    //   const file = cloneAudioBuffer(fileArg);
+    console.log("RUNNING >? ", running);
+    console.log("RUNNING >? ", bpm);
+    console.log("NOTE DIVS>? ", noteDivisions);
+    console.log("NOTE>? ", note);
+    console.log("FILE>? ", file);
+
+
+    return (
+        `
+        0 => int a => int t;
+        1 => int b;
+        15 => int c;
+
+        while( c > 0 ) 
+        {
+            a + b => t;
+            b => a;
+            <<<t => b>>>;
+            c - 1 => c;
+        }
+        FileIO io;
+        FileIO.help();
+        io.dirList() @=> string fileList[];
+
+        ${running} => int running;
+        <<< "${running}" >>>;
+
+        SndBuf buf => LiSa lisa => dac;
+        "wanna_die.wav" => string filename;
+        <<< filename >>>;
+
+        <<< "IIIOOO: ", io.mode() >>>;
+        filename => buf.read;
+        <<< buf.samples() >>>;
+        0.5 => buf.gain;
+        // 0.5 => buf.rate;
+        12611298 / 4 => buf.pos;
+        
+        500::ms => lisa.duration;
+        1 => lisa.record;
+        500::ms => now;
+        0 => lisa.record;
+        1 => lisa.loop;
+        1 => lisa.play;
+        1 => lisa.bi;
+        
+        while(running > 0)
+        {
+            0 => lisa.playPos;
+            [-1.0, -0.7, -0.5, -1.0] @=> float rates[];
+            for( float x : rates )
+            {
+                // rates[Math.random2(0, rates.size()-1)] => lisa.rate;
+                x => lisa.rate;
+                2500::ms => now;
+            }
+            
+            // -1 => lisa.rate;
+            
         }
         `
     )

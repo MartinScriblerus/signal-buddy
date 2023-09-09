@@ -274,22 +274,25 @@ ul {
   left: 10vw;
   width: 80vw;
   text-align: center;
+  background: var(--black-60);
 }
 
 #instrumentBuilderWrapper {
-  flex-direction: row;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   position: absolute;
   background: var(--black-60);
   color: var(--white-80);
   position: absolute;
-  top: 10vh !important;
-  left: 10vw;
-  bottom: 10vh;
-  width: 80vw;
-  height: 80vh;
+  border-bottom-right-radius: 80px 80px;
+  top: 0vh !important;
+  left: 0vw;
+  bottom: 20vh;
+  width: 40vw;
+  /* height: 20vh; */
   text-align: center;
+  right: 20vw;
 }
 
 #instrumentBuilder {
@@ -337,4 +340,12 @@ ul {
   border-radius: 4px;
   margin: 4vw;
   color: white;
+}
+
+.MuiRadio-root {
+  color: var(--white-80) !important;
+}
+
+.MuiButtonBase-root {
+  color: var(--white-80) !important;
 }

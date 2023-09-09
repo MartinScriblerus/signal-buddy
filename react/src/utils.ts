@@ -26,6 +26,7 @@ export interface Filename {
     onerror: () => void
   ): void {
     const xhr = new XMLHttpRequest();
+    console.log("URL!!! ", url);
     xhr.open("GET", url, true);
     xhr.responseType = "arraybuffer";
     xhr.onload = () => {

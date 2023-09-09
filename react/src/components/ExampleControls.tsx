@@ -12,6 +12,7 @@ import { RenderTooltipGlyphProps } from '@visx/xychart/lib/components/Tooltip';
 import customTheme from './customTheme';
 import userPrefersReducedMotion from './userPrefersReducedMotion';
 import getAnimatedOrUnanimatedComponents from './getAnimatedOrUnanimatedComponents';
+import buildChartTheme from './customTheme';
 import styles from '../styles/VizControls.module.css';
 
 
@@ -88,7 +89,7 @@ type ControlsProps = {
 
 export default function ExampleControls({ children }: ControlsProps ) {
   const [useAnimatedComponents, setUseAnimatedComponents] = useState(!userPrefersReducedMotion());
-  const [theme, setTheme] = useState<XYChartTheme>(darkTheme);
+  const [theme, setTheme] = useState<XYChartTheme>(buildChartTheme);
   const [animationTrajectory, setAnimationTrajectory] = useState<AnimationTrajectory | undefined>(
     'center',
   );
@@ -144,7 +145,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
       x,
       y,
       size,
-      color,
+      color='var(white-80)',
       onPointerMove,
       onPointerOut,
       onPointerUp,
