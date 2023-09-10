@@ -1,9 +1,10 @@
+import audioop
 import json
 from urllib import request
 from flask import Flask
 from flask_restful import reqparse, Api, Resource
 from flask_cors import CORS
-from flask import request
+from flask import request, make_response
 import os
 import librosa
 import numpy as np
@@ -19,9 +20,9 @@ import mingus.core.progressions as progressions
 import mingus.core.keys as keys
 from mingus.containers import Note, NoteContainer, Bar, Track, Composition
 from unidecode import unidecode
-# from mingus.core.notes import augment, diminish, reduce_accidentals
-# from mingus.core.keys import keys, get_notes
-# from mingus.core.mt_exceptions import NoteFormatError, FormatError, RangeError
+from IPython.display import Audio
+from spleeter.separator import Separator
+from io import StringIO
 
 matplotlib.use('agg')
 
@@ -74,6 +75,25 @@ def onsets(file_path):
     if request.method == 'POST':
         file = request.files[file_path]
         print(file)
+        Audio(file)
+        separator = Separator('spleeter:4stems')
+        separator.separate_to_file(audioop.name, "uploadedFiles/", filename_format="audio_example/{i}.wav")
+        spleeter_files = []
+        for i in "uploadedFiles":
+            # spleeter_files.append(f"./output/audio_example/{i.wav}")
+            buf = StringIO()
+
+            # generate_wav_file should take a file as parameter and write a wav in it
+            buf = i
+            buf.name = f"./uploadedFiles/{i.wav}" 
+
+            response = make_response(buf.getvalue())
+            buf.close()
+            response.headers['Content-Type'] = 'audio/wav'
+            response.headers['Content-Disposition'] = 'attachment; filename=sound.wav'
+            spleeter_files.append(response)
+
+            
         y, sr = librosa.load(file)
         # # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
         hop_length = 512
@@ -119,6 +139,7 @@ def onsets(file_path):
             'beatFeatures: ': beat_features.tolist(), 
             'beats': beat_times.tolist(),
             'times': times.tolist(),
+            'spleeter_files': spleeter_files,
         }}]
 
 def midi_name_to_num_helper(idx, scale):
@@ -407,14 +428,15 @@ def midi(number):
 @app.route('/api/mingus_scales', methods=['POST', 'GET'])
 def mingus_scales():
     data = request.get_json()
+    print('REEEEEQ1 ', str(data))
     is_sharp = False
-    if data['theNote']:
+    print(str(data))
+    if len(data['audioKey']) == 0 and len(data['theNote']) > 0:
         data['audioKey'] = data['theNote']
     data['audioKey'] = unidecode(data['audioKey'])
     if '#' in data['audioKey']:
         data['audioKey'] = data['audioKey'][:-1]
         is_sharp = True
-    print(data)
     if not notes.is_valid_note(data['audioKey']):
         return [{"data": data['audioKey'] + ' is not a valid note!'}]
     scales_to_return = []
@@ -502,7 +524,6 @@ def mingus_scales():
         scales_to_return.append(notes.fifths(data['audioKey']).ascending())
         scales_to_return.append(notes.fifths(data['audioKey']).descending())  
         print('Locrian')
-    print("SCALES TO REETYRN 111 ", scales_to_return)
     if is_sharp:
         for scale in scales_to_return[0]:
             for idx, note in enumerate(scale):
@@ -519,7 +540,7 @@ def mingus_scales():
                 if fix_flat is True:
                     fixed_note = scale[0]
                     scale = notes.diminish(fixed_note)
-    print("SCALES TO REETYRN 222 ", scales_to_return)        
+     
     return [{"data": scales_to_return}]
 
 @app.route('/api/mingus_chords', methods=['POST', 'GET'])

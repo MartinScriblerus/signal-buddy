@@ -16,7 +16,7 @@ export default function Example({ height }: XYChartProps) {
     const [dataVizControlsOpen, setDataVizControlsOpen] = useState(true);  
 
     const handleChangeDataVizControls = async () => {
-      console.log('here!');
+      console.log('here in handleChangeDataVizControls!');
       const el = await document.getElementById('vizControls');
       if (dataVizControlsOpen) {
         el?.classList.add('invisible');

@@ -7,4 +7,19 @@ export default buildChartTheme({
   gridColorDark: '#1d1b38',
   svgLabelBig: { fill: '#f6f6f6' },
   tickLength: 8,
+    // labels
+    svgLabelSmall: { fill: '#f6f6f6', color: '#f6f6f6' },
+    htmlLabel: { fill: '#f6f6f6', color: '#f6f6f6' },
+  
+    // lines
+    xAxisLineStyles: { fill: '#f6f6f6', color: '#f6f6f6' },
+    yAxisLineStyles: { fill: '#f6f6f6', color: '#f6f6f6' },
+    xTickLineStyles: { fill: '#f6f6f6', color: '#f6f6f6' },
+    yTickLineStyles: { fill: '#f6f6f6', color: '#f6f6f6' },
+
+  
+    // grid
+    // gridColor: '#f6f6f6',
+    // gridColorDark: 'pink', // used for axis baseline if x/yxAxisLineStyles not set
+    // gridStyles?: CSSProperties;
 });
