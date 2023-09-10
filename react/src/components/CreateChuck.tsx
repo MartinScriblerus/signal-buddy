@@ -26,6 +26,18 @@ declare global {
     }
 }
 
+let modsDefault: any = [
+    {
+        key: 'mod_1', 
+        id: 'mod_1', 
+        className: 'mods',
+        audioKey: 'C',
+        octave: '3',
+        audioScale: 'Minor',
+        audioChord: 'm'
+    }
+];
+
 export default function CreateChuck(props: any) {
     const {game, datas} = props;
     const theChuck = useRef<any>(undefined);
@@ -90,23 +102,12 @@ export default function CreateChuck(props: any) {
     const [timeSignature, setTimeSignature] = useState(5/4);
     const { defer, deferRef } = useDeferredPromise<boolean>();
 
-    let modsDefault: any = [
-        {
-            key: 'mod_1', 
-            id: 'mod_1', 
-            className: 'mods',
-            audioKey: 'C',
-            octave: '3',
-            audioScale: 'Minor',
-            audioChord: 'm'
-        }
-    ];
+    const [ showingTwoOctaves, setShowingTwoOctaves ] = useState(true);
+
     const [modsHook, setModsHook] = useState<any>(modsDefault);
     const vizArray = [<Example width={500} height={500} />, <Example2 width={500} height={500} />];
     const vizItem = useRef(1);
     const [vizComponent, setVizComponent] = useState(vizArray[vizItem.current]);
-
-
 
     const lastMidiNote: any = useRef('');
     lastMidiNote.current = '';
@@ -124,7 +125,7 @@ export default function CreateChuck(props: any) {
     // playingInstrument.current = [];
     const midiCode = useRef('');
     midiCode.current =  midiCode.current || '';
-
+    const currGraphEl: any = useRef()
     // console.log('datas: ', datas);
 
     const headerDict = {
@@ -143,6 +144,15 @@ export default function CreateChuck(props: any) {
     if (!game.audioContext) {
         game.audioContext = new AudioContext();  
     }
+
+    useEffect(() => {
+        const x = window.matchMedia("(max-width: 900px)")
+        function myFunction(e) {
+            setShowingTwoOctaves(!showingTwoOctaves);
+        };
+        x.addListener(myFunction)
+        return () => x.removeListener(myFunction);
+    }, [showingTwoOctaves]);
 
     const handleChangeAudioKey = (event: SelectChangeEvent) => {
         setAudioKey(event.target.value as string);
@@ -296,7 +306,29 @@ export default function CreateChuck(props: any) {
                     <li id={`B-${i}`}  key={`B-${i}`} onClick={(e) => playChuckNote(e)} className="white offset half">{`B${i}`}</li>
                 </React.Fragment>
             );
+            const addBreak = (<span className="break" key={`octaveBreakWrapper_${i}`}><br key={`octaveBreak_${i}`} /></span>);
             octaves.push(octave);
+            const isOdd = i % 2;
+
+            if (isOdd > 0 && window.innerWidth < 900) {
+                octaves.push(addBreak);
+                octaves.map((o: any) => {
+                    if (o.className === "break") {
+                        o.style.display = "flex";
+                    }
+                });
+                
+            } else {
+                // const breaks = document.getElementsByClassName("break")
+                octaves.map((o: any) => {
+                    if (o.className === "break") {
+                        console.log("what is O? ", o);
+                        // o.style.display = "none";
+                        o.removeChild();
+                    }
+                });
+
+            }
         }
         return octaves;
     }
@@ -553,12 +585,12 @@ export default function CreateChuck(props: any) {
             if (playingInstrument === 'sampler' && realTimeScalesDataObj && realTimeChordsDataObj) {
                 setLastNote(note);
                 // await noteOff(note);
-       
-                      await result.loadFile("wanna_die.wav").then(async (res: any) => {
-                            console.log("FILE IMPORT WORK?  ", res);
-                            midiCode.current = await SAMPLER(1, bpm, timeSignature, note, res);
-                      });
-                    }
+                
+                await result.loadFile("./wanna_die.wav").then(async (res: any) => {
+                    const fl = fetch("./wanna_die.wav");
+                    midiCode.current = await SAMPLER(1, bpm, timeSignature, note, fl);
+                });
+            }
 
                     new Promise(async (resolve, reject) => {
                         const it = await result.isShredActive(1);
@@ -689,6 +721,7 @@ export default function CreateChuck(props: any) {
             return null;
         }
         console.log('NOTE??? ', note.target);
+        console.log('AAAATTTTTTRRRRSSS: ', note.target.attributes);
         try {
             const noteReady = note.target.attributes[2].value;
             console.log('what are options? ', note.target.attributes);
@@ -764,18 +797,21 @@ export default function CreateChuck(props: any) {
             :
             <></>
             }
-            {
+            {/* {
             chuckHook && Object.values(chuckHook).length && keysVisible
-                ?
-                    <Box id="keyboardWrapper">
-                    <div id="keyboardControlsWrapper">
-                    </div>
-                    <ul id="keyboard">
-                        {createKeys()}
-                    </ul>
+                ? */}
+                    <Box 
+                      id="keyboardWrapper"
+                      style={{display: (chuckHook && Object.values(chuckHook).length && keysVisible) ? "flex" : "none"}}
+                    >
+                        <div id="keyboardControlsWrapper">
+                        </div>
+                        <ul id="keyboard">
+                            {createKeys()}
+                        </ul>
                     </Box>
-                : null
-            }
+                {/* : null
+            } */}
   
             <Box id="synthControlsWrapper" className="invisible">
             {
@@ -1822,12 +1858,10 @@ export default function CreateChuck(props: any) {
             }
             </Box>
 
-
-
             <Box id="sequencerWrapperOuter" className="invisible">
                 
                 {/* REACT BEATIFUL DND */}
-                <DragDropContext onDragEnd={dragDone}> 
+                {/* <DragDropContext onDragEnd={dragDone}> 
                     <StrictModeDroppable droppableId="sequencerWrapper">
                     {(provided: any) =>
                         <ul 
@@ -1860,7 +1894,7 @@ export default function CreateChuck(props: any) {
                         
                     }
                     </StrictModeDroppable>
-                </DragDropContext>
+                </DragDropContext> */}
                 {/* ////////////////// */}
 
                 <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
@@ -2024,6 +2058,6 @@ export default function CreateChuck(props: any) {
                 </Box>
 
             </Box>
-    </>
+        </>
     )
 } 

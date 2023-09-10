@@ -94,7 +94,7 @@ export function STFKRP(
     return (
         `
         // STK StifKarp
-        StifKarp.help();
+        // StifKarp.help();
         ${running} => int running;
         // patch
         StifKarp m => Dyno dyno => Gain g => JCRev r => dac;
@@ -688,7 +688,9 @@ export async function SAMPLER(
             c - 1 => c;
         }
         FileIO io;
-        FileIO.help();
+        // FileIO.help();
+        
+
         io.dirList() @=> string fileList[];
 
         ${running} => int running;
@@ -697,10 +699,10 @@ export async function SAMPLER(
         SndBuf buf => LiSa lisa => dac;
         "wanna_die.wav" => string filename;
         <<< filename >>>;
-
+        <<< io.open( filename, FileIO.READ | FileIO.BINARY ) >>>;
         <<< "IIIOOO: ", io.mode() >>>;
         filename => buf.read;
-        <<< buf.samples() >>>;
+        <<< "SAMPS: ", buf.samples() >>>;
         0.5 => buf.gain;
         // 0.5 => buf.rate;
         12611298 / 4 => buf.pos;

@@ -52,6 +52,32 @@ body{
   text-align: center;
 }
 
+#keyboard {
+  border-radius: 24px;
+  overflow: scroll;
+  position: absolute;
+  max-height: 27rem;
+  width: 26rem;
+  left: calc(50vw - 14.25rem);
+  /* top: 3.5rem; */
+  /* top: 3rem; */
+  /* margin-top: 5rem; */
+}
+
+@media screen and (min-width: 900px) {
+  #keyboard {
+    left: calc(50vw - 27.25rem);
+    width: 52rem;
+    top: 1.5rem;
+  }
+  #keyboardWrapper {
+
+  }
+  /* left: calc(50vw - 25rem); */
+  
+  /* left: calc(50vw - 25rem); */
+}
+
 #keyboard li:first-child {
   border-radius: 5px 0 5px 5px;
 }
@@ -135,9 +161,10 @@ canvas {
 }
 
 ul {
-  display: inline-flex;
+  /* display: inline-flex; */
   border-radius: 24px;
   overflow: scroll;
+  position: absolute;
 }
 
 #keyboardWrapper {
@@ -147,9 +174,9 @@ ul {
   overflow: scroll;
   background-color: transparent;
   position: absolute;
-  top: 20vh;
-  margin-top: 20vh;
-  margin-bottom: 20vh;
+  top: 0vh;
+  margin-top: 4vh;
+  margin-bottom: 0vh;
 }
 
 #inputFileWrapper {
@@ -172,7 +199,7 @@ ul {
   width: 100vw;
   display: flex;
   justify-content: center;
-  padding-top: 24px;
+  margin-top: 2rem;
 }
 
 .MuiList-root, .MuiPaper-root {
@@ -214,14 +241,15 @@ ul {
 }
 
 #sequencerWrapperOuter {
-  display: inline-flex; 
+  display: inline-flex;
   position: absolute;
-  top: 20vh;
+  height: 10vh;
   left: 5vw;
   width: 90vw;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   background: var(--black-60);
+  bottom: 0;
 }
 
 .sequencer-dropdown {
@@ -278,21 +306,20 @@ ul {
 }
 
 #instrumentBuilderWrapper {
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  background: var(--black-60);
+  flex-direction: ROW;
+  justify-content: LEFT;
   color: var(--white-80);
   position: absolute;
   border-bottom-right-radius: 80px 80px;
-  top: 0vh !important;
-  left: 0vw;
+  top: 2VH;
+  left: 2vw;
   bottom: 20vh;
   width: 40vw;
-  /* height: 20vh; */
   text-align: center;
   right: 20vw;
+  margin-top: 36px;
+  BACKGROUND: TRANSPARENT;
+  PADDING-LEFT: 0;
 }
 
 #instrumentBuilder {
