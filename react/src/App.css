@@ -58,8 +58,8 @@ body{
   position: absolute;
   max-height: 27rem;
   width: 26rem;
-  left: calc(50vw - 14.25rem);
-  /* top: 3.5rem; */
+  left: calc(50vw - 14.5rem);
+  top: 1.5rem;
   /* top: 3rem; */
   /* margin-top: 5rem; */
 }
@@ -68,7 +68,7 @@ body{
   #keyboard {
     left: calc(50vw - 27.25rem);
     width: 52rem;
-    top: 1.5rem;
+    /* top: 1.5rem; */
   }
   #keyboardWrapper {
 
@@ -241,11 +241,11 @@ ul {
 }
 
 #sequencerWrapperOuter {
-  display: inline-flex;
+  display: inline-table;
   position: absolute;
   height: 10vh;
-  left: 5vw;
-  width: 90vw;
+  right: 0;
+  /* width: 90vw; */
   flex-direction: row;
   justify-content: center;
   background: var(--black-60);
@@ -257,9 +257,8 @@ ul {
 }
 
 #submitMingus {
-  height: 80px;
-  position: relative;
-  min-height: 80px;  
+  height: 44px;
+  position: relative; 
   z-index: 22;
 }
 

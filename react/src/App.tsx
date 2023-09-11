@@ -124,7 +124,8 @@ function App() {
           {audioReady && fileControlsVisible && (
           <Box id="inputFileWrapper">
             <form onSubmit={handleSubmit(onSubmit)}>
-              <input 
+              <input
+                onChange={(e) => {onSubmit(e.target.files)}} 
                 type="file" 
                 {...register("file") } />
               <input type="submit" />

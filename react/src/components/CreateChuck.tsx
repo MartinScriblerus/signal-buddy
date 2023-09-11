@@ -18,7 +18,7 @@ import CLARINET, { CHORUS, STFKRP, SITAR, MOOG, MOOG2, RHODEY, FRNCHRN, MANDOLIN
 // import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
 import styles from '../styles/KeyControls.module.css';
 import CircularSlider from '@fseehawer/react-circular-slider';
-
+import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 
 declare global {
     interface HTMLLIElement {
@@ -39,7 +39,7 @@ let modsDefault: any = [
 ];
 
 export default function CreateChuck(props: any) {
-    const {game, datas} = props;
+    const {game, datas, audioReady} = props;
     const theChuck = useRef<any>(undefined);
     const modsTemp: any = useRef([]);
     modsTemp.current = [];
@@ -105,7 +105,71 @@ export default function CreateChuck(props: any) {
     const [ showingTwoOctaves, setShowingTwoOctaves ] = useState(true);
 
     const [modsHook, setModsHook] = useState<any>(modsDefault);
-    const vizArray = [<Example width={500} height={500} />, <Example2 width={500} height={500} />];
+    
+    interface TreeNode {
+        name: string;
+        children?: this[];
+    }
+    const rawTree: TreeNode = {
+    name: 'T',
+    children: [
+        {
+        name: 'I_A',
+        children: [
+            { name: 'A1' },
+            { name: 'A2' },
+            { name: 'A3' },
+            {
+            name: 'II_C',
+            children: [
+                {
+                name: 'C1',
+                },
+                {
+                name: 'III_D',
+                children: [
+                    {
+                    name: 'D1',
+                    },
+                    {
+                    name: 'D2',
+                    },
+                    {
+                    name: 'D3',
+                    },
+                    {
+                    name: 'IV_',
+                    children: [
+                            {
+                                name: 'V_F',
+                                children: [
+                                    {
+                                        name: 'VI_G',
+                                        children: [
+                                            {
+                                                name: 'VII_H'
+                                            },
+                                        ]
+                                    },
+                                ]
+                            },
+                        ]
+                    }
+                ],
+                },
+            ],
+            },
+        ],
+        },
+        { name: 'Z' },
+        {
+        name: 'I_B',
+        children: [{ name: 'B1' }, { name: 'B2' }, { name: 'B3' }],
+        },
+    ],
+    };
+
+    const vizArray = [<Example width={500} height={500} />, <Example2 width={800} height={500} rawTree={rawTree} />];
     const vizItem = useRef(1);
     const [vizComponent, setVizComponent] = useState(vizArray[vizItem.current]);
 
@@ -144,6 +208,10 @@ export default function CreateChuck(props: any) {
     if (!game.audioContext) {
         game.audioContext = new AudioContext();  
     }
+
+    useEffect(() => {
+        handleSequencerVisible();
+    }, [audioReady])
 
     useEffect(() => {
         const x = window.matchMedia("(max-width: 900px)")
@@ -336,12 +404,13 @@ export default function CreateChuck(props: any) {
     // const vizComponent = <Example width={500} height={500} />
 
     const submitMingus = async () => {
+        console.log("DO WE HAVE AUDIOKEY??? ", audioKey);
         axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {audioKey, audioScale, octave}, {
             headers: {
               'Content-Type': 'application/json'
             }
           }).then(({data}) => setMingusData(data));
-
+        console.log("TEST HERE 1");
         axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, audioKey}, {
             headers: {
               'Content-Type': 'application/json'
@@ -370,13 +439,18 @@ export default function CreateChuck(props: any) {
     }
 
     const handleSequencerVisible = () => {
+        if (!audioReady){
+            return;
+        }
         const el = document.getElementById('sequencerWrapperOuter');
         if (sequencerVisible) {
             el?.classList.add('invisible');
+            setSequencerVisible(!sequencerVisible);
         } else {
+            console.log("REMOVED IT!");
             el?.classList.remove('invisible');
         }
-        setSequencerVisible(!sequencerVisible);
+        
     }
 
     const getSequenceList = () => {
@@ -480,6 +554,10 @@ export default function CreateChuck(props: any) {
                 }).then(async ({data}) => {
                     console.log("REALTIME SCALES DATA: ", data);
                     const gotData = await data;
+                    if (!gotData.length) {
+                        console.log('NO DATA 1? ', gotData);
+                        return;
+                    }
                     gotData.forEach((d: any) => {
                         if (realTimeScalesDataObj.indexOf(d) === -1) {
                             setRealTimeScalesDataObj((realTimeScalesDataObj) => [...realTimeScalesDataObj, d]);
@@ -494,11 +572,15 @@ export default function CreateChuck(props: any) {
                 }).then(async ({data}) => {
                     console.log("REALTIME CHORDS DATA: ", data);
                     const gotData = await data;
-                    gotData.forEach((d: any) => {
-                        if (realTimeChordsDataObj.indexOf(d) === -1) {
-                            setRealTimeChordsDataObj((realTimeChordsDataObj) => [...realTimeChordsDataObj, d]);
-                        }
-                    });
+                    if (!gotData.length) {
+                        console.log('NO DATA 2? ', gotData);
+                        return;
+                    }
+                    // gotData.forEach((d: any) => {
+                    //     if (realTimeChordsDataObj.indexOf(d) === -1) {
+                            setRealTimeChordsDataObj((realTimeChordsDataObj) => [[], [gotData]]);
+                    //     }
+                    // });
 
                     mingusChordsData.current = data;
                 });
@@ -751,24 +833,27 @@ export default function CreateChuck(props: any) {
     const handleToggleViz = () => {
         console.log('??? ', vizItem.current);
         if (vizItem.current === 0) {
+            // handleSequencerVisible();
             setVizComponent(vizArray[1]);
             vizItem.current = 1;
         } else {
+            // handleSequencerVisible();
             setVizComponent(vizArray[0]);
             vizItem.current = 0;
         }
+        
     };
 
     return (
         <>
             <Button onClick={handleKeysVisible}>KEYS</Button>
             <Button onClick={handleInstrumentsVisible}>INSTRUMENT</Button>
-            <Button onClick={handleSequencerVisible}>SEQUENCER</Button>
+            {/* <Button onClick={handleSequencerVisible}>SEQUENCER</Button> */}
 
             <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
             <Button onClick={handleToggleViz}>TOGGLE VIZ</Button>
             {/* <DragDropContext onDragEnd={dragDone}> */}
-            <ParentSize>{({ width, height }) => vizComponent}</ParentSize>
+            <ParentSize style={{overflowY: "scroll"}}>{({ width, height }) => vizComponent}</ParentSize>
 
             {
             chuckHook && Object.values(chuckHook).length && instrumentsVisible

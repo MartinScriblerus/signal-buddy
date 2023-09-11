@@ -21,48 +21,49 @@ interface TreeNode {
 
 type HierarchyNode = HierarchyPointNode<TreeNode>;
 
-const rawTree: TreeNode = {
-  name: 'T',
-  children: [
-    {
-      name: 'A',
-      children: [
-        { name: 'A1' },
-        { name: 'A2' },
-        { name: 'A3' },
-        {
-          name: 'C',
-          children: [
-            {
-              name: 'C1',
-            },
-            {
-              name: 'D',
-              children: [
-                {
-                  name: 'D1',
-                },
-                {
-                  name: 'D2',
-                },
-                {
-                  name: 'D3',
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    { name: 'Z' },
-    {
-      name: 'B',
-      children: [{ name: 'B1' }, { name: 'B2' }, { name: 'B3' }],
-    },
-  ],
-};
+// const rawTree: TreeNode = {
+//   name: 'T',
+//   children: [
+//     {
+//       name: 'A',
+//       children: [
+//         { name: 'A1' },
+//         { name: 'A2' },
+//         { name: 'A3' },
+//         {
+//           name: 'C',
+//           children: [
+//             {
+//               name: 'C1',
+//             },
+//             {
+//               name: 'D',
+//               children: [
+//                 {
+//                   name: 'D1',
+//                 },
+//                 {
+//                   name: 'D2',
+//                 },
+//                 {
+//                   name: 'D3',
+//                 },
+//               ],
+//             },
+//           ],
+//         },
+//       ],
+//     },
+//     { name: 'Z' },
+//     {
+//       name: 'B',
+//       children: [{ name: 'B1' }, { name: 'B2' }, { name: 'B3' }],
+//     },
+//   ],
+// };
 
 function RootNode({ node }: { node: HierarchyNode }) {
+  console.log("WHAT IS PARENT NODE? ", node);
   return (
     <Group top={node.x} left={node.y}>
       <circle r={12} fill="url('#lg')" />
@@ -81,6 +82,7 @@ function RootNode({ node }: { node: HierarchyNode }) {
 }
 
 function ParentNode({ node }: { node: HierarchyNode }) {
+  console.log("WHAT IS PARENT NODE? ", node);
   const width = 40;
   const height = 20;
   const centerX = -width / 2;
@@ -163,9 +165,10 @@ export type TreeProps = {
   width: number;
   height: number;
   margin?: { top: number; right: number; bottom: number; left: number };
+  rawTree: TreeNode;
 };
 
-export default function Example2({ width, height, margin = defaultMargin }: TreeProps) {
+export default function Example2({ width, height, margin = defaultMargin, rawTree }: TreeProps) {
   const data = useMemo(() => hierarchy(rawTree), []);
   const yMax = height - margin.top - margin.bottom;
   const xMax = width - margin.left - margin.right;

@@ -4,7 +4,7 @@ from urllib import request
 from flask import Flask
 from flask_restful import reqparse, Api, Resource
 from flask_cors import CORS
-from flask import request, make_response
+from flask import request
 import os
 import librosa
 import numpy as np
@@ -74,26 +74,28 @@ def detect_pitch(y, sr, times):
 def onsets(file_path):
     if request.method == 'POST':
         file = request.files[file_path]
-        print(file)
-        Audio(file)
-        separator = Separator('spleeter:4stems')
-        separator.separate_to_file(audioop.name, "uploadedFiles/", filename_format="audio_example/{i}.wav")
-        spleeter_files = []
-        for i in "uploadedFiles":
-            # spleeter_files.append(f"./output/audio_example/{i.wav}")
-            buf = StringIO()
+        # print(file)
+        # Audio(file)
+        # separator = Separator('spleeter:4stems')
+        # separator.separate_to_file(audioop.name, "uploadedFiles/", filename_format="audio_example/{i}.wav")
+        # spleeter_files = []
+        # for i in os.scandir("./uploadedFiles"):
+        #     if i.is_file():
+        #         print("HERE IS THE FILE: ", str(i))
+        #         # spleeter_files.append(f"./output/audio_example/{i.wav}")
+        #         buf = StringIO()
 
-            # generate_wav_file should take a file as parameter and write a wav in it
-            buf = i
-            buf.name = f"./uploadedFiles/{i.wav}" 
+        #         # generate_wav_file should take a file as parameter and write a wav in it
+        #         buf = i
+        #         buf.name = f"./uploadedFiles/{i.wav}" 
 
-            response = make_response(buf.getvalue())
-            buf.close()
-            response.headers['Content-Type'] = 'audio/wav'
-            response.headers['Content-Disposition'] = 'attachment; filename=sound.wav'
-            spleeter_files.append(response)
+        #         response = make_response(buf.getvalue())
+        #         buf.close()
+        #         response.headers['Content-Type'] = 'audio/wav'
+        #         response.headers['Content-Disposition'] = 'attachment; filename=sound.wav'
+        #         spleeter_files.append(response)
 
-            
+                
         y, sr = librosa.load(file)
         # # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
         hop_length = 512
@@ -139,7 +141,7 @@ def onsets(file_path):
             'beatFeatures: ': beat_features.tolist(), 
             'beats': beat_times.tolist(),
             'times': times.tolist(),
-            'spleeter_files': spleeter_files,
+            # 'spleeter_files': spleeter_files,
         }}]
 
 def midi_name_to_num_helper(idx, scale):
@@ -277,18 +279,14 @@ def progression_num_helper(note):
                 continue
             chord_method = cm['chord_method']
             scale_degree = cm['scale_degree']  
-            CHORD[scale_degree]['MAJOR'] = []
             min_converter = scale_degree if 'MIN' not in scale_degree else scale_degree.replace('MIN', f'{get_chord_method(idx, 0)}'.lower())  
             if variation == 4:
                 min_converter = min_converter + '7'
             for index, i in enumerate(chord_method(note[0])):
-                # CHORD[scale_degree].major = midi_name_to_num_prog_helper(index, chords.I(note[0]), chords.major_triad(note[0]))
                 if variation == 0:
-                    # CHORD[scale_degree]['MAJOR'].append(midi_name_to_num_prog_helper(index, chords.I(note[0]), chords.major_triad(note[0])))
-                    # CHORD[scale_degree]['MAJOR'] = []
-                    CHORD[scale_degree]['MAJOR'].append(chords.major_triad(i)[0])
+                    CHORD[scale_degree]['MAJOR'] = []
+                    CHORD[scale_degree]['MAJOR'].append(progressions.to_chords('I', key=note[0][0]))
                 if variation == 1:
-                    # CHORD[scale_degree]['MINOR'].append(midi_name_to_num_prog_helper(index, chords.I(note[0]), chords.minor_triad(note[0])))
                     CHORD[scale_degree]['MINOR'] = []
                     CHORD[scale_degree]['MINOR'].append(chords.minor_triad(i[0]))
                 if variation == 2:
@@ -311,9 +309,9 @@ def progression_num_helper(note):
                 CHORD[scale_degree]['MAJ_FOURTH'] = []
                 CHORD[scale_degree]['MAJ_FOURTH'].append(progressions.to_chords('IV', key=note[0][0]))
                 CHORD[scale_degree]['PERFECT_FOURTH'] = []
-                CHORD[scale_degree]['PERFECT_FOURTH'].append(intervals.perfect_fourth(note[0]))
+                CHORD[scale_degree]['PERFECT_FOURTH'].append(intervals.perfect_fourth(note[0][0]))
                 CHORD[scale_degree]['PERFECT_FIFTH'] = []
-                CHORD[scale_degree]['PERFECT_FIFTH'].append(intervals.perfect_fifth(note[0]))
+                CHORD[scale_degree]['PERFECT_FIFTH'].append(intervals.perfect_fifth(note[0][0]))
                 CHORD[scale_degree]['MAJ_FIFTH'] = []
                 CHORD[scale_degree]['MAJ_FIFTH'].append(progressions.to_chords('V', key=note[0][0]))
                 CHORD[scale_degree]['MIN_FIFTH'] = []
@@ -431,7 +429,7 @@ def mingus_scales():
     print('REEEEEQ1 ', str(data))
     is_sharp = False
     print(str(data))
-    if len(data['audioKey']) == 0 and len(data['theNote']) > 0:
+    if ('audioKey' in data.keys() and len(data) and len(data['audioKey']) == 0) or len(data['theNote']) > 0:
         data['audioKey'] = data['theNote']
     data['audioKey'] = unidecode(data['audioKey'])
     if '#' in data['audioKey']:
@@ -541,7 +539,7 @@ def mingus_scales():
                     fixed_note = scale[0]
                     scale = notes.diminish(fixed_note)
      
-    return [{"data": scales_to_return}]
+    return {"data": scales_to_return}
 
 @app.route('/api/mingus_chords', methods=['POST', 'GET'])
 def mingus_chords():
@@ -558,7 +556,7 @@ def mingus_chords():
     # print('WHAT IS THIS? ', data['audioKey'])
     if not notes.is_valid_note(data['audioKey']):
         print('WOULD THIS BE VALID? ', str(data['audioKey']))
-        return [{"data": data['audioKey'] + ' is not a valid note!'}]
+        return {"data": data['audioKey'] + ' is not a valid note!'}
     
     
     if data['audioChord'] == 'M':
@@ -569,10 +567,8 @@ def mingus_chords():
                 prog_num_helper = progression_num_helper(data['audioKey'])
             nums_chords.append(midi_num_helper)
             nums_chords.append(prog_num_helper)
-        return [{
-            "data": chords.major_triad(data['audioKey']), 
-            "nums": nums_chords,
-        }]
+            print('NUMS CHORDS!!!!! ', nums_chords)
+        return json.dumps(nums_chords)
     elif data['audioChord'] == 'm':
         print('Minor Triad')
         return chords.minor_triad(data['audioKey'] )
@@ -590,7 +586,8 @@ def mingus_chords():
         is_sharp = False
         if data['theNote']:
             data['audioKey'] = data['theNote']
-        data['audioKey'] = unidecode(data['audioKey'])
+        if data['audioKey']:
+            data['audioKey'] = unidecode(data['audioKey'])
         if '#' in data['audioKey']:
             data['audioKey'] = data['audioKey'][:-1]
             is_sharp = True

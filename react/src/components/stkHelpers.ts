@@ -556,7 +556,6 @@ export function MANDOLIN(running: number, bpm: number, noteDivisions: number, no
         fun void play( float note, float velocity )
         {
             // start the note
-            <<< "HELLO!" >>>;
             Std.mtof( note ) => m.freq;
             velocity => m.pluck;
         }
