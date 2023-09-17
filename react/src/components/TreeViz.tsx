@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useContext, useEffect } from 'react';
 import { Group } from '@visx/group';
 import { Tree, hierarchy } from '@visx/hierarchy';
 import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import { LinkHorizontal } from '@visx/shape';
 import { LinearGradient } from '@visx/gradient';
+import { TreeContext } from './CreateChuck';
 
 const peach = '#fd9b93';
 const pink = '#fe6e9e';
@@ -17,55 +18,19 @@ export const background = '#272b4d';
 interface TreeNode {
   name: string;
   children?: this[];
+  treeContext?: TreeContext;
 }
 
-type HierarchyNode = HierarchyPointNode<TreeNode>;
+type HierarchyNode = HierarchyPointNode<TreeNode>; // let Array<any> for now
 
-// const rawTree: TreeNode = {
-//   name: 'T',
-//   children: [
-//     {
-//       name: 'A',
-//       children: [
-//         { name: 'A1' },
-//         { name: 'A2' },
-//         { name: 'A3' },
-//         {
-//           name: 'C',
-//           children: [
-//             {
-//               name: 'C1',
-//             },
-//             {
-//               name: 'D',
-//               children: [
-//                 {
-//                   name: 'D1',
-//                 },
-//                 {
-//                   name: 'D2',
-//                 },
-//                 {
-//                   name: 'D3',
-//                 },
-//               ],
-//             },
-//           ],
-//         },
-//       ],
-//     },
-//     { name: 'Z' },
-//     {
-//       name: 'B',
-//       children: [{ name: 'B1' }, { name: 'B2' }, { name: 'B3' }],
-//     },
-//   ],
-// };
+function RootNode(props: { node: { node: HierarchyPointNode<TreeNode> }, getNode: any}) {
+  let {node, getNode} = props;
 
-function RootNode({ node }: { node: HierarchyNode }) {
-  console.log("WHAT IS PARENT NODE? ", node);
+  if (node.node.data.name !== "T") {
+    getNode(node.node.data.name);
+  }
   return (
-    <Group top={node.x} left={node.y}>
+    <Group top={node.node.x} left={node.node.y}>
       <circle r={12} fill="url('#lg')" />
       <text
         dy=".33em"
@@ -75,49 +40,57 @@ function RootNode({ node }: { node: HierarchyNode }) {
         style={{ pointerEvents: 'none' }}
         fill={plum}
       >
-        {node.data.name}
+        {node.node.data.name}
       </text>
     </Group>
   );
 }
 
-function ParentNode({ node }: { node: HierarchyNode }) {
-  console.log("WHAT IS PARENT NODE? ", node);
+function ParentNode( props: {node: {node: HierarchyPointNode<TreeNode>}, getNode: any}) {
+  const { node, getNode } = props
+  
   const width = 40;
   const height = 20;
   const centerX = -width / 2;
   const centerY = -height / 2;
 
   return (
-    <Group top={node.x} left={node.y}>
-      <rect
-        height={height}
-        width={width}
-        y={centerY}
-        x={centerX}
-        fill={background}
-        stroke={blue}
-        strokeWidth={1}
-        onClick={() => {
-          alert(`clicked: ${JSON.stringify(node.data.name)}`);
-        }}
-      />
-      <text
-        dy=".33em"
-        fontSize={9}
-        fontFamily="Arial"
-        textAnchor="middle"
-        style={{ pointerEvents: 'none' }}
-        fill={white}
-      >
-        {node.data.name}
-      </text>
-    </Group>
+      <Group top={node.node.x} left={node.node.y}>
+        <rect
+          height={height}
+          width={width}
+          y={centerY}
+          x={centerX}
+          fill={background}
+          stroke={blue}
+          strokeWidth={1}
+          onClick={() => {
+            getNode(JSON.stringify(node.node.data.name));
+            alert(`clicked: ${JSON.stringify(node.node.data.name)}`);
+          }}
+        />
+        <text
+          dy=".33em"
+          fontSize={9}
+          fontFamily="Arial"
+          textAnchor="middle"
+          style={{ pointerEvents: 'none' }}
+          fill={white}
+        >
+          {node.node.data.name}
+        </text>
+      </Group>
   );
 }
 
+type NodeType = {
+  node: HierarchyNode;
+  getLatestTreeSettings: any;
+};
+
 /** Handles rendering Root, Parent, and other Nodes. */
-function Node({ node }: { node: HierarchyNode }) {
+function Node( x: NodeType) {
+  const { node, getLatestTreeSettings } = x;
   const width = 40;
   const height = 20;
   const centerX = -width / 2;
@@ -125,9 +98,13 @@ function Node({ node }: { node: HierarchyNode }) {
   const isRoot = node.depth === 0;
   const isParent = !!node.children;
 
-  if (isRoot) return <RootNode node={node} />;
-  if (isParent) return <ParentNode node={node} />;
+  const getNode = (node: HierarchyNode) => {
+    getLatestTreeSettings(node);
+  }; 
 
+  if (isRoot) return <RootNode node={{ node: node }} getNode={getNode} />;
+  if (isParent) return <ParentNode node={{ node: node }} getNode={getNode} />;
+  
   return (
     <Group top={node.x} left={node.y}>
       <rect
@@ -142,6 +119,8 @@ function Node({ node }: { node: HierarchyNode }) {
         strokeOpacity={0.6}
         rx={10}
         onClick={() => {
+          getLatestTreeSettings(JSON.stringify(node.data.name));
+          // setChildSettingHook(JSON.stringify(node.data.name));
           alert(`clicked: ${JSON.stringify(node.data.name)}`);
         }}
       />
@@ -166,9 +145,13 @@ export type TreeProps = {
   height: number;
   margin?: { top: number; right: number; bottom: number; left: number };
   rawTree: TreeNode;
+  TreeContext: React.Context<any>;
+  getLatestTreeSettings: any;
 };
 
-export default function Example2({ width, height, margin = defaultMargin, rawTree }: TreeProps) {
+
+
+export default function Example2({ width, height, margin = defaultMargin, rawTree, TreeContext, getLatestTreeSettings }: TreeProps) {
   const data = useMemo(() => hierarchy(rawTree), []);
   const yMax = height - margin.top - margin.bottom;
   const xMax = width - margin.left - margin.right;
@@ -190,7 +173,7 @@ export default function Example2({ width, height, margin = defaultMargin, rawTre
               />
             ))}
             {tree.descendants().map((node, i) => (
-              <Node key={`node-${i}`} node={node} />
+              <Node key={`node-${i}`} node={node} getLatestTreeSettings={getLatestTreeSettings} />
             ))}
           </Group>
         )}

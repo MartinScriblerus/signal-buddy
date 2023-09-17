@@ -10739,7 +10739,7 @@ web-vitals@^2.1.0:
   resolved "https://registry.npmjs.org/web-vitals/-/web-vitals-2.1.4.tgz"
   integrity sha512-sVWcwhU5mX6crfI5Vd2dC4qchyTqxV8URinzt25XqVh+bHEPGH4C3NPrNionCP7Obx59wrYEbNlw4Z8sjALzZg==
 
-webchuck@^1.2.3:
+webchuck@1.5.1.3:
   version "1.2.3"
   resolved "https://registry.npmjs.org/webchuck/-/webchuck-1.2.3.tgz"
   integrity sha512-D99tmYOczmb347YZpFs5kvtQWZRugBwsV7u4DydUSil2Jv8bfd3LzkSngIatKAHDD11FAS2kucxUCrQrcE3UPA==

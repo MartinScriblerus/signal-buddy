@@ -24,7 +24,7 @@
 //          a chance to run -- all this without advancing time
 //
 // uncomment this to print out info about Machine:
-Machine.help();
+// Machine.help();
 
 //
 // date: Spring 2023

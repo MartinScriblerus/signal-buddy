@@ -375,3 +375,7 @@ ul {
 .MuiButtonBase-root {
   color: var(--white-80) !important;
 }
+
+.MuiInputLabel-root {
+  color: "#f6f6f6" !important;
+}

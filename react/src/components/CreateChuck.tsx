@@ -1,30 +1,32 @@
-import React, { useState, useEffect, useMemo, useRef} from 'react';
-import Chuck from '../Chuck';
+import React, { useState, useEffect, useMemo, useRef, createContext, useContext} from 'react';
+// import Chuck from '../Chuck';
+import { Chuck } from 'webchuck'
 import axios, { AxiosResponse } from 'axios';
 import { FLASK_API_URL } from '../helpers/constants';
 import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Example from './XYChartWrapper';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import { useDeferredPromise } from './DefereredPromiseHook';
-import { Button, Checkbox, FormControlLabel, FormLabel, Radio, RadioGroup } from '@mui/material';
-import { DragDropContext, Draggable } from 'react-beautiful-dnd';
-import { StrictModeDroppable } from './Droppable';
+import { Button, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, InputLabel } from '@mui/material';
 import Example2 from './TreeViz';
 import CLARINET, { CHORUS, STFKRP, SITAR, MOOG, MOOG2, RHODEY, FRNCHRN, MANDOLIN, SAXOFONY, SAMPLER } from './stkHelpers'
 // import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
-import styles from '../styles/KeyControls.module.css';
 import CircularSlider from '@fseehawer/react-circular-slider';
-import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 
 declare global {
     interface HTMLLIElement {
         data: Promise<AxiosResponse<any, any> | undefined>
     }
 }
+
+export interface TreeContext {
+    newestSetting: string;
+    setNewestSetting: React.Dispatch<React.SetStateAction<string>>;
+};
 
 let modsDefault: any = [
     {
@@ -99,11 +101,17 @@ export default function CreateChuck(props: any) {
     const [lastNote, setLastNote] = useState(0);
 
     const [bpm, setBpm] = useState(60);
+    const [numeratorSignature, setNumeratorSignature] = useState<number>(4);
+    const [lastBpm, setLastBpm] = useState(60);
+    const [running, setRunning] = useState(1);
     const [timeSignature, setTimeSignature] = useState(5/4);
     const { defer, deferRef } = useDeferredPromise<boolean>();
-
     const [ showingTwoOctaves, setShowingTwoOctaves ] = useState(true);
 
+    const treeDataNodeName = useRef<any>();
+    treeDataNodeName.current = '';
+
+    const [newestSetting, setNewestSetting] = useState('');
     const [modsHook, setModsHook] = useState<any>(modsDefault);
     
     interface TreeNode {
@@ -169,7 +177,16 @@ export default function CreateChuck(props: any) {
     ],
     };
 
-    const vizArray = [<Example width={500} height={500} />, <Example2 width={800} height={500} rawTree={rawTree} />];
+    const TreeContext = createContext<TreeContext>({newestSetting: newestSetting, setNewestSetting: () => {}});
+    const treeContext = useContext(TreeContext);
+
+    const getLatestTreeSettings = (x: any) => {
+        console.log("TREE SETTINGS in CREATE CHUCK: ", x);
+        setNewestSetting(x);
+        console.log("NEWEST SETTING HOOK: ", newestSetting);
+      };
+
+    const vizArray = [<Example width={500} height={500} />, <Example2 width={800} height={500} rawTree={rawTree} TreeContext={TreeContext} getLatestTreeSettings={getLatestTreeSettings} />];
     const vizItem = useRef(1);
     const [vizComponent, setVizComponent] = useState(vizArray[vizItem.current]);
 
@@ -210,6 +227,11 @@ export default function CreateChuck(props: any) {
     }
 
     useEffect(() => {
+        console.log("TREE CTX ", treeContext);
+        console.log("WOO HOO NEWEST SETTING: ", newestSetting);
+    }, [treeContext, treeContext.newestSetting, newestSetting]);
+
+    useEffect(() => {
         handleSequencerVisible();
     }, [audioReady])
 
@@ -242,11 +264,30 @@ export default function CreateChuck(props: any) {
     // const loadChuck = async (theChuck: any) => {
     //     theChuck.loadFile('readData.ck').then(async () => {
     //         await theChuck.loadFile('readData.txt').then(async () => {
-    //             // theChuck.runFile('readData.ck');
+    //             theChuck.runFile('readData.ck');
     //         });
     //     });
     //     setLoaded(true);
     // }
+    const loadChuck = async (theChuck: any) => {
+
+        // if(running.current === 1) {
+            theChuck.loadFile('writeData.ck').then(async () => {
+                console.log("BPM SHOULD BE... ", bpm);
+                console.log("RUNNING???? ", running);
+                theChuck.runFileWithArgs('writeData.ck', `${bpm}:${running}:${lastBpm}:${numeratorSignature}`);
+                if (running === 1) {
+                    setRunning(0);
+                } else {
+                    setRunning(1);
+                }
+            });
+            setLoaded(true);
+            setLastBpm(bpm);
+
+            // setRunning(1);
+
+    }
 
     let midi = null; // global MIDIAccess object
     const nav: any = navigator;
@@ -268,17 +309,41 @@ export default function CreateChuck(props: any) {
             //     serverFilename: '//wanna_die.wav',
             //     virtualFilename: '/wanna_die.wav'
             // },
-            // {
-            //     serverFilename: '/readData.ck',
-            //     virtualFilename: 'readData.ck'
-            // },
-            // {
-            //     serverFilename: '/readData.txt',
-            //     virtualFilename: 'readData.txt'
-            // },
+            {
+                serverFilename: '/readData.ck',
+                virtualFilename: 'readData.ck'
+            },
+            {
+                serverFilename: '/readData.txt',
+                virtualFilename: 'readData.txt'
+            },
             {
                 serverFilename: '/writeData.ck',
                 virtualFilename: 'writeData.ck'
+            },
+            {
+                serverFilename: '/MinipopsKick.wav',
+                virtualFilename: 'MinipopsKick.wav'
+            },
+            {
+                serverFilename: '/MinipopsSnare.wav',
+                virtualFilename: 'MinipopsSnare.wav'
+            },
+            {
+                serverFilename: '/MinipopsHH.wav',
+                virtualFilename: 'MinipopsHH.wav'
+            },
+            {
+                serverFilename: '/MinipopsKick.ck',
+                virtualFilename: 'MinipopsKick.ck'
+            },
+            {
+                serverFilename: '/MinipopsSnare.ck',
+                virtualFilename: 'MinipopsSnare.ck'
+            },
+            {
+                serverFilename: '/MinipopsHH.ck',
+                virtualFilename: 'MinipopsHH.ck'
             },
         ];
         if (ranChuckInit.current === true || chuckHook) {
@@ -291,14 +356,14 @@ export default function CreateChuck(props: any) {
             if (gameExists) {
                 return;
             }
-            const theChuckTemp: any = Chuck.init(serverFilesToPreload, game.audioContext, 2);
-            console.log("CHUCK: ", theChuckTemp)
-            Promise.resolve(theChuckTemp).then(async (i: any) => {
-                game['theChuck'] = i;
+            const theChuckTemp: any = await Chuck.init(serverFilesToPreload, undefined, 2, undefined);
+            console.log("CHUCK: ", Chuck)
+            // Promise.resolve(theChuckTemp.promise).then(async (i: any) => {
+                game['theChuck'] = theChuckTemp;
                 // test beep
-                await i.runCode(` SinOsc osc => dac; 0.2 => osc.gain; 220 => osc.freq; .3::second => now; `);
-                return setChuckHook(i);
-            });       
+                await theChuckTemp.runCode(` SinOsc osc => dac; 0.2 => osc.gain; 220 => osc.freq; .3::second => now; `);
+                return setChuckHook(theChuckTemp);
+            // });       
         })();
     }, [game, chuckHook]);
 
@@ -459,9 +524,10 @@ export default function CreateChuck(props: any) {
             return <></>;
         }
         return modsHook.map((i: any, idx: number) => {
-            <Draggable key={`draggableKey_${idx}`} draggableId={`draggableId_${idx}`} index={idx}>
-                {(provided) => <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}></li>}
-            </Draggable>
+            console.log("MODS HOOK ITEM ", idx, i);
+            // <Draggable key={`draggableKey_${idx}`} draggableId={`draggableId_${idx}`} index={idx}>
+            //     {(provided) => <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}></li>}
+            // </Draggable>
         });
     }
 
@@ -491,28 +557,20 @@ export default function CreateChuck(props: any) {
         getSequenceList();
     }, [mingusChordsData.current]);
 
-    const dragDone = (result: any) => {
-        const newList = [... modsHook];
-        const [removed] = newList.splice(result.source.index, 1);
-        newList.splice(result.destination.index, 0, removed);
-        console.log('drag done!');
-        setModsHook(newList);
-    }
+    // const dragDone = (result: any) => {
+    //     const newList = [... modsHook];
+    //     const [removed] = newList.splice(result.source.index, 1);
+    //     newList.splice(result.destination.index, 0, removed);
+    //     console.log('drag done!');
+    //     setModsHook(newList);
+    // }
 
     useEffect(() => {
-        if (realTimeChordsDataObj && realTimeChordsDataObj.length > 0) {
-            console.log('REALTIME CHORDS DATA IN USE EFFECT: ', realTimeChordsDataObj);
-            // axios.post(`${process.env.REACT_APP_FLASK_API_URL}/midi_name`, JSON.stringify(realTimeChordsDataObj), {
-            //     headers: {
-            //         'Content-Type': 'application/json'
-            //     }
-            // }).then(({data}) => {
-            //     console.log('WHAT IS DATA@@@??? ', data);
-            //     //setRealTimeChordsDataObj((realTimeChordsDataObj) => [...realTimeChordsDataObj, data])
-            // });
-        }
         if (realTimeScalesDataObj) {
             console.log('REALTIME SCALES DATA IN USE EFFECT: ', realTimeScalesDataObj);
+        }
+        if (realTimeChordsDataObj) {
+            console.log('REALTIME CHORDS DATA IN USE EFFECT: ', realTimeChordsDataObj);
         }
     }, [realTimeChordsDataObj, realTimeScalesDataObj]);
 
@@ -534,10 +592,6 @@ export default function CreateChuck(props: any) {
                 console.log('REALTIME MINGUS DATA: ', data);
                 const theOctave = data.midiNote[data.midiNote.length - 1];
                 let theNote = data.midiNote.slice(0, -1);
-                // console.log('OCTAVE: ', theOctave);
-                // console.log('NOTE: ', theNote);
-                // console.log('INDEX@!@! ', theNote.indexOf('♯'));
-    
                 const index = theNote.indexOf('♯');
                 let convertedNote;
                 if (index !== -1) {
@@ -555,7 +609,7 @@ export default function CreateChuck(props: any) {
                     console.log("REALTIME SCALES DATA: ", data);
                     const gotData = await data;
                     if (!gotData.length) {
-                        console.log('NO DATA 1? ', gotData);
+                        console.log('NO MINGUS SCALES? ', gotData);
                         return;
                     }
                     gotData.forEach((d: any) => {
@@ -600,8 +654,8 @@ export default function CreateChuck(props: any) {
             }
         });
         console.log('CAN WE START USING MINGUS DATA? ', mingusChordsData.current);
-
-        console.log('whst is nope here? ', Promise.resolve(mg));
+        if (!mingusChordsData.current)
+        console.log('what is nope here? ', Promise.resolve(mg));
 
         Promise.resolve(chuckHook).then(async function(result: Chuck) {
             if (playingInstrument === '') {
@@ -651,7 +705,6 @@ export default function CreateChuck(props: any) {
                 setLastNote(note);
                 console.log('NOTE . LAST => ', note, lastNote);
                 await noteOff(note);
-                console.log('GOT ALL??? ', bpm, timeSignature, note, velocity, valueBodySize, valuePluckPos, valueStringDamping, valueStringDetune, valueReverbMix, realTimeChordsDataObj, realTimeScalesDataObj);
                 // await chuckHook.loadFile('ByronGlacier.wav').then(() => {
                 //     console.log('IN MANDLONE ');
                     midiCode.current = MANDOLIN(1, bpm, timeSignature, note, velocity, valueBodySize, valuePluckPos, valueStringDamping, valueStringDetune, valueReverbMix, realTimeChordsDataObj, realTimeScalesDataObj);
@@ -675,7 +728,7 @@ export default function CreateChuck(props: any) {
             }
 
                     new Promise(async (resolve, reject) => {
-                        const it = await result.isShredActive(1);
+                        const it: any = await result.isShredActive(1);
                         Promise.resolve(it.promise).then((i: any) => {
                             console.log('THIS IS ACTIVE!!! ', i);
                             if (i === 0) {
@@ -687,49 +740,13 @@ export default function CreateChuck(props: any) {
                                 });
                             } 
                             else {
-                                console.log('IIIIIIINNNNNNN TTTTHHHHHEEEEE EEEELLLLLSSSSEEEE');
                                 Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
-                                    console.log('WHAT IS W (RUNNING CODE)? ', w);
+                                    console.log('WHAT IS (RUNNING CODE) in the ELSE? ', w);
                                 });       
                             }
                             setPlaying(true);
                         });
-                        // try {
-                        //     if (Promise.resolve(it !== undefined)) {
-                        //         resolve(it);
-                        //     } else {
-                        //         reject('not here');
-                        //     }
-                        // } catch (e) {
-
-                        // }
                     });
-                    // .then(async (res: any) => {
-
-                    //     // if (res === 0) {
-                    //     //     console.log('in RES ZERO');
-                    //     //     Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
-                    //     //         await Promise.resolve(w).then((i) => { 
-                    //     //             console.log('WHAT IS I (RUNNING CODE / RES IS ZERO) ', i);
-                    //     //         });                        
-                    //     //     });
-                    //     // } 
-                    //     // else {
-                    //     //     console.log('IIIIIIINNNNNNN TTTTHHHHHEEEEE EEEELLLLLSSSSEEEE');
-                    //     //     Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
-                    //     //         console.log('WHAT WAS RESPONSE FROM CHUCK CODEE???: ', res);
-                    //     //         console.log('WHAT IS W (RUNNING CODE)? ', w);
-                    //     //     });       
-                    //     // }
-                    //     // setPlaying(true);
-                    // });
-                
-                
-                // });
-            
-            
-            
-            // }
         });
       }
       
@@ -741,8 +758,9 @@ export default function CreateChuck(props: any) {
         console.log('MIDI NOTES ON IN OFF: ', midiNotesOn.current);
         if (chuckHook === undefined) return;
         setPlaying(false);
-
-        chuckHook.isShredActive(1).promise.then(async (i: any) => {
+        console.log("WHAT IS CHUCKHOOK?? ", chuckHook);
+        const firstShredActive = chuckHook.isShredActive(1);
+        Promise.resolve(firstShredActive).then(async (i: any) => {
             chuckHook.removeLastCode();
         });
       }
@@ -765,7 +783,7 @@ export default function CreateChuck(props: any) {
       }
       
       function getMIDIMessage(message: any) {
-        console.log('wjay is MSG> ', message);
+        console.log('MIDI MSG> ', message);
         const command = message.data[0];
         const note = message.data[1];
         const velocity = (message.data.length > 2) ? message.data[2] : 0; // a velocity value might not be included with a noteOff command
@@ -802,8 +820,6 @@ export default function CreateChuck(props: any) {
         if (!note.target || !note.target ) { 
             return null;
         }
-        console.log('NOTE??? ', note.target);
-        console.log('AAAATTTTTTRRRRSSS: ', note.target.attributes);
         try {
             const noteReady = note.target.attributes[2].value;
             console.log('what are options? ', note.target.attributes);
@@ -815,15 +831,14 @@ export default function CreateChuck(props: any) {
             return null;
         }
     };
-    //   useEffect(() => {
-    //     console.log('MODSHOOK IS NOW: ', modsHook);
-    //     console.log('MINGUS DATA? ', mingusData)
-    //     // modsTemp.current = [];
-    // }, [modsHook])
+    useEffect(() => {
+        console.log('MODSHOOK IS NOW: ', modsHook);
+        console.log('MINGUS DATA? ', mingusData)
+        // modsTemp.current = [];
+    }, [modsHook, mingusData]);
 
     const handleUpdateInstrument = (event: React.ChangeEvent<HTMLInputElement>) => {
         setPlayingInstrument((event.target as HTMLInputElement).value);
-        console.log("HERE 1")
         Promise.resolve(chuckHook).then(function(result: Chuck) {
             result.clearChuckInstance();
         });
@@ -831,7 +846,6 @@ export default function CreateChuck(props: any) {
     }
 
     const handleToggleViz = () => {
-        console.log('??? ', vizItem.current);
         if (vizItem.current === 0) {
             // handleSequencerVisible();
             setVizComponent(vizArray[1]);
@@ -844,8 +858,27 @@ export default function CreateChuck(props: any) {
         
     };
 
+    const handleDrumMachine = async () => {
+        const ch = await chuckHook;
+        loadChuck(ch);
+    };
+
+    useEffect(() => {
+        console.log("BPM IS ", bpm);
+    }, [bpm]);
+
+    const handleChangeBPM = (inputBPM: any) => {
+        if (inputBPM) {
+            setBpm(inputBPM);
+        }
+    };
+    const value = { newestSetting, setNewestSetting };
+
+    
+
     return (
         <>
+            <Button onClick={handleDrumMachine}>DRUM</Button>
             <Button onClick={handleKeysVisible}>KEYS</Button>
             <Button onClick={handleInstrumentsVisible}>INSTRUMENT</Button>
             {/* <Button onClick={handleSequencerVisible}>SEQUENCER</Button> */}
@@ -853,8 +886,9 @@ export default function CreateChuck(props: any) {
             <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
             <Button onClick={handleToggleViz}>TOGGLE VIZ</Button>
             {/* <DragDropContext onDragEnd={dragDone}> */}
-            <ParentSize style={{overflowY: "scroll"}}>{({ width, height }) => vizComponent}</ParentSize>
-
+            <TreeContext.Provider value={value}>
+                <ParentSize style={{overflowY: "scroll"}}>{({ width, height }) => vizComponent}</ParentSize>
+            </TreeContext.Provider>
             {
             chuckHook && Object.values(chuckHook).length && instrumentsVisible
             ?
@@ -1943,45 +1977,47 @@ export default function CreateChuck(props: any) {
             }
             </Box>
 
+            <Box
+                // component="form"
+                // sx={{
+                //     '& > :not(style)': { m: 1, width: '25ch' },
+                // }}
+                // noValidate
+                // autoComplete="off"
+            >
+                <FormControl
+                  sx={{
+                    position: "absolute",
+                    left: "0",
+                  }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                }}>
+                    <TextField
+                        inputProps={{ style: { color: "#f6f6f6"} }}
+                        sx={{
+                            input: { color: '#f6f6f6' },
+                            borderColor: "f6f6f6",
+                        }}
+                        placeholder="BPM"
+                        type="number"
+                        id="outlined-textarea"
+                        InputLabelProps={{
+                            shrink: true,
+                        }}
+                        value={bpm}
+                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                event.preventDefault();
+                                const inputBpm: any = parseInt(event.target.value);
+                                handleChangeBPM(inputBpm);
+                            }
+                        }
+                    />
+                </FormControl>
+            </Box>
+
             <Box id="sequencerWrapperOuter" className="invisible">
                 
-                {/* REACT BEATIFUL DND */}
-                {/* <DragDropContext onDragEnd={dragDone}> 
-                    <StrictModeDroppable droppableId="sequencerWrapper">
-                    {(provided: any) =>
-                        <ul 
-                            className="sequencerWrapper" 
-                            {...provided.droppableProps} 
-                            ref={provided.innerRef}>
-                            {
-                                modsHook.filter((i: any) => i).map((i: any, idx: number) => {
-                                    // i.id = i.id + `_${idx}`;
-                                    // console.log('wtf is I? ', i);
-                                    // return (
-                                    return (<Draggable key={`draggableKey_${idx}`} draggableId={`draggableId_${idx}`} index={idx}>
-                                        {(provided) => (
-                                        <li className="li-to-drag-wrapper" key={`draggableId_${idx}`} ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                            <div id={`draggableId_${idx}`} className="li-to-drag">
-                                                {`${modsHook[idx].id}`}
-                                                <br/>
-                                                {`${modsHook[idx].audioScale}`}
-                                                <br/>
-                                                {`${modsHook[idx].audioKey} ${modsHook[idx].audioChord}  ${modsHook[idx].octave}`}
-                                                <br/>
-                                            </div>
-                                        </li>)}
-                                    </Draggable>)
-                                    // )
-                                })
-                            }
-                            {provided.placeholder}
-                        </ul>
-                        
-                    }
-                    </StrictModeDroppable>
-                </DragDropContext> */}
-                {/* ////////////////// */}
-
                 <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
 
                 <Box id="sequencerWrapperInner">
