@@ -12,6 +12,7 @@ import Example from './XYChartWrapper';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import { useDeferredPromise } from './DefereredPromiseHook';
 import { Button, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, InputLabel } from '@mui/material';
+import rawTree from '../helpers/rawTreeNode';
 import Example2 from './TreeViz';
 import CLARINET, { CHORUS, STFKRP, SITAR, MOOG, MOOG2, RHODEY, FRNCHRN, MANDOLIN, SAXOFONY, SAMPLER } from './stkHelpers'
 // import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
@@ -23,10 +24,15 @@ declare global {
     }
 }
 
-export interface TreeContext {
-    newestSetting: string;
-    setNewestSetting: React.Dispatch<React.SetStateAction<string>>;
-};
+// export interface TreeContext {
+//     newestSetting: string;
+//     setNewestSetting: React.Dispatch<React.SetStateAction<string>>;
+// };
+
+export interface TreeNode {
+    name: string;
+    children?: this[];
+}
 
 let modsDefault: any = [
     {
@@ -108,87 +114,63 @@ export default function CreateChuck(props: any) {
     const { defer, deferRef } = useDeferredPromise<boolean>();
     const [ showingTwoOctaves, setShowingTwoOctaves ] = useState(true);
 
-    const treeDataNodeName = useRef<any>();
-    treeDataNodeName.current = '';
+    const [vizItem, setVizItem] = useState(0);
+    const [treeDepth, setTreeDepth] = React.useState<number>(0);
+    const [treeAtSelected, setTreeAtSelected] = React.useState<string>("");
+    const [vizComponent, setVizComponent] = useState<any>(<></>);
 
-    const [newestSetting, setNewestSetting] = useState('');
+    const [newestSetting, setNewestSetting] = useState(rawTree);
     const [modsHook, setModsHook] = useState<any>(modsDefault);
     
-    interface TreeNode {
-        name: string;
-        children?: this[];
-    }
-    const rawTree: TreeNode = {
-    name: 'T',
-    children: [
-        {
-        name: 'I_A',
-        children: [
-            { name: 'A1' },
-            { name: 'A2' },
-            { name: 'A3' },
-            {
-            name: 'II_C',
-            children: [
-                {
-                name: 'C1',
-                },
-                {
-                name: 'III_D',
-                children: [
-                    {
-                    name: 'D1',
-                    },
-                    {
-                    name: 'D2',
-                    },
-                    {
-                    name: 'D3',
-                    },
-                    {
-                    name: 'IV_',
-                    children: [
-                            {
-                                name: 'V_F',
-                                children: [
-                                    {
-                                        name: 'VI_G',
-                                        children: [
-                                            {
-                                                name: 'VII_H'
-                                            },
-                                        ]
-                                    },
-                                ]
-                            },
-                        ]
-                    }
-                ],
-                },
-            ],
-            },
-        ],
-        },
-        { name: 'Z' },
-        {
-        name: 'I_B',
-        children: [{ name: 'B1' }, { name: 'B2' }, { name: 'B3' }],
-        },
-    ],
-    };
-
-    const TreeContext = createContext<TreeContext>({newestSetting: newestSetting, setNewestSetting: () => {}});
-    const treeContext = useContext(TreeContext);
-
+    // const TreeContext = createContext<TreeContext>({newestSetting: newestSetting, setNewestSetting: () => {}});
+    // const treeContext = useContext(TreeContext);
+    
     const getLatestTreeSettings = (x: any) => {
         console.log("TREE SETTINGS in CREATE CHUCK: ", x);
-        setNewestSetting(x);
-        console.log("NEWEST SETTING HOOK: ", newestSetting);
-      };
+        setTreeAtSelected(x);
+        // setNewestSetting(rawTree.children.push());
+    // console.log("NEWEST SETTING HOOK: ", newestSetting);
+    // if (newestSetting) {
+        // rawTree.children[0].children.push({
+        //     name: `${newestSetting}_UPDATE`,
+        //     children: [
+        //         {name: "Fuq_ya_1"},
+        //         {name: "ell_ya_2"},
+        //     ],
+        // });
+    // }
+    };
 
-    const vizArray = [<Example width={500} height={500} />, <Example2 width={800} height={500} rawTree={rawTree} TreeContext={TreeContext} getLatestTreeSettings={getLatestTreeSettings} />];
-    const vizItem = useRef(1);
-    const [vizComponent, setVizComponent] = useState(vizArray[vizItem.current]);
+    const handleUpdateRawTree = (name: string) => {
+        console.log('fuck this shit: ', name);
+        // rawTree.children.push({name: name, children: []})
+        const childrenUpdated = {name: name, children: []};
+        setNewestSetting({...newestSetting, children: [...newestSetting.children, childrenUpdated]});
+        return childrenUpdated.name;
+    };
+
+    const handleAddStep = () => {
+        const name = prompt('What is the name of your new node?');
+        return handleUpdateRawTree(name);
+        // console.log('nodeName: ', nodeName);
+        ///rawTree.children.push({name: `${nodeName}_par`, children: [{name: `${nodeName}`}]});
+        // // console.log("WHAT IS THAT RAWTREE ARRAY??? ", rawTree);
+        // console.log("WHAT IS CURR POS ARRAY??? ", currPosData);    
+        // rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
+
+    };
+
+    const vizArray = [<Example width={500} height={500} />, <Example2 key={newestSetting.name} width={800} height={500} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />, <Box>Updating...</Box>];
+
+
+
+    // setVizComponent(vizArray[vizItem]);
+
+    useEffect(() => {
+        console.log("YO TREE AT SEL. ", treeAtSelected);
+        setVizComponent(vizArray[1]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [newestSetting]);
 
     const lastMidiNote: any = useRef('');
     lastMidiNote.current = '';
@@ -227,9 +209,20 @@ export default function CreateChuck(props: any) {
     }
 
     useEffect(() => {
-        console.log("TREE CTX ", treeContext);
         console.log("WOO HOO NEWEST SETTING: ", newestSetting);
-    }, [treeContext, treeContext.newestSetting, newestSetting]);
+        setVizComponent(vizArray[2]);
+        // vizComponent.current = vizArray[2];
+        return () => {
+            console.log("CLEANING UP!");
+        }
+    }, [newestSetting]);
+
+    useEffect(() => {
+        console.log("MMMMAAAAYYYYBBBBEEEE???? ", Object.keys(rawTree).flat().length);
+        console.log("DEPTH IS ", treeDepth);
+        console.log("STRING DEPTH IS ", treeAtSelected);
+        setVizComponent(vizArray[1]);
+    }, [treeDepth, treeAtSelected]);
 
     useEffect(() => {
         handleSequencerVisible();
@@ -557,14 +550,6 @@ export default function CreateChuck(props: any) {
         getSequenceList();
     }, [mingusChordsData.current]);
 
-    // const dragDone = (result: any) => {
-    //     const newList = [... modsHook];
-    //     const [removed] = newList.splice(result.source.index, 1);
-    //     newList.splice(result.destination.index, 0, removed);
-    //     console.log('drag done!');
-    //     setModsHook(newList);
-    // }
-
     useEffect(() => {
         if (realTimeScalesDataObj) {
             console.log('REALTIME SCALES DATA IN USE EFFECT: ', realTimeScalesDataObj);
@@ -831,6 +816,7 @@ export default function CreateChuck(props: any) {
             return null;
         }
     };
+
     useEffect(() => {
         console.log('MODSHOOK IS NOW: ', modsHook);
         console.log('MINGUS DATA? ', mingusData)
@@ -846,14 +832,15 @@ export default function CreateChuck(props: any) {
     }
 
     const handleToggleViz = () => {
-        if (vizItem.current === 0) {
+        console.log("vizItem.current is ", vizItem);
+        if (vizItem === 0) {
             // handleSequencerVisible();
             setVizComponent(vizArray[1]);
-            vizItem.current = 1;
+            setVizItem(1);
         } else {
             // handleSequencerVisible();
             setVizComponent(vizArray[0]);
-            vizItem.current = 0;
+            setVizItem(0);
         }
         
     };
@@ -874,8 +861,6 @@ export default function CreateChuck(props: any) {
     };
     const value = { newestSetting, setNewestSetting };
 
-    
-
     return (
         <>
             <Button onClick={handleDrumMachine}>DRUM</Button>
@@ -885,10 +870,8 @@ export default function CreateChuck(props: any) {
 
             <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
             <Button onClick={handleToggleViz}>TOGGLE VIZ</Button>
-            {/* <DragDropContext onDragEnd={dragDone}> */}
-            <TreeContext.Provider value={value}>
-                <ParentSize style={{overflowY: "scroll"}}>{({ width, height }) => vizComponent}</ParentSize>
-            </TreeContext.Provider>
+            <Button onClick={handleAddStep}>Add Step</Button>
+            <ParentSize key={newestSetting.name} style={{overflowY: "scroll"}}>{({ width, height }) => vizArray[vizItem]}</ParentSize>
             {
             chuckHook && Object.values(chuckHook).length && instrumentsVisible
             ?

@@ -4,7 +4,8 @@ import { Tree, hierarchy } from '@visx/hierarchy';
 import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import { LinkHorizontal } from '@visx/shape';
 import { LinearGradient } from '@visx/gradient';
-import { TreeContext } from './CreateChuck';
+import { Box, Button } from '@mui/material';
+import { raw } from 'body-parser';
 
 const peach = '#fd9b93';
 const pink = '#fe6e9e';
@@ -18,17 +19,23 @@ export const background = '#272b4d';
 interface TreeNode {
   name: string;
   children?: this[];
-  treeContext?: TreeContext;
+  currPosData?: any;
 }
 
 type HierarchyNode = HierarchyPointNode<TreeNode>; // let Array<any> for now
 
-function RootNode(props: { node: { node: HierarchyPointNode<TreeNode> }, getNode: any}) {
+function RootNode(props: { node: { node: HierarchyPointNode<TreeNode> }, getNode: any, currPosData: any }) {
   let {node, getNode} = props;
 
   if (node.node.data.name !== "T") {
-    getNode(node.node.data.name);
+    console.log('what is node? ', node.node);
+    getNode(node.node);
   }
+
+  useEffect(() => {
+    console.log('currPosData in root node: ', props.currPosData);
+  }, [props.currPosData]);
+
   return (
     <Group top={node.node.x} left={node.node.y}>
       <circle r={12} fill="url('#lg')" />
@@ -46,13 +53,17 @@ function RootNode(props: { node: { node: HierarchyPointNode<TreeNode> }, getNode
   );
 }
 
-function ParentNode( props: {node: {node: HierarchyPointNode<TreeNode>}, getNode: any}) {
-  const { node, getNode } = props
+function ParentNode( props: {node: {node: HierarchyPointNode<TreeNode>}, getNode: any, currPosData: any }) {
+  const { node, getNode, currPosData } = props
   
   const width = 40;
   const height = 20;
   const centerX = -width / 2;
   const centerY = -height / 2;
+  console.log("????? node: ", node);
+  useEffect(() => {
+    console.log('currPosData in parent node: ', currPosData);
+  }, [currPosData]);
 
   return (
       <Group top={node.node.x} left={node.node.y}>
@@ -65,8 +76,9 @@ function ParentNode( props: {node: {node: HierarchyPointNode<TreeNode>}, getNode
           stroke={blue}
           strokeWidth={1}
           onClick={() => {
-            getNode(JSON.stringify(node.node.data.name));
+            getNode(node.node);          
             alert(`clicked: ${JSON.stringify(node.node.data.name)}`);
+
           }}
         />
         <text
@@ -86,27 +98,35 @@ function ParentNode( props: {node: {node: HierarchyPointNode<TreeNode>}, getNode
 type NodeType = {
   node: HierarchyNode;
   getLatestTreeSettings: any;
+  currPosData: any; 
 };
 
 /** Handles rendering Root, Parent, and other Nodes. */
 function Node( x: NodeType) {
-  const { node, getLatestTreeSettings } = x;
+  const [selectedNode, setSelectedNode] = React.useState<string>("");
+  const { node, getLatestTreeSettings, currPosData } = x;
   const width = 40;
   const height = 20;
   const centerX = -width / 2;
   const centerY = -height / 2;
   const isRoot = node.depth === 0;
   const isParent = !!node.children;
-
+  console.log('xxxxxxxx: ', x);
   const getNode = (node: HierarchyNode) => {
-    getLatestTreeSettings(node);
-  }; 
+    return getLatestTreeSettings(node);
+  };
 
-  if (isRoot) return <RootNode node={{ node: node }} getNode={getNode} />;
-  if (isParent) return <ParentNode node={{ node: node }} getNode={getNode} />;
-  
+  React.useEffect(() => {
+    if(selectedNode.indexOf('Inst') !== -1) {
+      console.log("There's a Inst in that!");
+    }
+  }, [selectedNode])
+
+  if (isRoot) return <RootNode node={{ node: node }} getNode={getNode} currPosData={currPosData} />;
+  if (isParent) return <ParentNode node={{ node: node }} getNode={getNode} currPosData={currPosData}  />;
+
   return (
-    <Group top={node.x} left={node.y}>
+    <Group key={selectedNode} top={node.x} left={node.y}>
       <rect
         height={height}
         width={width}
@@ -119,9 +139,9 @@ function Node( x: NodeType) {
         strokeOpacity={0.6}
         rx={10}
         onClick={() => {
-          getLatestTreeSettings(JSON.stringify(node.data.name));
-          // setChildSettingHook(JSON.stringify(node.data.name));
-          alert(`clicked: ${JSON.stringify(node.data.name)}`);
+          setSelectedNode(JSON.stringify(node.data.name));
+          getLatestTreeSettings(node);
+          alert(`clicked: ${JSON.stringify(node.data.name)} / depth: ${node.depth} / root?: ${isRoot} / parent?: ${isParent}`);
         }}
       />
       <text
@@ -145,18 +165,72 @@ export type TreeProps = {
   height: number;
   margin?: { top: number; right: number; bottom: number; left: number };
   rawTree: TreeNode;
-  TreeContext: React.Context<any>;
+  handleUpdateRawTree: any;
+  currPosData: any;
   getLatestTreeSettings: any;
+  handleAddStep: any;
 };
 
-
-
-export default function Example2({ width, height, margin = defaultMargin, rawTree, TreeContext, getLatestTreeSettings }: TreeProps) {
-  const data = useMemo(() => hierarchy(rawTree), []);
+export default function Example2({ width, height, margin = defaultMargin, rawTree, handleUpdateRawTree, currPosData, getLatestTreeSettings, handleAddStep }: TreeProps) {
+  const data = useMemo(() => hierarchy(rawTree), [rawTree]);
   const yMax = height - margin.top - margin.bottom;
   const xMax = width - margin.left - margin.right;
+  const [currName, setCurrName] = React.useState("");
+  console.log('CURR POS DATA (where we need it): ', currPosData);
+  console.log('CURR TTTT?Reee DATA (where we need it): ', rawTree);
+  
+  useEffect(() => {
+    console.log("GOT CURR POS DATA: ", currPosData);
+    console.log("GOT LATEST TREE SETTINGS: ", getLatestTreeSettings);
+    // console.log("GOT CURR RAW TREE: ", rawTree);
+  }, [currPosData]);
+  
+  // const handleAddStep = () => {
+  //   const name = prompt('What is the name of your new node?');
+  //   setCurrName(name);
+  //   handleUpdateRawTree(name);
+  //   // console.log('nodeName: ', nodeName);
+  //   ///rawTree.children.push({name: `${nodeName}_par`, children: [{name: `${nodeName}`}]});
+  //   // console.log("WHAT IS THAT RAWTREE ARRAY??? ", rawTree);
+  //   console.log("WHAT IS CURR POS ARRAY??? ", currPosData);    
+  //   // rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
+  // };
+  // const handleRemoveStep = () => {
+  //   currPosData.data.children.splice(-1);
+  // };
+
+  const handleAddEffect = () => {
+    rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
+  };
+  const handleRemoveEffect = () => {
+    rawTree.children.splice(-1);
+  };
+  const handleAddPattern = () => {
+    rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
+  };
+  const handleRemovePattern = () => {
+    rawTree.children.splice(-1);
+  };
+  const handleAddInstrument = () => {
+    rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
+  };
+  const handleRemoveInstrument = () => {
+    rawTree.children.splice(-1);
+  };
 
   return width < 10 ? null : (
+    <>
+
+    {/* <Box sx={{position: "absolute"}}>
+      {/* <Button onClick={handleAddInstrument}>Add Instrument</Button>
+      <Button onClick={handleRemoveInstrument}>Remove Instrument</Button>
+      <Button onClick={handleRemoveEffect}>Remove Effect</Button>
+      <Button onClick={handleAddPattern}>Add Pattern</Button>
+      <Button onClick={handleRemovePattern}>Remove Pattern</Button>
+      <Button onClick={handleAddStep}>Add Step</Button>
+      <Button onClick={handleRemoveStep}>Remove Step / File</Button>
+    </Box> */}
+
     <svg width={width} height={height}>
       <LinearGradient id="lg" from={peach} to={pink} />
       <rect width={width} height={height} rx={14} fill={background} />
@@ -173,11 +247,13 @@ export default function Example2({ width, height, margin = defaultMargin, rawTre
               />
             ))}
             {tree.descendants().map((node, i) => (
-              <Node key={`node-${i}`} node={node} getLatestTreeSettings={getLatestTreeSettings} />
+              <Node key={`node-${i}-${currName}`} node={node} getLatestTreeSettings={getLatestTreeSettings} currPosData={currPosData} />
             ))}
           </Group>
         )}
       </Tree>
     </svg>
+
+    </>
   );
 }
