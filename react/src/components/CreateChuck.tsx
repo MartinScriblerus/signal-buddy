@@ -125,6 +125,7 @@ export default function CreateChuck(props: any) {
     const [treeDepth, setTreeDepth] = React.useState<number>(0);
     const [treeAtSelected, setTreeAtSelected] = React.useState<TreeAtSelected>({data: {}, depth: 0, children: [], parent: {}});
     const [vizComponent, setVizComponent] = useState<any>(<></>);
+    const [nextTreeItem, setNextTreeItem] = useState<any>('step');
 
     const [newestSetting, setNewestSetting] = useState(rawTree);
     const [modsHook, setModsHook] = useState<any>(modsDefault);
@@ -146,7 +147,17 @@ export default function CreateChuck(props: any) {
         } else {
             if (childrenUpdated) {
                 if (operation === "add") {
-                    treeAtSelected.data.children.push(childrenUpdated);
+                    if (nextTreeItem === 'pattern') {
+                        childrenUpdated.name = 'pat_' + childrenUpdated.name;
+                        treeAtSelected.data.children.push(childrenUpdated);
+                    }
+                    if (nextTreeItem === 'effect') {
+                        childrenUpdated.name = 'fx_' + childrenUpdated.name;
+                        treeAtSelected.data.children.push(childrenUpdated);
+                    }
+                    if (nextTreeItem === 'step') {
+                        treeAtSelected.data.children.push(childrenUpdated);
+                    }
                 } else if (operation === "remove") {
                     if (treeAtSelected.data.children.length === 0) {
                         treeAtSelected.parent.data.children = treeAtSelected.parent.data.children.splice(treeAtSelected.parent.data.children.indexOf(treeAtSelected), 1);
@@ -863,6 +874,11 @@ export default function CreateChuck(props: any) {
         }
     };
 
+    const updateNextTreeItem = (event: React.ChangeEvent<HTMLInputElement>) => {
+        console.log('CHECK!! ', (event.target).value);
+        setNextTreeItem((event.target as HTMLInputElement).value);
+    };
+
     return (
         <>
             <Button onClick={handleDrumMachine}>DRUM</Button>
@@ -874,6 +890,27 @@ export default function CreateChuck(props: any) {
             <Button onClick={handleToggleViz}>TOGGLE VIZ</Button>
             <Button onClick={handleAddStep}>Add Step</Button>
             <Button onClick={handleRemoveStep}>Remove Step</Button>
+
+
+
+            <FormControl sx={{position: 'absolute', left: '32px'}} id="treeBuilderWrapper">
+                <FormLabel id="demo-controlled-radio-buttons-group-tree"></FormLabel>
+                <RadioGroup
+                    aria-labelledby="demo-controlled-radio-buttons-group-tree"
+                    name="controlled-radio-buttons-group-tree"
+                    value={nextTreeItem}
+                    onChange={updateNextTreeItem}
+                >
+                    <FormControlLabel value="step" control={<Radio />} label="Step" />
+                    <FormControlLabel value="pattern" control={<Radio />} label="Pattern" />
+                    <FormControlLabel value="effect" control={<Radio />} label="Effect" />
+                    
+                </RadioGroup>
+            </FormControl>
+
+
+
+            
             <ParentSize key={newestSetting.name} style={{overflowY: "scroll"}}>{({ width, height }) => vizArray[vizItem]}</ParentSize>
             {
             chuckHook && Object.values(chuckHook).length && instrumentsVisible
