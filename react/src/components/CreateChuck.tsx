@@ -137,7 +137,7 @@ export default function CreateChuck(props: any) {
         setTreeAtSelected(x);
     };
 
-    const handleUpdateRawTree = (name: string) => {
+    const handleUpdateRawTree = (name: string, operation: string) => {
         const arrContainerUpdateTree = [];
         const childrenUpdated = {name: name, children: []};
         console.log('TREE DEPTH! ', treeDepth);
@@ -145,7 +145,15 @@ export default function CreateChuck(props: any) {
             arrContainerUpdateTree.push(childrenUpdated);
         } else {
             if (childrenUpdated) {
-                treeAtSelected.data.children.push(childrenUpdated);
+                if (operation === "add") {
+                    treeAtSelected.data.children.push(childrenUpdated);
+                } else if (operation === "remove") {
+                    if (treeAtSelected.data.children.length === 0) {
+                        treeAtSelected.parent.data.children = treeAtSelected.parent.data.children.splice(treeAtSelected.parent.data.children.indexOf(treeAtSelected), 1);
+                    } else {
+                        treeAtSelected.data.children = [];
+                    }
+                }
                 const splicedTree = {...treeAtSelected.parent, treeAtSelected: {children: [treeAtSelected.data]}};
                 // this and the outer setting update the tree
                 setNewestSetting(splicedTree);
@@ -158,7 +166,11 @@ export default function CreateChuck(props: any) {
 
     const handleAddStep = () => {
         const name = prompt('What is the name of your new node?');
-        return handleUpdateRawTree(name);
+        return handleUpdateRawTree(name, "add");
+    };
+
+    const handleRemoveStep = () => {
+        return handleUpdateRawTree("", "remove");
     };
 
     const vizArray = [<Example width={500} height={500} />, <Example2 key={newestSetting.name} width={800} height={500} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />, <Box>Updating...</Box>];
@@ -861,6 +873,7 @@ export default function CreateChuck(props: any) {
             <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
             <Button onClick={handleToggleViz}>TOGGLE VIZ</Button>
             <Button onClick={handleAddStep}>Add Step</Button>
+            <Button onClick={handleRemoveStep}>Remove Step</Button>
             <ParentSize key={newestSetting.name} style={{overflowY: "scroll"}}>{({ width, height }) => vizArray[vizItem]}</ParentSize>
             {
             chuckHook && Object.values(chuckHook).length && instrumentsVisible
