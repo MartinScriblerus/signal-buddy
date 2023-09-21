@@ -34,6 +34,13 @@ export interface TreeNode {
     children?: this[];
 }
 
+export interface TreeAtSelected {
+    data: any;
+    depth: number;
+    children: any[];
+    parent: any;
+}
+
 let modsDefault: any = [
     {
         key: 'mod_1', 
@@ -116,7 +123,7 @@ export default function CreateChuck(props: any) {
 
     const [vizItem, setVizItem] = useState(0);
     const [treeDepth, setTreeDepth] = React.useState<number>(0);
-    const [treeAtSelected, setTreeAtSelected] = React.useState<string>("");
+    const [treeAtSelected, setTreeAtSelected] = React.useState<TreeAtSelected>({data: {}, depth: 0, children: [], parent: {}});
     const [vizComponent, setVizComponent] = useState<any>(<></>);
 
     const [newestSetting, setNewestSetting] = useState(rawTree);
@@ -128,46 +135,37 @@ export default function CreateChuck(props: any) {
     const getLatestTreeSettings = (x: any) => {
         console.log("TREE SETTINGS in CREATE CHUCK: ", x);
         setTreeAtSelected(x);
-        // setNewestSetting(rawTree.children.push());
-    // console.log("NEWEST SETTING HOOK: ", newestSetting);
-    // if (newestSetting) {
-        // rawTree.children[0].children.push({
-        //     name: `${newestSetting}_UPDATE`,
-        //     children: [
-        //         {name: "Fuq_ya_1"},
-        //         {name: "ell_ya_2"},
-        //     ],
-        // });
-    // }
     };
 
     const handleUpdateRawTree = (name: string) => {
-        console.log('fuck this shit: ', name);
-        // rawTree.children.push({name: name, children: []})
+        const arrContainerUpdateTree = [];
         const childrenUpdated = {name: name, children: []};
-        setNewestSetting({...newestSetting, children: [...newestSetting.children, childrenUpdated]});
+        console.log('TREE DEPTH! ', treeDepth);
+        if (treeDepth === 0) {
+            arrContainerUpdateTree.push(childrenUpdated);
+        } else {
+            if (childrenUpdated) {
+                treeAtSelected.data.children.push(childrenUpdated);
+                const splicedTree = {...treeAtSelected.parent, treeAtSelected: {children: [treeAtSelected.data]}};
+                // this and the outer setting update the tree
+                setNewestSetting(splicedTree);
+            }
+        }
+        // here we update the tree array
+        setNewestSetting({...newestSetting, children: [...newestSetting.children]});
         return childrenUpdated.name;
     };
 
     const handleAddStep = () => {
         const name = prompt('What is the name of your new node?');
         return handleUpdateRawTree(name);
-        // console.log('nodeName: ', nodeName);
-        ///rawTree.children.push({name: `${nodeName}_par`, children: [{name: `${nodeName}`}]});
-        // // console.log("WHAT IS THAT RAWTREE ARRAY??? ", rawTree);
-        // console.log("WHAT IS CURR POS ARRAY??? ", currPosData);    
-        // rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
-
     };
 
     const vizArray = [<Example width={500} height={500} />, <Example2 key={newestSetting.name} width={800} height={500} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />, <Box>Updating...</Box>];
 
-
-
     // setVizComponent(vizArray[vizItem]);
 
     useEffect(() => {
-        console.log("YO TREE AT SEL. ", treeAtSelected);
         setVizComponent(vizArray[1]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newestSetting]);
@@ -218,9 +216,9 @@ export default function CreateChuck(props: any) {
     }, [newestSetting]);
 
     useEffect(() => {
-        console.log("MMMMAAAAYYYYBBBBEEEE???? ", Object.keys(rawTree).flat().length);
-        console.log("DEPTH IS ", treeDepth);
-        console.log("STRING DEPTH IS ", treeAtSelected);
+        if (treeDepth !== treeAtSelected.depth) {
+            setTreeDepth(treeAtSelected.depth);
+        }
         setVizComponent(vizArray[1]);
     }, [treeDepth, treeAtSelected]);
 
@@ -277,9 +275,7 @@ export default function CreateChuck(props: any) {
             });
             setLoaded(true);
             setLastBpm(bpm);
-
             // setRunning(1);
-
     }
 
     let midi = null; // global MIDIAccess object
@@ -459,8 +455,6 @@ export default function CreateChuck(props: any) {
         return octaves;
     }
     
-    // const vizComponent = <Example width={500} height={500} />
-
     const submitMingus = async () => {
         console.log("DO WE HAVE AUDIOKEY??? ", audioKey);
         axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {audioKey, audioScale, octave}, {
@@ -518,9 +512,6 @@ export default function CreateChuck(props: any) {
         }
         return modsHook.map((i: any, idx: number) => {
             console.log("MODS HOOK ITEM ", idx, i);
-            // <Draggable key={`draggableKey_${idx}`} draggableId={`draggableId_${idx}`} index={idx}>
-            //     {(provided) => <li ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}></li>}
-            // </Draggable>
         });
     }
 
@@ -617,7 +608,7 @@ export default function CreateChuck(props: any) {
                     }
                     // gotData.forEach((d: any) => {
                     //     if (realTimeChordsDataObj.indexOf(d) === -1) {
-                            setRealTimeChordsDataObj((realTimeChordsDataObj) => [[], [gotData]]);
+                    setRealTimeChordsDataObj((realTimeChordsDataObj) => [[], [gotData]]);
                     //     }
                     // });
 
@@ -859,7 +850,6 @@ export default function CreateChuck(props: any) {
             setBpm(inputBPM);
         }
     };
-    const value = { newestSetting, setNewestSetting };
 
     return (
         <>

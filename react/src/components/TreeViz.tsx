@@ -141,7 +141,7 @@ function Node( x: NodeType) {
         onClick={() => {
           setSelectedNode(JSON.stringify(node.data.name));
           getLatestTreeSettings(node);
-          alert(`clicked: ${JSON.stringify(node.data.name)} / depth: ${node.depth} / root?: ${isRoot} / parent?: ${isParent}`);
+          alert(`clicked: ${JSON.stringify(node.data.name)} / height: ${node.height} / depth: ${node.depth} / root?: ${isRoot} / parent?: ${isParent}`);
         }}
       />
       <text
@@ -172,6 +172,8 @@ export type TreeProps = {
 };
 
 export default function Example2({ width, height, margin = defaultMargin, rawTree, handleUpdateRawTree, currPosData, getLatestTreeSettings, handleAddStep }: TreeProps) {
+  console.log('WHAT IS PROBLEMATIC RAW TREEE? ', rawTree);
+  rawTree.children.map((child: any) => child !== undefined);
   const data = useMemo(() => hierarchy(rawTree), [rawTree]);
   const yMax = height - margin.top - margin.bottom;
   const xMax = width - margin.left - margin.right;
