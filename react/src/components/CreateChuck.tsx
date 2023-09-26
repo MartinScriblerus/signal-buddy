@@ -24,6 +24,18 @@ declare global {
     }
 }
 
+export interface LibrosaData {
+    beats: Array<any>,
+    tempo: number,
+    boundTimes: Array<number>,
+    pitches: {
+      times: Array<number>;
+      hzs: Array<number>;
+      midis: Array<number>;
+      magnitudes: Array<number>;
+    },
+  };
+
 // export interface TreeContext {
 //     newestSetting: string;
 //     setNewestSetting: React.Dispatch<React.SetStateAction<string>>;
@@ -65,6 +77,17 @@ export default function CreateChuck(props: any) {
     const [audioScale, setAudioScale] = useState('Major');
     const [audioChord, setAudioChord] = useState('M');
     const [mingusData, setMingusData] = useState<any>([]);
+    const [librosaData, setLibrosaData] = useState<LibrosaData>({
+        beats: [],
+        tempo: 60,
+        boundTimes: [],
+        pitches: {
+            times: [],
+            hzs: [],
+            magnitudes: [],
+            midis: [],
+        },
+    });
     // const [mingusChordsData, setMingusChordsData] = useState<any>([]);
     const [keysVisible, setKeysVisible] = useState(false);
     const [instrumentsVisible, setInstrumentsVisible] = useState(false);
@@ -126,6 +149,7 @@ export default function CreateChuck(props: any) {
     const [treeAtSelected, setTreeAtSelected] = React.useState<TreeAtSelected>({data: {}, depth: 0, children: [], parent: {}});
     const [vizComponent, setVizComponent] = useState<any>(<></>);
     const [nextTreeItem, setNextTreeItem] = useState<any>('step');
+    const [ticksDatas, setTicksDatas] = useState<any>([])
 
     const [newestSetting, setNewestSetting] = useState(rawTree);
     const [modsHook, setModsHook] = useState<any>(modsDefault);
@@ -184,7 +208,15 @@ export default function CreateChuck(props: any) {
         return handleUpdateRawTree("", "remove");
     };
 
-    const vizArray = [<Example width={500} height={500} />, <Example2 key={newestSetting.name} width={800} height={500} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />, <Box>Updating...</Box>];
+    const handleUpdateTicks = (ticks: any) => {
+        setTicksDatas(ticks);
+    };
+
+    useEffect(() => {
+        console.log("TICKS DATA IN CREATE CHUCK: ", ticksDatas);
+    }, [ticksDatas]);
+
+    const vizArray = [<Example width={500} height={500} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />, <Example2 key={newestSetting.name} width={800} height={500} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />, <Box>Updating...</Box>];
 
     // setVizComponent(vizArray[vizItem]);
 
@@ -230,7 +262,6 @@ export default function CreateChuck(props: any) {
     }
 
     useEffect(() => {
-        console.log("WOO HOO NEWEST SETTING: ", newestSetting);
         setVizComponent(vizArray[2]);
         // vizComponent.current = vizArray[2];
         return () => {
@@ -390,6 +421,7 @@ export default function CreateChuck(props: any) {
             datas[0].data.times.map((time: any, idx: number) => {
                 if (idx === datas[0].data.times.length - 1) {
                     console.log('DATA: ', datas[0].data);
+                    setLibrosaData(datas[0].data)
                     return datas[0].data;
                 }
             })

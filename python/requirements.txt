@@ -18,6 +18,7 @@ cachetools==5.3.1
 certifi==2023.5.7
 cffi==1.15.1
 charset-normalizer==3.1.0
+click==7.1.2
 cmake==3.26.4
 comm==0.1.3
 contourpy==1.1.0
@@ -32,6 +33,7 @@ executing==1.2.0
 fastjsonschema==2.17.1
 ffmpeg==1.4
 ffmpeg-python==0.2.0
+Flask==2.0.3
 Flask-Cors==3.0.10
 Flask-RESTful==0.3.10
 flatbuffers==1.12
@@ -126,6 +128,7 @@ pyasn1==0.5.0
 pyasn1-modules==0.3.0
 pyAudioAnalysis==0.3.14
 pycparser==2.21
+pyee==11.0.0
 Pygments==2.15.1
 pyparsing==3.0.9
 pyrsistent==0.19.3

@@ -4,16 +4,21 @@ import Button from '@mui/material/Button'
 import ExampleControls from './ExampleControls';
 import CustomChartBackground from './CustomChartBackground';
 import BaseBrush from '@visx/brush/lib/BaseBrush';
+import { LibrosaData } from './CreateChuck';
 
 export type XYChartProps = {
   width: number;
   height: number;
+  librosaData: LibrosaData;
+  setTicksDatas: (x) => void;
+  ticksDatas: Array<number>;
 };
 
-type City = 'San Francisco' | 'New York' | 'Austin';
+type City = 'San Francisco' | 'New York' | 'Austin' | 'Times' | 'Hzs' | 'Magnitudes';
 
-export default function Example({ height }: XYChartProps) {
+export default function Example({ height, librosaData, setTicksDatas, ticksDatas }: XYChartProps) {
     const [dataVizControlsOpen, setDataVizControlsOpen] = useState(true);  
+    const [newData, setNewData] = useState([]);
 
     const handleChangeDataVizControls = async () => {
       console.log('here in handleChangeDataVizControls!');
@@ -26,12 +31,52 @@ export default function Example({ height }: XYChartProps) {
       setDataVizControlsOpen(!dataVizControlsOpen);
     }
 
+    useEffect(() => {
+      setNewData([]);
+      console.log('librosaData in XYChartWrapper: ', librosaData);
+      if (!librosaData) {
+        return;
+      }
+      
+      (async() => {
+        const newLibrosaData: LibrosaData | Promise<LibrosaData> = await librosaData;
+        // newLibrosaData.pitches.times.forEach((a: any, idx: number) => {
+        const testPitchMap = newLibrosaData.pitches.times.map((a: any) => a);
+        const ticksData = newLibrosaData.boundTimes.map((a: any) => a);
+        setTicksDatas(ticksData);
+        console.log("TICKS DATA: ", ticksData);
+        console.log("TEST PITCH MAP: ", testPitchMap);
+        newLibrosaData.beats.forEach((a: any, idx: number) => {
+          const index = newLibrosaData.pitches.times.indexOf(Math.floor(parseInt(String(a))));
+          const midiNums = librosaData.pitches.midis.map((i) => +i);
+          const maxMidiNum = Math.max(...midiNums);
+          const parsedString: string | number = +a;
+          const d = {
+            // date: librosaData.pitches.times[index],
+            date: +a.toFixed(3),
+          };
+          d['San Francisco'] = [];
+          d.date = parsedString;
+          d['San Francisco'] = librosaData.pitches.midis[index];
+          // d['New York'] = +d['New York'];
+          // d['Austin'] = librosaData.pitches.magnitudes[index];
+          d['New York'] = +librosaData.pitches.magnitudes[index] + maxMidiNum;
+          setNewData((newData) => [...newData, d]);
+        });
+
+      })();
+    }, [librosaData]);
+
+    useEffect(() => {
+      console.log('^^^^^^^^^^^newData in XYChartWrapper: ', newData);
+    }, [newData]);
+
     return (
     <>
       <Button id="btnDataVizControls" onClick={handleChangeDataVizControls}>Data Controls</Button>
-      {<h1>{dataVizControlsOpen}</h1>}
-      <ExampleControls >
-      {({
+        {<h1>{dataVizControlsOpen}</h1>}
+      <ExampleControls>
+      { ({
         accessors,
         animationTrajectory,
         annotationDataKey,
@@ -90,6 +135,9 @@ export default function Example({ height }: XYChartProps) {
         XYChart,
       }) => (
         <>
+        {console.log('DATA IS>>>>>>> ', config)}
+        {console.log('NEWDATA IS>>>>>>> ', newData)}
+        
         <XYChart
 
           theme={theme}
@@ -109,25 +157,25 @@ export default function Example({ height }: XYChartProps) {
             rows={showGridRows}
             columns={showGridColumns}
             // animationTrajectory={animationTrajectory}
-            numTicks={numTicks}
+            numTicks={ticksDatas.length}
           />
           {renderBarStack && (
             <BarStack offset={stackOffset}>
               <BarSeries
                 dataKey="New York"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['New York']}
                 yAccessor={accessors.y['New York']}
               />
               <BarSeries
                 dataKey="San Francisco"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['San Francisco']}
                 yAccessor={accessors.y['San Francisco']}
               />
               <BarSeries
                 dataKey="Austin"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x.Austin}
                 yAccessor={accessors.y.Austin}
               />
@@ -137,21 +185,21 @@ export default function Example({ height }: XYChartProps) {
             <BarGroup>
               <BarSeries
                 dataKey="New York"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['New York']}
                 yAccessor={accessors.y['New York']}
                 colorAccessor={colorAccessorFactory('New York')}
               />
               <BarSeries
                 dataKey="San Francisco"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['San Francisco']}
                 yAccessor={accessors.y['San Francisco']}
                 colorAccessor={colorAccessorFactory('San Francisco')}
               />
               <BarSeries
                 dataKey="Austin"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x.Austin}
                 yAccessor={accessors.y.Austin}
                 colorAccessor={colorAccessorFactory('Austin')}
@@ -161,7 +209,7 @@ export default function Example({ height }: XYChartProps) {
           {renderBarSeries && (
             <BarSeries
               dataKey="New York"
-              data={data}
+              data={newData}
               xAccessor={accessors.x['New York']}
               yAccessor={accessors.y['New York']}
               colorAccessor={colorAccessorFactory('New York')}
@@ -171,7 +219,7 @@ export default function Example({ height }: XYChartProps) {
             <>
               <AreaSeries
                 dataKey="Austin"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x.Austin}
                 yAccessor={accessors.y.Austin}
                 fillOpacity={0.4}
@@ -179,7 +227,7 @@ export default function Example({ height }: XYChartProps) {
               />
               <AreaSeries
                 dataKey="New York"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['New York']}
                 yAccessor={accessors.y['New York']}
                 fillOpacity={0.4}
@@ -187,7 +235,7 @@ export default function Example({ height }: XYChartProps) {
               />
               <AreaSeries
                 dataKey="San Francisco"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['San Francisco']}
                 yAccessor={accessors.y['San Francisco']}
                 fillOpacity={0.4}
@@ -199,21 +247,21 @@ export default function Example({ height }: XYChartProps) {
             <AreaStack curve={curve} offset={stackOffset} renderLine={stackOffset !== 'wiggle'}>
               <AreaSeries
                 dataKey="Austin"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x.Austin}
                 yAccessor={accessors.y.Austin}
                 fillOpacity={0.4}
               />
               <AreaSeries
                 dataKey="New York"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['New York']}
                 yAccessor={accessors.y['New York']}
                 fillOpacity={0.4}
               />
               <AreaSeries
                 dataKey="San Francisco"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['San Francisco']}
                 yAccessor={accessors.y['San Francisco']}
                 fillOpacity={0.4}
@@ -224,7 +272,7 @@ export default function Example({ height }: XYChartProps) {
             <>
               <LineSeries
                 dataKey="Austin"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x.Austin}
                 yAccessor={accessors.y.Austin}
                 curve={curve}
@@ -232,7 +280,7 @@ export default function Example({ height }: XYChartProps) {
               {!renderBarSeries && (
                 <LineSeries
                   dataKey="New York"
-                  data={data}
+                  data={newData}
                   xAccessor={accessors.x['New York']}
                   yAccessor={accessors.y['New York']}
                   curve={curve}
@@ -240,7 +288,7 @@ export default function Example({ height }: XYChartProps) {
               )}
               <LineSeries
                 dataKey="San Francisco"
-                data={data}
+                data={newData}
                 xAccessor={accessors.x['San Francisco']}
                 yAccessor={accessors.y['San Francisco']}
                 curve={curve}
@@ -250,7 +298,7 @@ export default function Example({ height }: XYChartProps) {
           {renderGlyphSeries && (
             <GlyphSeries
               dataKey="San Francisco"
-              data={data}
+              data={newData}
               xAccessor={accessors.x['San Francisco']}
               yAccessor={accessors.y['San Francisco']}
               renderGlyph={renderGlyph}
@@ -260,20 +308,20 @@ export default function Example({ height }: XYChartProps) {
           <Axis
             key={`time-axis-${animationTrajectory}-${renderHorizontally}`}
             orientation={renderHorizontally ? yAxisOrientation : xAxisOrientation}
-            numTicks={numTicks}
+            numTicks={ticksDatas.length}
             // animationTrajectory={animationTrajectory}
           />
           <Axis
             key={`temp-axis-${animationTrajectory}-${renderHorizontally}`}
             label={
               stackOffset == null
-                ? 'Temperature (°F)'
+                ? 'Number (°)'
                 : stackOffset === 'expand'
-                ? 'Fraction of total temperature'
+                ? 'Fraction of total ... '
                 : ''
             }
             orientation={renderHorizontally ? xAxisOrientation : yAxisOrientation}
-            numTicks={numTicks}
+            numTicks={ticksDatas.length}
             // animationTrajectory={animationTrajectory}
             // values don't make sense in stream graph
             tickFormat={stackOffset === 'wiggle' ? () => '' : undefined}
@@ -294,6 +342,7 @@ export default function Example({ height }: XYChartProps) {
               ) : (
                 <AnnotationLineSubject />
               )}
+              {annotationDatum.date}
               <AnnotationLabel
                 title={annotationDataKey}
                 subtitle={`${annotationDatum.date}, ${annotationDatum[annotationDataKey]}°F`}

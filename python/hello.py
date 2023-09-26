@@ -57,17 +57,22 @@ def detect_pitch(y, sr, times):
         'hzs': [],
         'justs': [],
         'magnitudes': [],
+        'times': [],
     }
-    pitches, magnitudes = librosa.core.piptrack(y=y, sr=sr, fmin=75, fmax=1600)
+    pitches, magnitudes = librosa.core.piptrack(y=y, sr=sr, S=None, n_fft=2048, hop_length=None, fmin=150.0, fmax=2000.0, threshold=0.1, win_length=None, window='hann', center=True, pad_mode='constant', ref=None)
     pitches[pitches > 1e308] = 0
     for idx, t in enumerate(np.nditer(times)):
         index = magnitudes[:, t.astype(int)].argmax()
+        print('HERE IS A PITCH: ', pitches[index, t.astype(int)].tolist())
+        print('HERE IS MEAN: ', pitches.mean())
+        print('HERE IS STD: ', pitches.std())
         if (f'note_{t.astype(int)}' not in pitch_values['notes'] and pitches[index, t.astype(int)]):
             pitch_values['notes'].append(librosa.hz_to_note(pitches[index, t.astype(int)]))
             pitch_values['midis'].append(librosa.hz_to_midi(pitches[index, t.astype(int)]))
             pitch_values['justs'].append(librosa.hz_to_fjs(pitches[index, t.astype(int)]))
             pitch_values['hzs'].append(pitches[index, t.astype(int)].tolist())
             pitch_values['magnitudes'].append(magnitudes[index, t.astype(int)].tolist())
+            pitch_values['times'].append(t.astype(int).tolist())
     return pitch_values
 
 @app.route('/api/onsets/<file_path>', methods=['POST'])
@@ -103,46 +108,68 @@ def onsets(file_path):
         # # Separate harmonics and percussives into two waveforms
         y_harmonic, y_percussive = librosa.effects.hpss(y)
         print('got harmonic & percussive tracks')
+        
+
+
         # Beat track on the percussive signal
-        onset_env = librosa.onset.onset_strength(y=y_percussive, sr=sr, aggregate=np.median)
+        onset_env = librosa.onset.onset_strength(y=y, sr=sr, aggregate=np.median)
         print('got onset env')
+        onset_times = librosa.frames_to_time(librosa.onset.onset_detect(onset_envelope=onset_env, sr=sr), sr=sr)
+        print('got onset times: ', onset_times)
         tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
         beat_times = librosa.frames_to_time(beats, sr=sr)
-        print('beat tracked on percussive')
-        # Compute MFCC features from the raw signal
-        # numpy array corresponding to track duration in frames 
-        mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=hop_length, n_mfcc=13)
+        
+        onset_env_harmonic = librosa.onset.onset_strength(y=y, sr=sr, aggregate=np.median)
+        onset_times_harmonic = librosa.frames_to_time(librosa.onset.onset_detect(onset_envelope=onset_env_harmonic, sr=sr), sr=sr)
+   
+        # print('beat tracked on percussive')
+        # # Compute MFCC features from the raw signal
+        # # numpy array corresponding to track duration in frames 
+        # mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=hop_length, n_mfcc=13)
 
-        # And the first-order differences (delta features)
-        mfcc_delta = librosa.feature.delta(mfcc)
+        # # # And the first-order differences (delta features)
+        # mfcc_delta = librosa.feature.delta(mfcc)
 
-        # Stack and synchronize between beat events
-        # This time, we'll use the mean value (default) instead of median
-        beat_mfcc_delta = librosa.util.sync(np.vstack([mfcc, mfcc_delta]), beats)
+        # # # Stack and synchronize between beat events
+        # # # This time, we'll use the mean value (default) instead of median
+        # beat_mfcc_delta = librosa.util.sync(np.vstack([mfcc, mfcc_delta]), beats)
 
-        # Compute chroma features from the harmonic signal
+        # # Compute chroma features from the harmonic signal
         chromagram = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr)
 
-        # Aggregate chroma features between beat events
-        # We'll use the median value of each feature between beat frames
+        # # Aggregate chroma features between beat events
+        # # We'll use the median value of each feature between beat frames
         beat_chroma = librosa.util.sync(chromagram, beats, aggregate=np.median)
-
-        # Finally, stack all beat-synchronous features together
-        beat_features = np.vstack([beat_chroma, beat_mfcc_delta])
+        bounds = librosa.segment.agglomerative(chromagram, 20)
+        bound_times = librosa.frames_to_time(bounds, sr=sr)
+        # # Finally, stack all beat-synchronous features together
+        # beat_features = np.vstack([beat_chroma, beat_mfcc_delta])
 
         times = librosa.frames_to_time(beats, sr=sr)
 
-        pV = detect_pitch(y_harmonic, sr, times)
+        print(onset_times_harmonic)
+
+        pV = detect_pitch(y, sr, times)
+        # pV_harmonic = detect_pitch(y_harmonic, sr, onset_times_harmonic)
         print('sending that data!')
 
-        return [{'data': {
+        return json.dumps([{'data': {
             'tempo': tempo,
             'pitches': pV,
-            'beatFeatures: ': beat_features.tolist(), 
+            #'beatFeatures: ': beat_features.tolist(), 
             'beats': beat_times.tolist(),
             'times': times.tolist(),
+            'boundTimes': bound_times.tolist(),
+            # 'pYin': {
+            #     'f0': p_yin[0], 
+            #     'voiced_flag': p_yin[1], 
+            #     'voiced_probs': p_yin[2], 
+            #     'times': p_yin[3], 
+            #     'D': p_yin[4]
+            # }
+            #'harmonicPitches': pV_harmonic,
             # 'spleeter_files': spleeter_files,
-        }}]
+        }}])
 
 def midi_name_to_num_helper(idx, scale):
     start = notes.note_to_int(scale[0])

@@ -15,7 +15,6 @@ import getAnimatedOrUnanimatedComponents from './getAnimatedOrUnanimatedComponen
 import buildChartTheme from './customTheme';
 import styles from '../styles/VizControls.module.css';
 
-
 const dateScaleConfig = { type: 'band', paddingInner: 0.3 } as const;
 const temperatureScaleConfig = { type: 'linear' } as const;
 const numTicks = 4;
@@ -23,12 +22,12 @@ const numTicks = 4;
 const defaultAnnotationDataIndex = 13;
 const selectedDatumPatternId = 'xychart-selected-datum';
 
-type Accessor = (d: CityTemperature) => number | string;
+type Accessor = (d: any) => number | string;
 
 interface Accessors {
   'San Francisco': Accessor;
   'New York': Accessor;
-  Austin: Accessor;
+  'Austin': Accessor;
 }
 
 type DataKey = keyof Accessors;
@@ -41,18 +40,19 @@ type ProvidedProps = {
     y: Accessors;
     date: Accessor;
   };
+  newData: Array<any>;
   animationTrajectory?: AnimationTrajectory;
   annotationDataKey: DataKey | null;
-  annotationDatum?: CityTemperature;
+  annotationDatum?: any;
   annotationLabelPosition: { dx: number; dy: number };
   annotationType?: 'line' | 'circle';
-  colorAccessorFactory: (key: DataKey) => (d: CityTemperature) => string | null;
+  colorAccessorFactory: (key: DataKey) => (d: any) => string | null;
   config: {
     x: SimpleScaleConfig;
     y: SimpleScaleConfig;
   };
   curve: typeof curveLinear | typeof curveCardinal | typeof curveStep;
-  data: CityTemperature[];
+  data: Array<any>;
   editAnnotationLabelPosition: boolean;
   numTicks: number;
   setAnnotationDataIndex: (index: number) => void;
@@ -63,10 +63,10 @@ type ProvidedProps = {
   renderBarGroup: boolean;
   renderBarSeries: boolean;
   renderBarStack: boolean;
-  renderGlyph: React.FC<GlyphProps<CityTemperature>>;
+  renderGlyph: React.FC<GlyphProps<any>>;
   renderGlyphSeries: boolean;
   enableTooltipGlyph: boolean;
-  renderTooltipGlyph: React.FC<RenderTooltipGlyphProps<CityTemperature>>;
+  renderTooltipGlyph: React.FC<RenderTooltipGlyphProps<any>>;
   renderHorizontally: boolean;
   renderLineSeries: boolean;
   sharedTooltip: boolean;
@@ -88,6 +88,9 @@ type ControlsProps = {
 };
 
 export default function ExampleControls({ children }: ControlsProps ) {
+  let u;
+  Object.entries(children).length > 0 ? u = {children} : u = children
+
   const [useAnimatedComponents, setUseAnimatedComponents] = useState(!userPrefersReducedMotion());
   const [theme, setTheme] = useState<XYChartTheme>(buildChartTheme);
   const [animationTrajectory, setAnimationTrajectory] = useState<AnimationTrajectory | undefined>(
@@ -99,6 +102,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
   const [yAxisOrientation, setYAxisOrientation] = useState<'left' | 'right'>('left');
   const [renderHorizontally, setRenderHorizontally] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
+  // const [newDatas, setNewDatas] = useState<ProvidedProps['newData']>(newData);
   const [annotationDataKey, setAnnotationDataKey] =
     useState<ProvidedProps['annotationDataKey']>(null);
   const [annotationType, setAnnotationType] = useState<ProvidedProps['annotationType']>('circle');
@@ -123,9 +127,8 @@ export default function ExampleControls({ children }: ControlsProps ) {
   const [missingValues, setMissingValues] = useState(false);
   const [glyphComponent, setGlyphComponent] = useState<'star' | 'cross' | 'circle' | '🍍'>('star');
   const [curveType, setCurveType] = useState<'linear' | 'cardinal' | 'step'>('linear');
-
-
-  const data = cityTemperature.slice(225, 275);
+  // const data = cityTemperature.slice(225, 275);
+  const data = [];
   const dataMissingValues = data.map((d, i) =>
     i === 10 || i === 11
       ? { ...d, 'San Francisco': 'nope', 'New York': 'notanumber', Austin: 'null' }
@@ -133,11 +136,11 @@ export default function ExampleControls({ children }: ControlsProps ) {
   );
   const dataSmall = data.slice(0, 15);
   const dataSmallMissingValues = dataMissingValues.slice(0, 15);
-  const getDate = (d: CityTemperature) => d.date;
-  const getSfTemperature = (d: CityTemperature) => Number(d['San Francisco']);
-  const getNegativeSfTemperature = (d: CityTemperature) => -getSfTemperature(d);
-  const getNyTemperature = (d: CityTemperature) => Number(d['New York']);
-  const getAustinTemperature = (d: CityTemperature) => Number(d.Austin);
+  const getDate = (d: any) => parseFloat(d.date).toFixed(3);
+  const getSfTemperature = (d: any) => parseFloat(Number(d['San Francisco']).toFixed(3));
+  const getNegativeSfTemperature = (d: any) => -parseFloat(getSfTemperature(d).toFixed(3));
+  const getNyTemperature = (d: any) => parseFloat(Number(d['New York']).toFixed(3));
+  const getAustinTemperature = (d: any) => parseFloat(Number(d.Austin).toFixed(3));
   
   const glyphOutline = theme.gridStyles.stroke;
   const renderGlyph = useCallback(
@@ -149,7 +152,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
       onPointerMove,
       onPointerOut,
       onPointerUp,
-    }: GlyphProps<CityTemperature>) => {
+    }: GlyphProps<any>) => {
       const handlers = { onPointerMove, onPointerOut, onPointerUp };
       if (glyphComponent === 'star') {
         return (
@@ -209,7 +212,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
       onPointerOut,
       onPointerUp,
       isNearestDatum,
-    }: RenderTooltipGlyphProps<CityTemperature>) => {
+    }: RenderTooltipGlyphProps<any>) => {
       const handlers = { onPointerMove, onPointerOut, onPointerUp };
       if (tooltipGlyphComponent === 'star') {
         return (
@@ -250,7 +253,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
   );
   // for series that support it, return a colorAccessor which returns a custom color if the datum is selected
   const colorAccessorFactory = useCallback(
-    (dataKey: DataKey) => (d: CityTemperature) =>
+    (dataKey: DataKey) => (d: any) =>
       annotationDataKey === dataKey && d === data[annotationDataIndex]
         ? `url(#${selectedDatumPatternId})`
         : null,
@@ -266,7 +269,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
             : getSfTemperature
           : getDate,
         'New York': renderHorizontally ? getNyTemperature : getDate,
-        Austin: renderHorizontally ? getAustinTemperature : getDate,
+        'Austin': renderHorizontally ? getAustinTemperature : getDate,
       },
       y: {
         'San Francisco': renderHorizontally
@@ -275,7 +278,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
           ? getNegativeSfTemperature
           : getSfTemperature,
         'New York': renderHorizontally ? getDate : getNyTemperature,
-        Austin: renderHorizontally ? getDate : getAustinTemperature,
+        'Austin': renderHorizontally ? getDate : getAustinTemperature,
       },
       date: getDate,
     }),
@@ -305,6 +308,13 @@ export default function ExampleControls({ children }: ControlsProps ) {
         annotationType,
         colorAccessorFactory,
         config,
+        newData: fewerDatum
+        ? missingValues
+          ? dataSmallMissingValues
+          : dataSmall
+        : missingValues
+        ? dataMissingValues
+        : data,
         curve:
           (curveType === 'cardinal' && curveCardinal) ||
           (curveType === 'step' && curveStep) ||
