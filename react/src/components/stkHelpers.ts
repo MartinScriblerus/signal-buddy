@@ -651,7 +651,10 @@ export async function SAMPLER(
     bpm: number, 
     noteDivisions: number, 
     note: number, 
-    file: any, 
+    file: any,
+    samplePositionStart: number,
+    sampleRates: Array<number>,
+    sampleLength: number,
 ) {
     // function cloneAudioBuffer(fromAudioBuffer: any) {
     //     const audioBuffer = new AudioBuffer({
@@ -675,40 +678,28 @@ export async function SAMPLER(
 
     return (
         `
-        0 => int a => int t;
-        1 => int b;
-        15 => int c;
-
-        while( c > 0 ) 
-        {
-            a + b => t;
-            b => a;
-            <<<t => b>>>;
-            c - 1 => c;
-        }
         FileIO io;
-        // FileIO.help();
-        
 
+        
         io.dirList() @=> string fileList[];
 
         ${running} => int running;
         <<< "${running}" >>>;
 
         SndBuf buf => LiSa lisa => dac;
-        "wanna_die.wav" => string filename;
+        "loner.wav" => string filename;
         <<< filename >>>;
         <<< io.open( filename, FileIO.READ | FileIO.BINARY ) >>>;
-        <<< "IIIOOO: ", io.mode() >>>;
+
         filename => buf.read;
         <<< "SAMPS: ", buf.samples() >>>;
         0.5 => buf.gain;
         // 0.5 => buf.rate;
-        12611298 / 4 => buf.pos;
+        5845248 / ${samplePositionStart} => buf.pos;
         
-        500::ms => lisa.duration;
+        5000::ms => lisa.duration;
         1 => lisa.record;
-        500::ms => now;
+        5000::ms => now;
         0 => lisa.record;
         1 => lisa.loop;
         1 => lisa.play;
@@ -717,12 +708,12 @@ export async function SAMPLER(
         while(running > 0)
         {
             0 => lisa.playPos;
-            [-1.0, -0.7, -0.5, -1.0] @=> float rates[];
+            [${sampleRates}] @=> float rates[];
             for( float x : rates )
             {
                 // rates[Math.random2(0, rates.size()-1)] => lisa.rate;
                 x => lisa.rate;
-                2500::ms => now;
+                ${sampleLength}::ms => now;
             }
             
             // -1 => lisa.rate;

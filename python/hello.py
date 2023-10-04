@@ -140,7 +140,10 @@ def onsets(file_path):
         # # Aggregate chroma features between beat events
         # # We'll use the median value of each feature between beat frames
         beat_chroma = librosa.util.sync(chromagram, beats, aggregate=np.median)
-        bounds = librosa.segment.agglomerative(chromagram, 20)
+        segments = 20
+        if len(chromagram) < 20:
+            segments = len(chromagram)
+        bounds = librosa.segment.agglomerative(chromagram, segments)
         bound_times = librosa.frames_to_time(bounds, sr=sr)
         # # Finally, stack all beat-synchronous features together
         # beat_features = np.vstack([beat_chroma, beat_mfcc_delta])
@@ -456,7 +459,7 @@ def mingus_scales():
     print('REEEEEQ1 ', str(data))
     is_sharp = False
     print(str(data))
-    if ('audioKey' in data.keys() and len(data) and len(data['audioKey']) == 0) or len(data['theNote']) > 0:
+    if ('audioKey' in data.keys() and len(data) and len(data['audioKey']) == 0) or (data['theNote'] and len(data['theNote']) > 0):
         data['audioKey'] = data['theNote']
     data['audioKey'] = unidecode(data['audioKey'])
     if '#' in data['audioKey']:
@@ -723,12 +726,12 @@ def mingus_chords():
 
 @app.route('/api/note/<name>', methods=['POST', 'GET'])
 def note_name(name):
-    print('WTF : '  + name)
+    # print('WTF : '  + name)
     if(name):
         lib_note = librosa.note_to_midi(name)
         lib_hz = librosa.note_to_hz(name)
-        print("MIDI: ", lib_note)
-        print("HZ: ", lib_hz)
+        # print("MIDI: ", lib_note)
+        # print("HZ: ", lib_hz)
         return {"midiNote": lib_note, "midiHz": lib_hz}
 
 @app.route('/api/midi/send/<number>', methods=['POST', 'GET'])

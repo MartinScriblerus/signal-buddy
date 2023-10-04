@@ -10301,6 +10301,16 @@ temp-dir@^2.0.0:
   resolved "https://registry.npmjs.org/temp-dir/-/temp-dir-2.0.0.tgz"
   integrity sha512-aoBAniQmmwtcKp/7BzsH8Cxzv8OL736p7v1ihGb5e9DJ9kTwGWHrQrVB5+lfVDzfGrdRzXch+ig7LHaY1JTOrg==
 
+temp-write@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.npmjs.org/temp-write/-/temp-write-5.0.0.tgz"
+  integrity sha512-cJhnzBW7DjNox7VcZDXeNlQSkIh3mX/h+M0n0Fh+zgT7YAHwI9c+OngKx4MCiQCVx9iXxV104xYlJgDBCCtawA==
+  dependencies:
+    graceful-fs "^4.2.6"
+    is-stream "^2.0.0"
+    temp-dir "^2.0.0"
+    uuid "^8.3.2"
+
 tempy@^0.6.0:
   version "0.6.0"
   resolved "https://registry.npmjs.org/tempy/-/tempy-0.6.0.tgz"

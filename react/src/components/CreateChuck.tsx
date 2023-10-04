@@ -17,6 +17,10 @@ import Example2 from './TreeViz';
 import CLARINET, { CHORUS, STFKRP, SITAR, MOOG, MOOG2, RHODEY, FRNCHRN, MANDOLIN, SAXOFONY, SAMPLER } from './stkHelpers'
 // import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
 import CircularSlider from '@fseehawer/react-circular-slider';
+import fs from 'node:fs';
+import tempWrite from 'temp-write';
+import { midiHzConversions } from './midiHzConversions';
+
 
 declare global {
     interface HTMLLIElement {
@@ -66,7 +70,7 @@ let modsDefault: any = [
 ];
 
 export default function CreateChuck(props: any) {
-    const {game, datas, audioReady} = props;
+    const {game, datas, audioReady, uploadedFiles} = props;
     const theChuck = useRef<any>(undefined);
     const modsTemp: any = useRef([]);
     modsTemp.current = [];
@@ -151,9 +155,14 @@ export default function CreateChuck(props: any) {
     const [nextTreeItem, setNextTreeItem] = useState<any>('step');
     const [ticksDatas, setTicksDatas] = useState<any>([])
 
+    const [positionDenominator, setPositionDenominator] = useState(2);
+
     const [newestSetting, setNewestSetting] = useState(rawTree);
     const [modsHook, setModsHook] = useState<any>(modsDefault);
-    
+ 
+    const [samplePositionStart, setSamplePositionStart] = useState(2); // hardcoded nominator for now
+    const [sampleRates, setSampleRates] = useState([-0.3, -0.5, -0.7, -0.9, -1.99]); 
+    const [sampleLength, setSampleLength] = useState(250); // same as above 
     // const TreeContext = createContext<TreeContext>({newestSetting: newestSetting, setNewestSetting: () => {}});
     // const treeContext = useContext(TreeContext);
     
@@ -349,9 +358,13 @@ export default function CreateChuck(props: any) {
                 virtualFilename: 'ByronGlacier.wav'
             },
             // {
-            //     serverFilename: '//wanna_die.wav',
-            //     virtualFilename: '/wanna_die.wav'
+            //     serverFilename: '//loner.wav',
+            //     virtualFilename: '/loner.wav'
             // },
+            {
+                serverFilename: '/loner.wav',
+                virtualFilename: '/loner.wav'
+            },
             {
                 serverFilename: '/readData.ck',
                 virtualFilename: 'readData.ck'
@@ -404,11 +417,46 @@ export default function CreateChuck(props: any) {
             // Promise.resolve(theChuckTemp.promise).then(async (i: any) => {
                 game['theChuck'] = theChuckTemp;
                 // test beep
-                await theChuckTemp.runCode(` SinOsc osc => dac; 0.2 => osc.gain; 220 => osc.freq; .3::second => now; `);
+                // await theChuckTemp.runCode(` SinOsc osc => dac; 0.2 => osc.gain; 220 => osc.freq; .3::second => now; `);
+                console.log('three dirs down');
+                await theChuckTemp.runCode(`<<< me.dir(-1) >>>;`);
+                console.log('two dirs down');
+                await theChuckTemp.runCode(`<<< me.dir(-2) >>>;`);
+                console.log('one dir down');
+                await theChuckTemp.runCode(`<<< me.dir(-3) >>>;`);
+                // const fromS3 = await theChuckTemp.loadFile(`https://teemp.s3.us-east-2.amazonaws.com/LakeHouse_Scratch1_Redo.wav`);
                 return setChuckHook(theChuckTemp);
             // });       
         })();
     }, [game, chuckHook]);
+
+    useEffect(() => {
+        const fileReader  = new FileReader;
+        fileReader.onload = function(){
+         const arrayBuffer = this.result;
+        //  snippet.log(arrayBuffer);
+        //  snippet.log(arrayBuffer.byteLength);
+         }
+         if (!uploadedFiles.length) {
+            return;
+        }
+        console.log("UPLOADED FILES: ", typeof uploadedFiles[uploadedFiles.length - 1], uploadedFiles[uploadedFiles.length - 1]);
+
+        const url = URL.createObjectURL(uploadedFiles[uploadedFiles.length - 1]);
+        
+        fetch(url)
+            .then(data => data.arrayBuffer()).then(async (buffer: any) => {
+                    await chuckHook.createFile("/", `uploaded_file${uploadedFiles[uploadedFiles.length - 1].name}.wav`, new Uint8Array(buffer));
+                    await chuckHook.runCode(`
+                        SndBuf buffer => dac;
+                        "/uploaded_file${uploadedFiles[uploadedFiles.length - 1].name}.wav" => buffer.read;
+                        buffer.samples() => buffer.pos;
+
+                        0 => buffer.pos;
+                        buffer.length() => now;
+                    `)
+                })
+    }, [uploadedFiles.length])
 
     useEffect(() => {
         if (!chuckHook || !datas) {
@@ -429,6 +477,7 @@ export default function CreateChuck(props: any) {
         }
     }, [datas, theChuck, loaded, chuckHook]);
     
+    const logOnly = [];
     const awaitNote = async (note: string) => {
         if(keysReady) {
             return;
@@ -438,12 +487,35 @@ export default function CreateChuck(props: any) {
             const getVals = axios.get(`${FLASK_API_URL}/note/${note}`, requestOptions);
             resolve(getVals);
         }).then(async (res: any) => {
+            logOnly.push({'note': note, 'data': res.data});
+            if(note === `B9`) {
+                console.log('GET THIS IN A FILE: ', JSON.stringify(logOnly));
+            }
             return await res.data;
         });
     };
 
+    const tryGetNote = (note: any) => {
+        const noteIndex1 = midiHzConversions.filter((i: any) => i.note === note);
+        const noteReady = noteIndex1[0].data;
+        return noteReady;
+    };
+
     const organizeRows = async(rowNum: number, note: string) => {
+        console.log("NOTE: ", note);
+        console.log("ROW NUM: ", rowNum);
         const noteReady = await awaitNote(note);
+        console.log("NOTEREADT ", noteReady);
+        // console.log("REAL NOTE READT: ", noteReady);
+        // const noteReady = await tryGetNote(note);
+
+        // const noteIndex1 = midiHzConversions.filter((i: any) => i.note === note);
+        // const noteReady = noteIndex1[0].data;
+        // console.log("Note ready: ", noteReady);
+        // const noteIndex = midiHzConversions.findIndex((i: any) => i.note === note);
+        // // const noteReady = noteIndex !== -1 ? midiHzConversions[noteIndex].data : null;
+
+        // console.log("noteVals: ", noteIndex);
         if (noteReady) {
             setKeysReady(true);
         } else {
@@ -460,6 +532,7 @@ export default function CreateChuck(props: any) {
     }
 
     const createKeys = () => {
+        console.log("here!!!")
         const octaves: Array<any> = [];
         // range from 0 to 10
         for (let i = 0; i < 10; i++) {
@@ -512,12 +585,13 @@ export default function CreateChuck(props: any) {
     
     const submitMingus = async () => {
         console.log("DO WE HAVE AUDIOKEY??? ", audioKey);
+        console.log("TEST HERE 1$");
         axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {audioKey, audioScale, octave}, {
             headers: {
               'Content-Type': 'application/json'
             }
           }).then(({data}) => setMingusData(data));
-        console.log("TEST HERE 1");
+        console.log("TEST HERE 1#");
         axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, audioKey}, {
             headers: {
               'Content-Type': 'application/json'
@@ -530,7 +604,6 @@ export default function CreateChuck(props: any) {
     }
 
     const handleInstrumentsVisible = () => {
-        console.log('errrr');
         setInstrumentsVisible(!instrumentsVisible);
     }
 
@@ -569,6 +642,44 @@ export default function CreateChuck(props: any) {
             console.log("MODS HOOK ITEM ", idx, i);
         });
     }
+
+    // useEffect(() => {
+    //     console.log('CHHHHHECKIT: ', uploadedFiles);
+    //     uploadedFiles.map(async (f: any, idx: number) => {
+    //         const reader = new FileReader();
+    //         // const dataURL = reader.readAsDataURL(f);
+    //         // console.log('WHAT IS DATA URL? ', dataURL);
+    //         console.log('CHHHHHECKIT: ', uploadedFiles);
+    //         const tryFetch = await axios.get('http://3.141.15.81/');
+    //         console.log('TRY FETCH SHIT: ', tryFetch);
+    //         const fileURLs = {};
+    //         reader.readAsDataURL(f);
+    //         reader.onload = async (e) => {
+    //             // fileURLs[idx] = reader.result as string;
+    //             console.log('DATAURL WITHIN: ', e.target.result);
+
+    //             const ch = chuckHook;
+    //             try {
+    //                 await ch.loadFile(e.target.result as string);
+    //                 await ch.runCode(`
+    //                 SndBuf buf => dac;
+
+    //                 me.dir() + ${e.target.result} => string test;
+    //                 test => buf.read;
+
+    //                 0.5 => buf.gain;
+    //                 1 => buf.pos;
+    //                 1 => buf.rate;
+    //                 0.5::second => now;
+    //                 0 => buf.pos;
+    //                 `)
+    //             } catch (e) {
+    //                 console.log('ERROR in loadfile: ', e);
+    //             }
+    //             console.log('CHUCK HOOK AFTER FILE UPLOAD IS ', ch);
+    //         }
+    //     });
+    // }, [uploadedFiles.length]);
 
     useEffect(() => {
         console.log('MINGUS DATA: ', mingusData);
@@ -632,6 +743,7 @@ export default function CreateChuck(props: any) {
                     theNote = convertedNote;
                 }
                 console.log('THE NOTE IN CREATECHUCK: ', theNote);
+                console.log("TEST HERE 2$");
                 axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {theNote, audioScale, theOctave}, {
                     headers: {
                     'Content-Type': 'application/json'
@@ -650,6 +762,7 @@ export default function CreateChuck(props: any) {
                     });
                 });
 
+                console.log("TEST HERE 2#");
                 axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, theNote, theOctave}, {
                     headers: {
                     'Content-Type': 'application/json'
@@ -752,9 +865,9 @@ export default function CreateChuck(props: any) {
                 setLastNote(note);
                 // await noteOff(note);
                 
-                await result.loadFile("./wanna_die.wav").then(async (res: any) => {
-                    const fl = fetch("./wanna_die.wav");
-                    midiCode.current = await SAMPLER(1, bpm, timeSignature, note, fl);
+                await result.loadFile("./loner.wav").then(async (res: any) => {
+                    const fl = fetch("./loner.wav");
+                    midiCode.current = await SAMPLER(1, bpm, timeSignature, note, fl, samplePositionStart, sampleRates, sampleLength);
                 });
             }
 
@@ -906,6 +1019,24 @@ export default function CreateChuck(props: any) {
         }
     };
 
+    const handleChangeSampleStartPosition = (inputSampleStartPos: any) => {
+        if (inputSampleStartPos) {
+            setSamplePositionStart(inputSampleStartPos);
+        }
+    };
+
+    const handleChangeSampleLength = (inputSampleLength: any) => {
+        if (inputSampleLength) {
+            setSampleLength(inputSampleLength);
+        }
+    };
+
+    const handleChangeSampleRates = (inputSampleRate: any) => {
+        if (inputSampleRate) {
+            setSampleRates(inputSampleRate);
+        }
+    };
+
     const updateNextTreeItem = (event: React.ChangeEvent<HTMLInputElement>) => {
         console.log('CHECK!! ', (event.target).value);
         setNextTreeItem((event.target as HTMLInputElement).value);
@@ -918,28 +1049,206 @@ export default function CreateChuck(props: any) {
             <Button onClick={handleInstrumentsVisible}>INSTRUMENT</Button>
             {/* <Button onClick={handleSequencerVisible}>SEQUENCER</Button> */}
 
-            <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
+            {
+                playingInstrument
+                ?
+                    <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
+                :
+                    null
+            }
+
             <Button onClick={handleToggleViz}>TOGGLE VIZ</Button>
-            <Button onClick={handleAddStep}>Add Step</Button>
-            <Button onClick={handleRemoveStep}>Remove Step</Button>
+
+            {/* <Button onClick={handleAddStep}>Add Step</Button>
+            <Button onClick={handleRemoveStep}>Remove Step</Button> */}
 
 
-
-            <FormControl sx={{position: 'absolute', left: '32px'}} id="treeBuilderWrapper">
-                <FormLabel id="demo-controlled-radio-buttons-group-tree"></FormLabel>
-                <RadioGroup
-                    aria-labelledby="demo-controlled-radio-buttons-group-tree"
-                    name="controlled-radio-buttons-group-tree"
-                    value={nextTreeItem}
-                    onChange={updateNextTreeItem}
-                >
-                    <FormControlLabel value="step" control={<Radio />} label="Step" />
-                    <FormControlLabel value="pattern" control={<Radio />} label="Pattern" />
-                    <FormControlLabel value="effect" control={<Radio />} label="Effect" />
+            {vizItem === 1
+            ?
+                <>
+                    <Button onClick={handleAddStep}>Add Step</Button>
+                    <Button onClick={handleRemoveStep}>Remove Step</Button>
+                    <FormControl sx={{position: 'absolute', left: '32px'}} id="treeBuilderWrapper">
+                    <FormLabel id="demo-controlled-radio-buttons-group-tree"></FormLabel>
+                    <RadioGroup
+                        aria-labelledby="demo-controlled-radio-buttons-group-tree"
+                        name="controlled-radio-buttons-group-tree"
+                        value={nextTreeItem}
+                        onChange={updateNextTreeItem}
+                    >
+                        <FormControlLabel value="step" control={<Radio />} label="Step" />
+                        <FormControlLabel value="pattern" control={<Radio />} label="Pattern" />
+                        <FormControlLabel value="effect" control={<Radio />} label="Effect" />
+                        
+                    </RadioGroup>
+                    </FormControl>
+                    <Box id="sequencerWrapperOuter">
                     
-                </RadioGroup>
-            </FormControl>
+                    <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
 
+                    <Box id="sequencerWrapperInner">
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
+                                <Select
+                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                    labelId="audioKey-simple-select-label"
+                                    id="audioKey-simple-select"
+                                    value={audioKey}
+                                    label="Key"
+                                    onChange={handleChangeAudioKey}
+                                >
+                                    <MenuItem value={'C'}>C</MenuItem>
+                                    <MenuItem value={'C♯'}>C♯</MenuItem>
+                                    <MenuItem value={'D'}>D</MenuItem>
+                                    <MenuItem value={'D♯'}>D♯</MenuItem>
+                                    <MenuItem value={'E'}>E</MenuItem>
+                                    <MenuItem value={'F'}>F</MenuItem>
+                                    <MenuItem value={'F♯'}>F♯</MenuItem>
+                                    <MenuItem value={'G'}>G</MenuItem>
+                                    <MenuItem value={'G♯'}>G♯</MenuItem>
+                                    <MenuItem value={'A'}>A</MenuItem>
+                                    <MenuItem value={'A♯'}>A♯</MenuItem>
+                                    <MenuItem value={'B'}>B</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="octave-simple-select-label">Octave</InputLabel>
+                                <Select
+                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                    labelId="octave-simple-select-label"
+                                    id="octave-simple-select"
+                                    value={octave}
+                                    label="Octave"
+                                    onChange={handleChangeOctave}
+                                >
+                                    <MenuItem value={'1'}>1</MenuItem>
+                                    <MenuItem value={'2'}>2</MenuItem>
+                                    <MenuItem value={'3'}>3</MenuItem>
+                                    <MenuItem value={'4'}>4</MenuItem>
+                                    <MenuItem value={'5'}>5</MenuItem>
+                                    <MenuItem value={'6'}>6</MenuItem>
+                                    <MenuItem value={'7'}>7</MenuItem>
+                                    <MenuItem value={'8'}>8</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="scale-simple-select-label">Scale</InputLabel>
+                                <Select
+                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                    labelId="scale-simple-select-label"
+                                    id="scale-simple-select"
+                                    value={audioScale}
+                                    label="Scale"
+                                    onChange={handleChangeScale}
+                                >
+                                    <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
+                                    <MenuItem value={'Major'}>Major</MenuItem>
+                                    <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
+                                    <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
+                                    <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
+                                    <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
+                                    <MenuItem value={'Bachian'}>Bachian</MenuItem>
+                                    <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
+                                    <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
+                                    <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
+                                    <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
+                                    <MenuItem value={'Ionian'}>Ionian</MenuItem>
+                                    <MenuItem value={'Dorian'}>Dorian</MenuItem>
+                                    <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
+                                    <MenuItem value={'Lydian'}>Lydian</MenuItem>
+                                    <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
+                                    <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
+                                    <MenuItem value={'Locrian'}>Locrian</MenuItem>
+                                    <MenuItem value={'Fifths'}>Fifths</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="chord-simple-select-label">Chord</InputLabel>
+                                <Select
+                                    labelId="chord-simple-select-label"
+                                    id="chord-simple-select"
+                                    value={audioChord}
+                                    label="Chord"
+                                    onChange={handleChangeChord}
+                                    sx={{
+                                        color: 'white', 
+                                        fontWeight: 'bold', 
+                                        fontSize: '1rem',
+                                        '& .MuiList-root': {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        background: 'var(--black-20)',
+                                        color: 'var(--white-20)',
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value={'M'}>Major Triad</MenuItem>
+                                    <MenuItem value={'m'}>Minor Triad</MenuItem>
+                                    <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
+                                    <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
+                                    <MenuItem value={'dim'}>Diminished Triad</MenuItem>
+                                    <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
+                                    <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
+                                    <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
+                                    <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
+                                    <MenuItem value={'5'}>Perfect Fifth</MenuItem>
+                                    <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
+                                    <MenuItem value={'6'}>Major Sixth 1</MenuItem>
+                                    <MenuItem value={'67'}>Dominant Sixth</MenuItem>
+                                    <MenuItem value={'69'}>Sixth Ninth</MenuItem>
+                                    <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
+                                    <MenuItem value={'m6'}>Minor Sixth</MenuItem>
+                                    <MenuItem value={'M7'}>Major Seventh</MenuItem>
+                                    <MenuItem value={'m7'}>Minor Seventh</MenuItem>
+                                    <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
+                                    <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
+                                    <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
+                                    <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
+                                    <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
+                                    <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
+                                    <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
+                                    <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
+                                    <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
+                                    <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
+                                    <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
+                                    <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
+                                    <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
+                                    <MenuItem value={'M9'}>Major Ninth</MenuItem>
+                                    <MenuItem value={'m9'}>Minor Ninth</MenuItem>
+                                    <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
+                                    <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
+                                    <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
+                                    <MenuItem value={'9'}>Dominant Ninth</MenuItem>
+                                    <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
+                                    <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
+                                    <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
+                                    <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
+                                    <MenuItem value={'11'}>Eleventh</MenuItem>
+                                    <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
+                                    <MenuItem value={'add11'}>Add Eleventh</MenuItem>
+                                    <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
+                                    <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
+                                    <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
+                                    <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
+                                    <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
+                                    <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    </Box>
+
+                    </Box>
+                </>
+            : 
+                null
+            };
 
 
             
@@ -1007,10 +1316,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReed(value/100) } }
                             />
                         </div>
@@ -1028,10 +1337,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueNoiseGain(value/100) } }
                             />
                         </div>
@@ -1049,10 +1358,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
                                 onChange={ (value: any) => { setValueVibratoFreq(value) } }
                             />
@@ -1071,10 +1380,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueVibratoGain(value/100) } }
                             />
                         </div>
@@ -1095,10 +1404,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValuePressure(value/100) } }
                             />
                         </div>
@@ -1116,10 +1425,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReverbGain(value) } }
                             />
                         </div>
@@ -1137,10 +1446,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReverbMix(value) } }
                             />
                         </div>
@@ -1169,10 +1478,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValuePickupPosition(value/100) } }
                             />
                         </div>
@@ -1190,10 +1499,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueSustain(value/100) } }
                             />
                         </div>
@@ -1211,10 +1520,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueStretch(value/100) } }
                             />
                         </div>
@@ -1235,10 +1544,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValuePluck(value/100) } }
                             />
                         </div>
@@ -1256,10 +1565,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueBaseLoopGain(value/100) } }
                             />
                         </div>
@@ -1277,10 +1586,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReverbMix(value/100) } }
                             />
                         </div>
@@ -1307,10 +1616,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValuePluck(value/100) } }
                             />
                         </div>
@@ -1328,10 +1637,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReverbMix(value/100) } }
                             />
                         </div>
@@ -1358,10 +1667,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueMoogGain(value/100) } }
                                 />
                             </div>
@@ -1379,10 +1688,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
                                     onChange={ (value: any) => { setValueVibratoFreq(value) } }
                                 />
@@ -1401,10 +1710,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueVibratoGain(value/100) } }
                                 />
                             </div>
@@ -1422,10 +1731,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueFilterSweepRate(value/100) } }
                                 />
                             </div>
@@ -1446,10 +1755,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
                                     onChange={ (value: any) => { setValueLfoSpeed(value) } }
                                 />
@@ -1468,10 +1777,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueLfoDepth(value/100) } }
                                 />
                             </div>
@@ -1489,10 +1798,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueFilterQ(value/100) } }
                                 />
                             </div>
@@ -1513,10 +1822,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueAftertouch(value/100) } }
                                 />
                             </div>
@@ -1534,10 +1843,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueModSpeed(value) } }
                                 />
                             </div>
@@ -1555,10 +1864,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueModDepth(value/100) } }
                                 />
                             </div>
@@ -1576,10 +1885,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     data={[-1,0,1,2,3,4]}
                                     onChange={ (value: any) => { setValueOpMode(value) } }
                                 />
@@ -1608,10 +1917,10 @@ export default function CreateChuck(props: any) {
                             valueFontSize="1.7rem"
                             trackColor="#eeeeee"
                             trackDraggable={true}
-                            labelColor="yellow"
-                            knobColor="yellow"
-                            progressColorFrom="yellow"
-                            progressColorTo="yellow"
+                            labelColor="#0fb29d"
+                            knobColor="#0fb29d"
+                            progressColorFrom="#0fb29d"
+                            progressColorTo="#0fb29d"
                             onChange={ (value: any) => { setValueBodySize(value/100) } }
                         />
                     </div>
@@ -1629,10 +1938,10 @@ export default function CreateChuck(props: any) {
                             valueFontSize="1.7rem"
                             trackColor="#eeeeee"
                             trackDraggable={true}
-                            labelColor="yellow"
-                            knobColor="yellow"
-                            progressColorFrom="yellow"
-                            progressColorTo="yellow"
+                            labelColor="#0fb29d"
+                            knobColor="#0fb29d"
+                            progressColorFrom="#0fb29d"
+                            progressColorTo="#0fb29d"
                             onChange={ (value: any) => { setValuePluck(value/100) } }
                         />
                     </div>
@@ -1650,10 +1959,10 @@ export default function CreateChuck(props: any) {
                             valueFontSize="1.7rem"
                             trackColor="#eeeeee"
                             trackDraggable={true}
-                            labelColor="yellow"
-                            knobColor="yellow"
-                            progressColorFrom="yellow"
-                            progressColorTo="yellow"
+                            labelColor="#0fb29d"
+                            knobColor="#0fb29d"
+                            progressColorFrom="#0fb29d"
+                            progressColorTo="#0fb29d"
                             onChange={ (value: any) => { setValuePluckPos(value/100) } }
                         />
                     </div>
@@ -1671,10 +1980,10 @@ export default function CreateChuck(props: any) {
                             valueFontSize="1.7rem"
                             trackColor="#eeeeee"
                             trackDraggable={true}
-                            labelColor="yellow"
-                            knobColor="yellow"
-                            progressColorFrom="yellow"
-                            progressColorTo="yellow"
+                            labelColor="#0fb29d"
+                            knobColor="#0fb29d"
+                            progressColorFrom="#0fb29d"
+                            progressColorTo="#0fb29d"
                             onChange={ (value: any) => { setValueStringDamping(value/100) } }
                         />
                     </div>
@@ -1695,10 +2004,10 @@ export default function CreateChuck(props: any) {
                             valueFontSize="1.7rem"
                             trackColor="#eeeeee"
                             trackDraggable={true}
-                            labelColor="yellow"
-                            knobColor="yellow"
-                            progressColorFrom="yellow"
-                            progressColorTo="yellow"
+                            labelColor="#0fb29d"
+                            knobColor="#0fb29d"
+                            progressColorFrom="#0fb29d"
+                            progressColorTo="#0fb29d"
                             onChange={ (value: any) => { setValueStringDetune(value / 100) } }
                         />
                     </div>
@@ -1716,10 +2025,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReverbMix(value/100) } }
                             />
                         </div>
@@ -1747,10 +2056,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueStiffness(value/100) } }
                             />
                         </div>
@@ -1768,10 +2077,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueAperture(value/100) } }
                             />
                         </div>
@@ -1789,10 +2098,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueNoiseGain(value/100) } }
                             />
                         </div>
@@ -1810,10 +2119,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueBlowPosition(value/100) } }
                             />
                         </div>
@@ -1831,10 +2140,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
                                 onChange={ (value: any) => { setValueVibratoFreq(value) } }
                             />
@@ -1853,10 +2162,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueVibratoGain(value/100) } }
                             />
                         </div>
@@ -1877,10 +2186,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValuePressure(value/100) } }
                             />
                         </div>
@@ -1898,10 +2207,10 @@ export default function CreateChuck(props: any) {
                                 valueFontSize="1.7rem"
                                 trackColor="#eeeeee"
                                 trackDraggable={true}
-                                labelColor="yellow"
-                                knobColor="yellow"
-                                progressColorFrom="yellow"
-                                progressColorTo="yellow"
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReverbMix(value) } }
                             />
                         </div>
@@ -1931,10 +2240,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueLfoSpeed(value/100) } }
                                 />
                             </div>
@@ -1952,10 +2261,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueLfoDepth(value/100) } }
                                 />
                             </div>
@@ -1976,10 +2285,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueControlOne(value/100) } }
                                 />
                             </div>
@@ -1997,10 +2306,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueControlTwo(value/100) } }
                                 />
                             </div>
@@ -2018,10 +2327,10 @@ export default function CreateChuck(props: any) {
                                     valueFontSize="1.7rem"
                                     trackColor="#eeeeee"
                                     trackDraggable={true}
-                                    labelColor="yellow"
-                                    knobColor="yellow"
-                                    progressColorFrom="yellow"
-                                    progressColorTo="yellow"
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
                                     onChange={ (value: any) => { setValueReverbMix(value/100) } }
                                 />
                             </div>
@@ -2032,19 +2341,8 @@ export default function CreateChuck(props: any) {
             }
             </Box>
 
-            <Box
-                // component="form"
-                // sx={{
-                //     '& > :not(style)': { m: 1, width: '25ch' },
-                // }}
-                // noValidate
-                // autoComplete="off"
-            >
+            <Box>
                 <FormControl
-                  sx={{
-                    position: "absolute",
-                    left: "0",
-                  }}
                   onSubmit={(e) => {
                     e.preventDefault();
                 }}>
@@ -2058,7 +2356,7 @@ export default function CreateChuck(props: any) {
                         type="number"
                         id="outlined-textarea"
                         InputLabelProps={{
-                            shrink: true,
+                            shrink: false,
                         }}
                         value={bpm}
                         onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2071,169 +2369,258 @@ export default function CreateChuck(props: any) {
                 </FormControl>
             </Box>
 
-            <Box id="sequencerWrapperOuter" className="invisible">
-                
-                <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
 
-                <Box id="sequencerWrapperInner">
-                    <Box className="sequencer-dropdown">
-                        <FormControl fullWidth>
-                            <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
-                            <Select
-                                sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                labelId="audioKey-simple-select-label"
-                                id="audioKey-simple-select"
-                                value={audioKey}
-                                label="Key"
-                                onChange={handleChangeAudioKey}
-                            >
-                                <MenuItem value={'C'}>C</MenuItem>
-                                <MenuItem value={'C♯'}>C♯</MenuItem>
-                                <MenuItem value={'D'}>D</MenuItem>
-                                <MenuItem value={'D♯'}>D♯</MenuItem>
-                                <MenuItem value={'E'}>E</MenuItem>
-                                <MenuItem value={'F'}>F</MenuItem>
-                                <MenuItem value={'F♯'}>F♯</MenuItem>
-                                <MenuItem value={'G'}>G</MenuItem>
-                                <MenuItem value={'G♯'}>G♯</MenuItem>
-                                <MenuItem value={'A'}>A</MenuItem>
-                                <MenuItem value={'A♯'}>A♯</MenuItem>
-                                <MenuItem value={'B'}>B</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
-                    <Box className="sequencer-dropdown">
-                        <FormControl fullWidth>
-                            <InputLabel id="octave-simple-select-label">Octave</InputLabel>
-                            <Select
-                                sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                labelId="octave-simple-select-label"
-                                id="octave-simple-select"
-                                value={octave}
-                                label="Octave"
-                                onChange={handleChangeOctave}
-                            >
-                                <MenuItem value={'1'}>1</MenuItem>
-                                <MenuItem value={'2'}>2</MenuItem>
-                                <MenuItem value={'3'}>3</MenuItem>
-                                <MenuItem value={'4'}>4</MenuItem>
-                                <MenuItem value={'5'}>5</MenuItem>
-                                <MenuItem value={'6'}>6</MenuItem>
-                                <MenuItem value={'7'}>7</MenuItem>
-                                <MenuItem value={'8'}>8</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
-                    <Box className="sequencer-dropdown">
-                        <FormControl fullWidth>
-                            <InputLabel id="scale-simple-select-label">Scale</InputLabel>
-                            <Select
-                                sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                labelId="scale-simple-select-label"
-                                id="scale-simple-select"
-                                value={audioScale}
-                                label="Scale"
-                                onChange={handleChangeScale}
-                            >
-                                <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
-                                <MenuItem value={'Major'}>Major</MenuItem>
-                                <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
-                                <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
-                                <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
-                                <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
-                                <MenuItem value={'Bachian'}>Bachian</MenuItem>
-                                <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
-                                <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
-                                <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
-                                <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
-                                <MenuItem value={'Ionian'}>Ionian</MenuItem>
-                                <MenuItem value={'Dorian'}>Dorian</MenuItem>
-                                <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
-                                <MenuItem value={'Lydian'}>Lydian</MenuItem>
-                                <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
-                                <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
-                                <MenuItem value={'Locrian'}>Locrian</MenuItem>
-                                <MenuItem value={'Fifths'}>Fifths</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
-                    <Box className="sequencer-dropdown">
-                        <FormControl fullWidth>
-                            <InputLabel id="chord-simple-select-label">Chord</InputLabel>
-                            <Select
-                                labelId="chord-simple-select-label"
-                                id="chord-simple-select"
-                                value={audioChord}
-                                label="Chord"
-                                onChange={handleChangeChord}
-                                sx={{
-                                    color: 'white', 
-                                    fontWeight: 'bold', 
-                                    fontSize: '1rem',
-                                    '& .MuiList-root': {
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    background: 'var(--black-20)',
-                                    color: 'var(--white-20)',
-                                    }
-                                }}
-                            >
-                                <MenuItem value={'M'}>Major Triad</MenuItem>
-                                <MenuItem value={'m'}>Minor Triad</MenuItem>
-                                <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
-                                <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
-                                <MenuItem value={'dim'}>Diminished Triad</MenuItem>
-                                <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
-                                <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
-                                <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
-                                <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
-                                <MenuItem value={'5'}>Perfect Fifth</MenuItem>
-                                <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
-                                <MenuItem value={'6'}>Major Sixth 1</MenuItem>
-                                <MenuItem value={'67'}>Dominant Sixth</MenuItem>
-                                <MenuItem value={'69'}>Sixth Ninth</MenuItem>
-                                <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
-                                <MenuItem value={'m6'}>Minor Sixth</MenuItem>
-                                <MenuItem value={'M7'}>Major Seventh</MenuItem>
-                                <MenuItem value={'m7'}>Minor Seventh</MenuItem>
-                                <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
-                                <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
-                                <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
-                                <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
-                                <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
-                                <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
-                                <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
-                                <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
-                                <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
-                                <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
-                                <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
-                                <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
-                                <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
-                                <MenuItem value={'M9'}>Major Ninth</MenuItem>
-                                <MenuItem value={'m9'}>Minor Ninth</MenuItem>
-                                <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
-                                <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
-                                <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
-                                <MenuItem value={'9'}>Dominant Ninth</MenuItem>
-                                <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
-                                <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
-                                <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
-                                <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
-                                <MenuItem value={'11'}>Eleventh</MenuItem>
-                                <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
-                                <MenuItem value={'add11'}>Add Eleventh</MenuItem>
-                                <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
-                                <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
-                                <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
-                                <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
-                                <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
-                                <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </Box>
-                </Box>
-
+            
+            <Box>
+                <FormControl
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                }}>
+                    <TextField
+                        inputProps={{ style: { color: "#f6f6f6"} }}
+                        sx={{
+                            input: { color: '#f6f6f6' },
+                            borderColor: "f6f6f6",
+                        }}
+                        placeholder="Sample Start"
+                        type="number"
+                        id="outlined-textarea"
+                        InputLabelProps={{
+                            shrink: false,
+                        }}
+                        value={samplePositionStart}
+                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                event.preventDefault();
+                                const inputSampleStartPosition: any = parseInt(event.target.value);
+                                handleChangeSampleStartPosition(inputSampleStartPosition);
+                            }
+                        }
+                    />
+                </FormControl>
             </Box>
+
+            <Box>
+                <FormControl
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                }}>
+                    <TextField
+                        inputProps={{ style: { color: "#f6f6f6"} }}
+                        sx={{
+                            input: { color: '#f6f6f6' },
+                            borderColor: "f6f6f6",
+                        }}
+                        placeholder="Sample Length"
+                        type="number"
+                        id="outlined-textarea"
+                        InputLabelProps={{
+                            shrink: false,
+                        }}
+                        value={sampleLength}
+                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                event.preventDefault();
+                                const inputSampleLength: any = parseInt(event.target.value);
+                                handleChangeSampleLength(inputSampleLength);
+                            }
+                        }
+                    />
+                </FormControl>
+            </Box>
+
+            <Box>
+                <FormControl
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                }}>
+                    <TextField
+                        inputProps={{ style: { color: "#f6f6f6"} }}
+                        sx={{
+                            input: { color: '#f6f6f6' },
+                            borderColor: "f6f6f6",
+                        }}
+                        placeholder="Sample Rate"
+                        type="any"
+                        id="outlined-textarea"
+                        InputLabelProps={{
+                            shrink: false,
+                        }}
+                        value={sampleRates}
+                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                event.preventDefault();
+                                const sampleRateInput: any = event.target.value;
+                                handleChangeSampleRates(sampleRateInput);
+                            }
+                        }
+                    />
+                </FormControl>
+            </Box>
+            {/* {vizItem === 1
+            ?
+                <Box id="sequencerWrapperOuter" className="invisible">
+                    
+                    <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
+
+                    <Box id="sequencerWrapperInner">
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
+                                <Select
+                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                    labelId="audioKey-simple-select-label"
+                                    id="audioKey-simple-select"
+                                    value={audioKey}
+                                    label="Key"
+                                    onChange={handleChangeAudioKey}
+                                >
+                                    <MenuItem value={'C'}>C</MenuItem>
+                                    <MenuItem value={'C♯'}>C♯</MenuItem>
+                                    <MenuItem value={'D'}>D</MenuItem>
+                                    <MenuItem value={'D♯'}>D♯</MenuItem>
+                                    <MenuItem value={'E'}>E</MenuItem>
+                                    <MenuItem value={'F'}>F</MenuItem>
+                                    <MenuItem value={'F♯'}>F♯</MenuItem>
+                                    <MenuItem value={'G'}>G</MenuItem>
+                                    <MenuItem value={'G♯'}>G♯</MenuItem>
+                                    <MenuItem value={'A'}>A</MenuItem>
+                                    <MenuItem value={'A♯'}>A♯</MenuItem>
+                                    <MenuItem value={'B'}>B</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="octave-simple-select-label">Octave</InputLabel>
+                                <Select
+                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                    labelId="octave-simple-select-label"
+                                    id="octave-simple-select"
+                                    value={octave}
+                                    label="Octave"
+                                    onChange={handleChangeOctave}
+                                >
+                                    <MenuItem value={'1'}>1</MenuItem>
+                                    <MenuItem value={'2'}>2</MenuItem>
+                                    <MenuItem value={'3'}>3</MenuItem>
+                                    <MenuItem value={'4'}>4</MenuItem>
+                                    <MenuItem value={'5'}>5</MenuItem>
+                                    <MenuItem value={'6'}>6</MenuItem>
+                                    <MenuItem value={'7'}>7</MenuItem>
+                                    <MenuItem value={'8'}>8</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="scale-simple-select-label">Scale</InputLabel>
+                                <Select
+                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                    labelId="scale-simple-select-label"
+                                    id="scale-simple-select"
+                                    value={audioScale}
+                                    label="Scale"
+                                    onChange={handleChangeScale}
+                                >
+                                    <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
+                                    <MenuItem value={'Major'}>Major</MenuItem>
+                                    <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
+                                    <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
+                                    <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
+                                    <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
+                                    <MenuItem value={'Bachian'}>Bachian</MenuItem>
+                                    <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
+                                    <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
+                                    <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
+                                    <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
+                                    <MenuItem value={'Ionian'}>Ionian</MenuItem>
+                                    <MenuItem value={'Dorian'}>Dorian</MenuItem>
+                                    <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
+                                    <MenuItem value={'Lydian'}>Lydian</MenuItem>
+                                    <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
+                                    <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
+                                    <MenuItem value={'Locrian'}>Locrian</MenuItem>
+                                    <MenuItem value={'Fifths'}>Fifths</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box className="sequencer-dropdown">
+                            <FormControl fullWidth>
+                                <InputLabel id="chord-simple-select-label">Chord</InputLabel>
+                                <Select
+                                    labelId="chord-simple-select-label"
+                                    id="chord-simple-select"
+                                    value={audioChord}
+                                    label="Chord"
+                                    onChange={handleChangeChord}
+                                    sx={{
+                                        color: 'white', 
+                                        fontWeight: 'bold', 
+                                        fontSize: '1rem',
+                                        '& .MuiList-root': {
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        background: 'var(--black-20)',
+                                        color: 'var(--white-20)',
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value={'M'}>Major Triad</MenuItem>
+                                    <MenuItem value={'m'}>Minor Triad</MenuItem>
+                                    <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
+                                    <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
+                                    <MenuItem value={'dim'}>Diminished Triad</MenuItem>
+                                    <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
+                                    <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
+                                    <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
+                                    <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
+                                    <MenuItem value={'5'}>Perfect Fifth</MenuItem>
+                                    <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
+                                    <MenuItem value={'6'}>Major Sixth 1</MenuItem>
+                                    <MenuItem value={'67'}>Dominant Sixth</MenuItem>
+                                    <MenuItem value={'69'}>Sixth Ninth</MenuItem>
+                                    <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
+                                    <MenuItem value={'m6'}>Minor Sixth</MenuItem>
+                                    <MenuItem value={'M7'}>Major Seventh</MenuItem>
+                                    <MenuItem value={'m7'}>Minor Seventh</MenuItem>
+                                    <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
+                                    <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
+                                    <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
+                                    <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
+                                    <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
+                                    <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
+                                    <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
+                                    <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
+                                    <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
+                                    <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
+                                    <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
+                                    <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
+                                    <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
+                                    <MenuItem value={'M9'}>Major Ninth</MenuItem>
+                                    <MenuItem value={'m9'}>Minor Ninth</MenuItem>
+                                    <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
+                                    <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
+                                    <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
+                                    <MenuItem value={'9'}>Dominant Ninth</MenuItem>
+                                    <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
+                                    <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
+                                    <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
+                                    <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
+                                    <MenuItem value={'11'}>Eleventh</MenuItem>
+                                    <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
+                                    <MenuItem value={'add11'}>Add Eleventh</MenuItem>
+                                    <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
+                                    <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
+                                    <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
+                                    <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
+                                    <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
+                                    <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    </Box>
+
+                </Box>
+            : null} */}
+
         </>
     )
 } 

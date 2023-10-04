@@ -293,13 +293,13 @@ ul {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 80vh;
+  height: 100vh;
   top: 10vh !important;
   position: absolute;
   background: transparent;
   position: absolute;
-  left: 10vw;
-  width: 80vw;
+  left: 0vw;
+  width: 100vw;
   text-align: center;
   background: var(--black-60);
 }
@@ -378,4 +378,8 @@ ul {
 
 .MuiInputLabel-root {
   color: "#f6f6f6" !important;
+}
+
+.MuiFormControl-root {
+  position: relative;
 }

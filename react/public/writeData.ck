@@ -1,5 +1,10 @@
 float secLenBeat;
 
+ <<< "TEST HERE DIR" >>>;
+ <<< me.dir(-4) >>>;
+ <<< me.dir(-3) >>>;
+ <<< me.dir(-2) >>>;
+
 if (60 / Std.atof(me.arg(0)) > .1) {
     60 / Std.atof(me.arg(0)) => secLenBeat;
 } else {
