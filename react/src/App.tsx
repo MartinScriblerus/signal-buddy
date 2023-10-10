@@ -16,7 +16,8 @@ function App() {
   const [datas, setDatas] = useState<any>([]);
   const [fileControlsVisible, setFileControlsVisible] = useState(false);
   const { register, handleSubmit } = useForm();
-  const [uploadedFiles, setUploadedFiles] = useState<any>([]);
+  // const [uploadedFiles, setUploadedFiles] = useState<any>([]);
+  const uploadedFilesRef: any = useRef([]);
   // const [midiNotesOn, setMidiNotesOn] = useState([]);
   // const [midiNotesOff, setMidiNotesOff] = useState([]);
   // const midiNotesOn: any = useRef([]);
@@ -88,12 +89,17 @@ function App() {
 //   game.midi = nav.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure)
 
   const onSubmit = async(files: any) => {
+    console.log("WHAT ARE FILES? ", files);
     console.log('data out!!! ', files.file[0]);
     const file = files.file[0];
+   
     const reader = new FileReader();
-    const fileURL = reader.readAsDataURL(file);
-    console.log('FILE URL: ', fileURL)
-    setUploadedFiles((uploadedFiles) => [...uploadedFiles, file]);
+    console.log('FILE: ', file)
+    // const fileURL = reader.readAsDataURL(file);
+    // console.log('FILE URL: ', fileURL)
+    // setUploadedFiles((uploadedFiles) => [...uploadedFiles, file]);
+    // uploadedFilesRef.current.push(file);
+    uploadedFilesRef.current.push(file);
     const fileName = files.file[0].name; 
     let data = new FormData();
     const filename: any = await fileName.replaceAll(' ', '_').split('.')[0];
@@ -141,7 +147,7 @@ function App() {
             audioReady={audioReady} 
             game={game} 
             datas={datas}
-            uploadedFiles={uploadedFiles}
+            uploadedFiles={uploadedFilesRef.current}
           />
         </>
     </div>

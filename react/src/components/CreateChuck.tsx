@@ -69,6 +69,28 @@ let modsDefault: any = [
     }
 ];
 
+interface MediaStream {
+    id: string;
+    active: boolean;
+}
+
+interface MediaStreamAudioSourceNode extends AudioNode {
+    
+}
+
+interface MediaStreamAudioDestinationNode extends AudioNode {
+    stream: MediaStream;
+}
+
+interface AudioContext {
+    state: string;
+    close: () => void;
+    createMediaStreamSource: () => MediaStreamAudioSourceNode;
+    createMediaStreamDestination: () => any;
+    resume: () => void;
+    suspend: () => void;
+}
+
 export default function CreateChuck(props: any) {
     const {game, datas, audioReady, uploadedFiles} = props;
     const theChuck = useRef<any>(undefined);
@@ -92,6 +114,7 @@ export default function CreateChuck(props: any) {
             midis: [],
         },
     });
+    const [keysExist, setKeysExist] = useState(false);
     // const [mingusChordsData, setMingusChordsData] = useState<any>([]);
     const [keysVisible, setKeysVisible] = useState(false);
     const [instrumentsVisible, setInstrumentsVisible] = useState(false);
@@ -153,7 +176,11 @@ export default function CreateChuck(props: any) {
     const [treeAtSelected, setTreeAtSelected] = React.useState<TreeAtSelected>({data: {}, depth: 0, children: [], parent: {}});
     const [vizComponent, setVizComponent] = useState<any>(<></>);
     const [nextTreeItem, setNextTreeItem] = useState<any>('step');
-    const [ticksDatas, setTicksDatas] = useState<any>([])
+    const [ticksDatas, setTicksDatas] = useState<any>([]);
+
+    // const [createdFilesList, setCreatedFilesList] = useState([]);
+
+    const [isRecordingMic, setIsRecordingMic] = useState(false);
 
     const [positionDenominator, setPositionDenominator] = useState(2);
 
@@ -166,11 +193,59 @@ export default function CreateChuck(props: any) {
     // const TreeContext = createContext<TreeContext>({newestSetting: newestSetting, setNewestSetting: () => {}});
     // const treeContext = useContext(TreeContext);
     
+    const createdFilesList = useRef<Array<string>>([]);
+    // createdFilesList.current = [];
     const getLatestTreeSettings = (x: any) => {
         console.log("TREE SETTINGS in CREATE CHUCK: ", x);
         setTreeAtSelected(x);
     };
 
+    const getFile = async (uploadedFiles: any) => {
+        console.log("UF TEST: ", uploadedFiles);
+        const fileReader  = new FileReader;
+        fileReader.onload = function(){
+        const arrayBuffer = this.result;
+        //  snippet.log(arrayBuffer);
+        //  snippet.log(arrayBuffer.byteLength);
+        }
+        console.log("UPLOADED FILES TESTING HERE NOW 1: ", uploadedFiles);
+        if (!uploadedFiles[0]) {
+            return;
+        }
+       
+        // setCreatedFileBuffers(uploadedFiles);
+        const url = URL.createObjectURL(uploadedFiles[uploadedFiles.length - 1]);
+        console.log("THIS IS A TEST: ", uploadedFiles[uploadedFiles.length - 1]);
+        fetch(url)
+            .then(data => data.arrayBuffer())
+            .then(async (buffer: any) => {
+                const newestFileUpload = uploadedFiles[uploadedFiles.length - 1].name;
+                console.log("NEWEST FILE UPLOAD: ", newestFileUpload);    
+                console.log('THE FILE: ', uploadedFiles[uploadedFiles.length - 1]);
+                await chuckHook.createFile("", `${newestFileUpload}`, new Uint8Array(buffer));
+                if (uploadedFiles[uploadedFiles.length - 1].name.length < 1) {
+                    return;
+                }
+                console.log("HOLY SHIT: ", uploadedFiles[uploadedFiles.length - 1].name);
+                if (`${uploadedFiles[uploadedFiles.length - 1].name}`.length > 0) {
+                    createdFilesList.current.push(`${uploadedFiles[uploadedFiles.length - 1].name}`);
+                }
+                console.log("CREATED FILES: ", createdFilesList.current);
+                await chuckHook.runCode(`
+                    SndBuf buffer => dac;
+                    "${createdFilesList.current[createdFilesList.current.length - 1]}" => buffer.read;
+                    buffer.samples() => buffer.pos;
+
+                    0 => buffer.pos;
+                    buffer.length() => now;
+                `);
+                return createdFilesList.current;
+            });
+    }
+        //     console.log("CREATED FILES LIST: ", createdFilesList.current);
+
+    
+    
     const handleUpdateRawTree = (name: string, operation: string) => {
         const arrContainerUpdateTree = [];
         const childrenUpdated = {name: name, children: []};
@@ -323,23 +398,72 @@ export default function CreateChuck(props: any) {
     //     });
     //     setLoaded(true);
     // }
-    const loadChuck = async (theChuck: any) => {
 
-        // if(running.current === 1) {
-            theChuck.loadFile('writeData.ck').then(async () => {
-                console.log("BPM SHOULD BE... ", bpm);
-                console.log("RUNNING???? ", running);
-                theChuck.runFileWithArgs('writeData.ck', `${bpm}:${running}:${lastBpm}:${numeratorSignature}`);
-                if (running === 1) {
-                    setRunning(0);
-                } else {
-                    setRunning(1);
-                }
-            });
-            setLoaded(true);
-            setLastBpm(bpm);
-            // setRunning(1);
+
+    const loadChuck = async (theChuck: any) => {
+        if (!uploadedFiles.length) {
+            return;
+        }
+        // await getFile(uploadedFiles);
+        const fileReader  = new FileReader;
+        fileReader.onload = function(){
+        const arrayBuffer = this.result;
+        const url = URL.createObjectURL(uploadedFiles[uploadedFiles.length - 1]);
+        console.log("THIS IS A TEST: ", uploadedFiles[uploadedFiles.length - 1]);
+        fetch(url)
+            .then(data => data.arrayBuffer()).then(async (buffer: any) => {
+                    const newestFileUpload = uploadedFiles[uploadedFiles.length - 1].name;
+                    console.log("NEWEST FILE UPLOAD: ", newestFileUpload);    
+                    console.log('THE FILE in loadchuck: ', uploadedFiles[uploadedFiles.length - 1]);
+                    await chuckHook.createFile("", `${newestFileUpload}`, new Uint8Array(buffer));
+                    createdFilesList.current.push(`${uploadedFiles[uploadedFiles.length - 1].name}`);
+                    
+                    await chuckHook.runCode(`
+                        SndBuf buffer => dac;
+                        "${newestFileUpload}" => buffer.read;
+                        buffer.samples() => buffer.pos;
+
+                        0 => buffer.pos;
+                        buffer.length() => now;
+                    `);
+
+                })
+    
+            
+   
+   
+        //  snippet.log(arrayBuffer);
+        //  snippet.log(arrayBuffer.byteLength);
+        }
+        console.log("UPLOADED FILES TESTING HERE NOW 2: ", uploadedFiles);
+
+        
+        // .then((data: any) => {
+
+        // theChuck.loadFile(`${createdFilesList}`).then(async () => {
+        console.log("BPM SHOULD BE... ", bpm);
+        console.log("RUNNING???? ", running);
+        console.log("created files list: ", createdFilesList.current);
+        // theChuck.runFileWithArgs('writeData.ck', `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList}`);
+        theChuck.runFileWithArgs("uploadedFiles.ck", `/${createdFilesList.current}`);
+        if (createdFilesList.current.length > 0) {
+            console.log("GGODDAMIT: ", createdFilesList.current);
+            theChuck.runFileWithArgs("runLoop.ck", `${createdFilesList.current}:${bpm}:${running}:${lastBpm}:${numeratorSignature}`);
+        }
+        // theChuck.runFileWithArgs("runLoop.ck", `/${createdFilesList.current}:${bpm}:${running}:${lastBpm}:${numeratorSignature}`);
+
+        if (running === 1) {
+            setRunning(0);
+        } else {
+            setRunning(1);
+        }
+        // });
+        setLoaded(true);
+        setLastBpm(bpm);
+        // });
+
     }
+ 
 
     let midi = null; // global MIDIAccess object
     const nav: any = navigator;
@@ -361,6 +485,10 @@ export default function CreateChuck(props: any) {
             //     serverFilename: '//loner.wav',
             //     virtualFilename: '/loner.wav'
             // },
+            {
+                serverFilename: '/runLoop.ck',
+                virtualFilename: 'runLoop.ck'
+            },
             {
                 serverFilename: '/loner.wav',
                 virtualFilename: '/loner.wav'
@@ -384,6 +512,10 @@ export default function CreateChuck(props: any) {
             {
                 serverFilename: '/MinipopsSnare.wav',
                 virtualFilename: 'MinipopsSnare.wav'
+            },
+            {
+                serverFilename: '/uploadedFiles.ck',
+                virtualFilename: 'uploadedFiles.ck'
             },
             {
                 serverFilename: '/MinipopsHH.wav',
@@ -418,12 +550,6 @@ export default function CreateChuck(props: any) {
                 game['theChuck'] = theChuckTemp;
                 // test beep
                 // await theChuckTemp.runCode(` SinOsc osc => dac; 0.2 => osc.gain; 220 => osc.freq; .3::second => now; `);
-                console.log('three dirs down');
-                await theChuckTemp.runCode(`<<< me.dir(-1) >>>;`);
-                console.log('two dirs down');
-                await theChuckTemp.runCode(`<<< me.dir(-2) >>>;`);
-                console.log('one dir down');
-                await theChuckTemp.runCode(`<<< me.dir(-3) >>>;`);
                 // const fromS3 = await theChuckTemp.loadFile(`https://teemp.s3.us-east-2.amazonaws.com/LakeHouse_Scratch1_Redo.wav`);
                 return setChuckHook(theChuckTemp);
             // });       
@@ -431,32 +557,8 @@ export default function CreateChuck(props: any) {
     }, [game, chuckHook]);
 
     useEffect(() => {
-        const fileReader  = new FileReader;
-        fileReader.onload = function(){
-         const arrayBuffer = this.result;
-        //  snippet.log(arrayBuffer);
-        //  snippet.log(arrayBuffer.byteLength);
-         }
-         if (!uploadedFiles.length) {
-            return;
-        }
-        console.log("UPLOADED FILES: ", typeof uploadedFiles[uploadedFiles.length - 1], uploadedFiles[uploadedFiles.length - 1]);
-
-        const url = URL.createObjectURL(uploadedFiles[uploadedFiles.length - 1]);
-        
-        fetch(url)
-            .then(data => data.arrayBuffer()).then(async (buffer: any) => {
-                    await chuckHook.createFile("/", `uploaded_file${uploadedFiles[uploadedFiles.length - 1].name}.wav`, new Uint8Array(buffer));
-                    await chuckHook.runCode(`
-                        SndBuf buffer => dac;
-                        "/uploaded_file${uploadedFiles[uploadedFiles.length - 1].name}.wav" => buffer.read;
-                        buffer.samples() => buffer.pos;
-
-                        0 => buffer.pos;
-                        buffer.length() => now;
-                    `)
-                })
-    }, [uploadedFiles.length])
+        getFile(uploadedFiles);
+   }, [uploadedFiles.length])
 
     useEffect(() => {
         if (!chuckHook || !datas) {
@@ -469,7 +571,7 @@ export default function CreateChuck(props: any) {
             datas[0].data.times.map((time: any, idx: number) => {
                 if (idx === datas[0].data.times.length - 1) {
                     console.log('DATA: ', datas[0].data);
-                    setLibrosaData(datas[0].data)
+                    setLibrosaData(datas[0].data);
                     return datas[0].data;
                 }
             })
@@ -495,6 +597,54 @@ export default function CreateChuck(props: any) {
         });
     };
 
+    const handleRecordAudio = async() => {
+        // const audioCtx = await chuckHook.context;
+        let recorder;
+        let stream;
+        const chuck = await chuckHook;
+        console.log("NAV DEVICES ", navigator.mediaDevices);
+        // Prompt the user to use their microphone.
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recorder = new MediaRecorder(stream);
+        if(!isRecordingMic) {
+            console.log("CHUCKHOOK: ", await chuck);
+            let mic = chuck.context as unknown as AudioContext;
+
+            if (chuck.context) {
+                // mic = chuck.context.destination;
+                // const source = mic.createMediaStreamSource(stream);
+                // source.connect(chuckHook.context.destination);
+            }
+            // console.log('SRC ', source);
+                                // For the sake of more legible code, this sample only uses the
+            // `showSaveFilePicker()` method. In production, you need to
+            // cater for browsers that don't support this method, as
+            // outlined in https://web.dev/patterns/files/save-a-file/.
+          
+            // Prompt the user to choose where to save the recording file.
+            const suggestedName = "microphone-recording.webm";
+            const handle = await window.showSaveFilePicker({ suggestedName });
+            const writable = await handle.createWritable();
+          
+            // Start recording.
+            recorder.start();
+            recorder.addEventListener("dataavailable", async (event) => {
+              // Write chunks to the file.
+              await writable.write(event.data);
+              if (recorder.state === "inactive") {
+                // Close the file when the recording stops.
+                await writable.close();
+              }
+            });
+        } else {
+            // Stop the recording.
+            recorder.stop();
+            // Stop the stream.
+            stream.getTracks().forEach(track => track.stop());
+        };
+        setIsRecordingMic(!isRecordingMic);        
+    }
+
     const tryGetNote = (note: any) => {
         const noteIndex1 = midiHzConversions.filter((i: any) => i.note === note);
         const noteReady = noteIndex1[0].data;
@@ -502,6 +652,9 @@ export default function CreateChuck(props: any) {
     };
 
     const organizeRows = async(rowNum: number, note: string) => {
+        if (keysReady) {
+            return;
+        }
         console.log("NOTE: ", note);
         console.log("ROW NUM: ", rowNum);
         const noteReady = await awaitNote(note);
@@ -535,7 +688,7 @@ export default function CreateChuck(props: any) {
         console.log("here!!!")
         const octaves: Array<any> = [];
         // range from 0 to 10
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 9; i++) {
             [`C${i}`, `C♯${i}`, `D${i}`, `D♯${i}`, `E${i}`, `F${i}`, `F♯${i}`, `G${i}`, `G♯${i}`, `A${i}`, `A♯${i}`, `B${i}`].forEach((note) => {
                 organizeRows(i, note);
             });
@@ -782,7 +935,6 @@ export default function CreateChuck(props: any) {
 
                     mingusChordsData.current = data;
                 });
-                
             });
         }
         lastMidiNote.current = note;
@@ -859,8 +1011,7 @@ export default function CreateChuck(props: any) {
                 setLastNote(note);
                 await noteOff(note);
                 midiCode.current = FRNCHRN(1, bpm, timeSignature, note, velocity, valueLfoDepth, valueLfoSpeed, valueControlOne, valueControlTwo, valueReverbMix, realTimeChordsDataObj, realTimeScalesDataObj);
-            }
-            
+            }         
             if (playingInstrument === 'sampler' && realTimeScalesDataObj && realTimeChordsDataObj) {
                 setLastNote(note);
                 // await noteOff(note);
@@ -870,31 +1021,30 @@ export default function CreateChuck(props: any) {
                     midiCode.current = await SAMPLER(1, bpm, timeSignature, note, fl, samplePositionStart, sampleRates, sampleLength);
                 });
             }
-
-                    new Promise(async (resolve, reject) => {
-                        const it: any = await result.isShredActive(1);
-                        Promise.resolve(it.promise).then((i: any) => {
-                            console.log('THIS IS ACTIVE!!! ', i);
-                            if (i === 0) {
-                                console.log('in RES ZERO');
-                                Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
-                                    await Promise.resolve(w).then((i) => { 
-                                        console.log('WHAT IS I (RUNNING CODE / RES IS ZERO) ', i);
-                                    });                        
-                                });
-                            } 
-                            else {
-                                Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
-                                    console.log('WHAT IS (RUNNING CODE) in the ELSE? ', w);
-                                });       
-                            }
-                            setPlaying(true);
+            new Promise(async (resolve, reject) => {
+                const it: any = await result.isShredActive(1);
+                Promise.resolve(it.promise).then((i: any) => {
+                    console.log('THIS IS ACTIVE!!! ', i);
+                    if (i === 0) {
+                        console.log('in RES ZERO');
+                        Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
+                            await Promise.resolve(w).then((i) => { 
+                                console.log('WHAT IS I (RUNNING CODE / RES IS ZERO) ', i);
+                            });                        
                         });
-                    });
+                    } 
+                    else {
+                        Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
+                            console.log('WHAT IS (RUNNING CODE) in the ELSE? ', w);
+                        });       
+                    }
+                    setPlaying(true);
+                });
+            });
         });
-      }
+    }
       
-      const noteOff = async (note: any) => {
+    const noteOff = async (note: any) => {
         if (midiNotesOn.current.indexOf(note) !== -1) {
             const index: any = midiNotesOn.current.indexOf(note);
             midiNotesOn.current.slice(index, 1);
@@ -907,60 +1057,59 @@ export default function CreateChuck(props: any) {
         Promise.resolve(firstShredActive).then(async (i: any) => {
             chuckHook.removeLastCode();
         });
-      }
+    };
 
-      function onMIDISuccess(midiAccess: any) {
-          midi = midiAccess;
+    function onMIDISuccess(midiAccess: any) {
+        midi = midiAccess;
           
-          const inputs = midiAccess.inputs;
-          const outputs = midiAccess.outputs;
-          // console.log("HOW MANY MIDI ACCESS INPUTS? ", inputs);
-          for (const input of midiAccess.inputs.values()) {
+        const inputs = midiAccess.inputs;
+        const outputs = midiAccess.outputs;
+        // console.log("HOW MANY MIDI ACCESS INPUTS? ", inputs);
+        for (const input of midiAccess.inputs.values()) {
             input.onmidimessage = getMIDIMessage;
-          }
-          return midi;
         }
-        
-      function onMIDIFailure(msg: any) {
-          console.error(`Failed to get MIDI access - ${msg}`);
-          return undefined;
-      }
+        return midi;
+    };
+    
+    function onMIDIFailure(msg: any) {
+        console.error(`Failed to get MIDI access - ${msg}`);
+        return undefined;
+    };
       
-      function getMIDIMessage(message: any) {
-        console.log('MIDI MSG> ', message);
-        const command = message.data[0];
-        const note = message.data[1];
-        const velocity = (message.data.length > 2) ? message.data[2] : 0; // a velocity value might not be included with a noteOff command
-        // console.log("YO MIDI MSG: ", message);
-        if (playing) {
-            console.log('DOES NOTE === LASTNOTE? ', note, lastMidiNote.current);
-            return;
-        }
-        
-        // console.log('MIDI MSG!: ', message);
-        switch (command) {
-            case 144: // noteOn
-                if (velocity > 20) {
-                    if (!note) {
-                        return;
-                    }
-                    noteOn(Math.round(note), Math.round(parseInt(velocity)));
-                    // console.log('note ', note);
-                    // console.log('velocity ', velocity);
-                } else {
-                    console.log("********* TURNING OFF!");
-                    noteOff(note);
+    function getMIDIMessage(message: any) {
+    console.log('MIDI MSG> ', message);
+    const command = message.data[0];
+    const note = message.data[1];
+    const velocity = (message.data.length > 2) ? message.data[2] : 0; // a velocity value might not be included with a noteOff command
+    // console.log("YO MIDI MSG: ", message);
+    if (playing) {
+        console.log('DOES NOTE === LASTNOTE? ', note, lastMidiNote.current);
+        return;
+    }
+    
+    // console.log('MIDI MSG!: ', message);
+    switch (command) {
+        case 144: // noteOn
+            if (velocity > 20) {
+                if (!note) {
+                    return;
                 }
-                break;
-            case 128: // noteOff
+                noteOn(Math.round(note), Math.round(parseInt(velocity)));
+                // console.log('note ', note);
+                // console.log('velocity ', velocity);
+            } else {
+                console.log("********* TURNING OFF!");
                 noteOff(note);
-                break;
-            // we could easily expand this switch statement to cover other types of commands such as controllers or sysex
-        }
-      }
+            }
+            break;
+        case 128: // noteOff
+            noteOff(note);
+            break;
+        // we could easily expand this switch statement to cover other types of commands such as controllers or sysex
+    }
+    }
         
-    const playChuckNote = (note: any) => { 
-       
+    const playChuckNote = (note: any) => {       
         if (!note.target || !note.target ) { 
             return null;
         }
@@ -1001,7 +1150,6 @@ export default function CreateChuck(props: any) {
             setVizComponent(vizArray[0]);
             setVizItem(0);
         }
-        
     };
 
     const handleDrumMachine = async () => {
@@ -1084,165 +1232,165 @@ export default function CreateChuck(props: any) {
                     </FormControl>
                     <Box id="sequencerWrapperOuter">
                     
-                    <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
+                        <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
 
-                    <Box id="sequencerWrapperInner">
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
-                                <Select
-                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                    labelId="audioKey-simple-select-label"
-                                    id="audioKey-simple-select"
-                                    value={audioKey}
-                                    label="Key"
-                                    onChange={handleChangeAudioKey}
-                                >
-                                    <MenuItem value={'C'}>C</MenuItem>
-                                    <MenuItem value={'C♯'}>C♯</MenuItem>
-                                    <MenuItem value={'D'}>D</MenuItem>
-                                    <MenuItem value={'D♯'}>D♯</MenuItem>
-                                    <MenuItem value={'E'}>E</MenuItem>
-                                    <MenuItem value={'F'}>F</MenuItem>
-                                    <MenuItem value={'F♯'}>F♯</MenuItem>
-                                    <MenuItem value={'G'}>G</MenuItem>
-                                    <MenuItem value={'G♯'}>G♯</MenuItem>
-                                    <MenuItem value={'A'}>A</MenuItem>
-                                    <MenuItem value={'A♯'}>A♯</MenuItem>
-                                    <MenuItem value={'B'}>B</MenuItem>
-                                </Select>
-                            </FormControl>
+                        <Box id="sequencerWrapperInner">
+                            <Box className="sequencer-dropdown">
+                                <FormControl fullWidth>
+                                    <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
+                                    <Select
+                                        sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                        labelId="audioKey-simple-select-label"
+                                        id="audioKey-simple-select"
+                                        value={audioKey}
+                                        label="Key"
+                                        onChange={handleChangeAudioKey}
+                                    >
+                                        <MenuItem value={'C'}>C</MenuItem>
+                                        <MenuItem value={'C♯'}>C♯</MenuItem>
+                                        <MenuItem value={'D'}>D</MenuItem>
+                                        <MenuItem value={'D♯'}>D♯</MenuItem>
+                                        <MenuItem value={'E'}>E</MenuItem>
+                                        <MenuItem value={'F'}>F</MenuItem>
+                                        <MenuItem value={'F♯'}>F♯</MenuItem>
+                                        <MenuItem value={'G'}>G</MenuItem>
+                                        <MenuItem value={'G♯'}>G♯</MenuItem>
+                                        <MenuItem value={'A'}>A</MenuItem>
+                                        <MenuItem value={'A♯'}>A♯</MenuItem>
+                                        <MenuItem value={'B'}>B</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Box>
+                            <Box className="sequencer-dropdown">
+                                <FormControl fullWidth>
+                                    <InputLabel id="octave-simple-select-label">Octave</InputLabel>
+                                    <Select
+                                        sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                        labelId="octave-simple-select-label"
+                                        id="octave-simple-select"
+                                        value={octave}
+                                        label="Octave"
+                                        onChange={handleChangeOctave}
+                                    >
+                                        <MenuItem value={'1'}>1</MenuItem>
+                                        <MenuItem value={'2'}>2</MenuItem>
+                                        <MenuItem value={'3'}>3</MenuItem>
+                                        <MenuItem value={'4'}>4</MenuItem>
+                                        <MenuItem value={'5'}>5</MenuItem>
+                                        <MenuItem value={'6'}>6</MenuItem>
+                                        <MenuItem value={'7'}>7</MenuItem>
+                                        <MenuItem value={'8'}>8</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Box>
+                            <Box className="sequencer-dropdown">
+                                <FormControl fullWidth>
+                                    <InputLabel id="scale-simple-select-label">Scale</InputLabel>
+                                    <Select
+                                        sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
+                                        labelId="scale-simple-select-label"
+                                        id="scale-simple-select"
+                                        value={audioScale}
+                                        label="Scale"
+                                        onChange={handleChangeScale}
+                                    >
+                                        <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
+                                        <MenuItem value={'Major'}>Major</MenuItem>
+                                        <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
+                                        <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
+                                        <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
+                                        <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
+                                        <MenuItem value={'Bachian'}>Bachian</MenuItem>
+                                        <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
+                                        <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
+                                        <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
+                                        <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
+                                        <MenuItem value={'Ionian'}>Ionian</MenuItem>
+                                        <MenuItem value={'Dorian'}>Dorian</MenuItem>
+                                        <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
+                                        <MenuItem value={'Lydian'}>Lydian</MenuItem>
+                                        <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
+                                        <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
+                                        <MenuItem value={'Locrian'}>Locrian</MenuItem>
+                                        <MenuItem value={'Fifths'}>Fifths</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Box>
+                            <Box className="sequencer-dropdown">
+                                <FormControl fullWidth>
+                                    <InputLabel id="chord-simple-select-label">Chord</InputLabel>
+                                    <Select
+                                        labelId="chord-simple-select-label"
+                                        id="chord-simple-select"
+                                        value={audioChord}
+                                        label="Chord"
+                                        onChange={handleChangeChord}
+                                        sx={{
+                                            color: 'white', 
+                                            fontWeight: 'bold', 
+                                            fontSize: '1rem',
+                                            '& .MuiList-root': {
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            background: 'var(--black-20)',
+                                            color: 'var(--white-20)',
+                                            }
+                                        }}
+                                    >
+                                        <MenuItem value={'M'}>Major Triad</MenuItem>
+                                        <MenuItem value={'m'}>Minor Triad</MenuItem>
+                                        <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
+                                        <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
+                                        <MenuItem value={'dim'}>Diminished Triad</MenuItem>
+                                        <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
+                                        <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
+                                        <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
+                                        <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
+                                        <MenuItem value={'5'}>Perfect Fifth</MenuItem>
+                                        <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
+                                        <MenuItem value={'6'}>Major Sixth 1</MenuItem>
+                                        <MenuItem value={'67'}>Dominant Sixth</MenuItem>
+                                        <MenuItem value={'69'}>Sixth Ninth</MenuItem>
+                                        <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
+                                        <MenuItem value={'m6'}>Minor Sixth</MenuItem>
+                                        <MenuItem value={'M7'}>Major Seventh</MenuItem>
+                                        <MenuItem value={'m7'}>Minor Seventh</MenuItem>
+                                        <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
+                                        <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
+                                        <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
+                                        <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
+                                        <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
+                                        <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
+                                        <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
+                                        <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
+                                        <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
+                                        <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
+                                        <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
+                                        <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
+                                        <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
+                                        <MenuItem value={'M9'}>Major Ninth</MenuItem>
+                                        <MenuItem value={'m9'}>Minor Ninth</MenuItem>
+                                        <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
+                                        <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
+                                        <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
+                                        <MenuItem value={'9'}>Dominant Ninth</MenuItem>
+                                        <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
+                                        <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
+                                        <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
+                                        <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
+                                        <MenuItem value={'11'}>Eleventh</MenuItem>
+                                        <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
+                                        <MenuItem value={'add11'}>Add Eleventh</MenuItem>
+                                        <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
+                                        <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
+                                        <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
+                                        <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
+                                        <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
+                                        <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Box>
                         </Box>
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="octave-simple-select-label">Octave</InputLabel>
-                                <Select
-                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                    labelId="octave-simple-select-label"
-                                    id="octave-simple-select"
-                                    value={octave}
-                                    label="Octave"
-                                    onChange={handleChangeOctave}
-                                >
-                                    <MenuItem value={'1'}>1</MenuItem>
-                                    <MenuItem value={'2'}>2</MenuItem>
-                                    <MenuItem value={'3'}>3</MenuItem>
-                                    <MenuItem value={'4'}>4</MenuItem>
-                                    <MenuItem value={'5'}>5</MenuItem>
-                                    <MenuItem value={'6'}>6</MenuItem>
-                                    <MenuItem value={'7'}>7</MenuItem>
-                                    <MenuItem value={'8'}>8</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="scale-simple-select-label">Scale</InputLabel>
-                                <Select
-                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                    labelId="scale-simple-select-label"
-                                    id="scale-simple-select"
-                                    value={audioScale}
-                                    label="Scale"
-                                    onChange={handleChangeScale}
-                                >
-                                    <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
-                                    <MenuItem value={'Major'}>Major</MenuItem>
-                                    <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
-                                    <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
-                                    <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
-                                    <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
-                                    <MenuItem value={'Bachian'}>Bachian</MenuItem>
-                                    <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
-                                    <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
-                                    <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
-                                    <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
-                                    <MenuItem value={'Ionian'}>Ionian</MenuItem>
-                                    <MenuItem value={'Dorian'}>Dorian</MenuItem>
-                                    <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
-                                    <MenuItem value={'Lydian'}>Lydian</MenuItem>
-                                    <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
-                                    <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
-                                    <MenuItem value={'Locrian'}>Locrian</MenuItem>
-                                    <MenuItem value={'Fifths'}>Fifths</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="chord-simple-select-label">Chord</InputLabel>
-                                <Select
-                                    labelId="chord-simple-select-label"
-                                    id="chord-simple-select"
-                                    value={audioChord}
-                                    label="Chord"
-                                    onChange={handleChangeChord}
-                                    sx={{
-                                        color: 'white', 
-                                        fontWeight: 'bold', 
-                                        fontSize: '1rem',
-                                        '& .MuiList-root': {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        background: 'var(--black-20)',
-                                        color: 'var(--white-20)',
-                                        }
-                                    }}
-                                >
-                                    <MenuItem value={'M'}>Major Triad</MenuItem>
-                                    <MenuItem value={'m'}>Minor Triad</MenuItem>
-                                    <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
-                                    <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
-                                    <MenuItem value={'dim'}>Diminished Triad</MenuItem>
-                                    <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
-                                    <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
-                                    <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
-                                    <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
-                                    <MenuItem value={'5'}>Perfect Fifth</MenuItem>
-                                    <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
-                                    <MenuItem value={'6'}>Major Sixth 1</MenuItem>
-                                    <MenuItem value={'67'}>Dominant Sixth</MenuItem>
-                                    <MenuItem value={'69'}>Sixth Ninth</MenuItem>
-                                    <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
-                                    <MenuItem value={'m6'}>Minor Sixth</MenuItem>
-                                    <MenuItem value={'M7'}>Major Seventh</MenuItem>
-                                    <MenuItem value={'m7'}>Minor Seventh</MenuItem>
-                                    <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
-                                    <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
-                                    <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
-                                    <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
-                                    <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
-                                    <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
-                                    <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
-                                    <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
-                                    <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
-                                    <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
-                                    <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
-                                    <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
-                                    <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
-                                    <MenuItem value={'M9'}>Major Ninth</MenuItem>
-                                    <MenuItem value={'m9'}>Minor Ninth</MenuItem>
-                                    <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
-                                    <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
-                                    <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
-                                    <MenuItem value={'9'}>Dominant Ninth</MenuItem>
-                                    <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
-                                    <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
-                                    <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
-                                    <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
-                                    <MenuItem value={'11'}>Eleventh</MenuItem>
-                                    <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
-                                    <MenuItem value={'add11'}>Add Eleventh</MenuItem>
-                                    <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
-                                    <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
-                                    <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
-                                    <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
-                                    <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
-                                    <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                    </Box>
 
                     </Box>
                 </>
@@ -1280,9 +1428,9 @@ export default function CreateChuck(props: any) {
             :
             <></>
             }
-            {/* {
+            {
             chuckHook && Object.values(chuckHook).length && keysVisible
-                ? */}
+                ?
                     <Box 
                       id="keyboardWrapper"
                       style={{display: (chuckHook && Object.values(chuckHook).length && keysVisible) ? "flex" : "none"}}
@@ -1293,8 +1441,8 @@ export default function CreateChuck(props: any) {
                             {createKeys()}
                         </ul>
                     </Box>
-                {/* : null
-            } */}
+                : null
+            }
   
             <Box id="synthControlsWrapper" className="invisible">
             {
@@ -2620,6 +2768,13 @@ export default function CreateChuck(props: any) {
 
                 </Box>
             : null} */}
+            <Button id="startMicrophoneButton" onClick={handleRecordAudio}>
+                {
+                !isRecordingMic 
+                    ? "START REC"
+                    : "STOP REC"
+                }
+            </Button>
 
         </>
     )
