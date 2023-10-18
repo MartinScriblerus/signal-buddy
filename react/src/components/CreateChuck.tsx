@@ -226,19 +226,18 @@ export default function CreateChuck(props: any) {
                 if (uploadedFiles[uploadedFiles.length - 1].name.length < 1) {
                     return;
                 }
-                console.log("HOLY SHIT: ", uploadedFiles[uploadedFiles.length - 1].name);
                 if (`${uploadedFiles[uploadedFiles.length - 1].name}`.length > 0) {
                     createdFilesList.current.push(`${uploadedFiles[uploadedFiles.length - 1].name}`);
                 }
                 console.log("CREATED FILES: ", createdFilesList.current);
-                await chuckHook.runCode(`
-                    SndBuf buffer => dac;
-                    "${createdFilesList.current[createdFilesList.current.length - 1]}" => buffer.read;
-                    buffer.samples() => buffer.pos;
+                // await chuckHook.runCode(`
+                //     SndBuf buffer => dac;
+                //     "${createdFilesList.current[createdFilesList.current.length - 1]}" => buffer.read;
+                //     buffer.samples() => buffer.pos;
 
-                    0 => buffer.pos;
-                    buffer.length() => now;
-                `);
+                //     0 => buffer.pos;
+                //     buffer.length() => now;
+                // `);
                 return createdFilesList.current;
             });
     }
@@ -409,23 +408,24 @@ export default function CreateChuck(props: any) {
         fileReader.onload = function(){
         const arrayBuffer = this.result;
         const url = URL.createObjectURL(uploadedFiles[uploadedFiles.length - 1]);
-        console.log("THIS IS A TEST: ", uploadedFiles[uploadedFiles.length - 1]);
+        // console.log("THIS IS A TEST: ", uploadedFiles[uploadedFiles.length - 1]);
         fetch(url)
             .then(data => data.arrayBuffer()).then(async (buffer: any) => {
                     const newestFileUpload = uploadedFiles[uploadedFiles.length - 1].name;
-                    console.log("NEWEST FILE UPLOAD: ", newestFileUpload);    
-                    console.log('THE FILE in loadchuck: ', uploadedFiles[uploadedFiles.length - 1]);
+                    // console.log("NEWEST FILE UPLOAD: ", newestFileUpload);    
+                    // console.log('THE FILE in loadchuck: ', uploadedFiles[uploadedFiles.length - 1]);
                     await chuckHook.createFile("", `${newestFileUpload}`, new Uint8Array(buffer));
                     createdFilesList.current.push(`${uploadedFiles[uploadedFiles.length - 1].name}`);
                     
-                    await chuckHook.runCode(`
-                        SndBuf buffer => dac;
-                        "${newestFileUpload}" => buffer.read;
-                        buffer.samples() => buffer.pos;
+                    // await chuckHook.runCode(`
+                    //     SndBuf buffer => dac;
+                    //     "${newestFileUpload}" => buffer.read;
+                    //     buffer.samples() => buffer.pos;
 
-                        0 => buffer.pos;
-                        buffer.length() => now;
-                    `);
+                    //     0 => buffer.pos;
+                    //     buffer.length() => now;
+                    // `);
+                    console.log("ALL GOOD WITH CHUCK!");
 
                 })
     
@@ -435,20 +435,33 @@ export default function CreateChuck(props: any) {
         //  snippet.log(arrayBuffer);
         //  snippet.log(arrayBuffer.byteLength);
         }
-        console.log("UPLOADED FILES TESTING HERE NOW 2: ", uploadedFiles);
+        // console.log("UPLOADED FILES TESTING HERE NOW: ", uploadedFiles);
 
         
         // .then((data: any) => {
 
         // theChuck.loadFile(`${createdFilesList}`).then(async () => {
-        console.log("BPM SHOULD BE... ", bpm);
-        console.log("RUNNING???? ", running);
-        console.log("created files list: ", createdFilesList.current);
+        // console.log("BPM SHOULD BE... ", bpm);
+        // console.log("RUNNING???? ", running);
+        // console.log("created files list: ", createdFilesList.current);
         // theChuck.runFileWithArgs('writeData.ck', `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList}`);
-        theChuck.runFileWithArgs("uploadedFiles.ck", `/${createdFilesList.current}`);
+        // theChuck.runFileWithArgs("uploadedFiles.ck", `/${createdFilesList.current[createdFilesList.current.length - 1]}`);
+        
         if (createdFilesList.current.length > 0) {
-            console.log("GGODDAMIT: ", createdFilesList.current);
-            theChuck.runFileWithArgs("runLoop.ck", `${createdFilesList.current}:${bpm}:${running}:${lastBpm}:${numeratorSignature}`);
+            // console.log("GGODDAMIT: ", createdFilesList.current);
+            
+            const filesArg = createdFilesList.current.toString().trim().replaceAll(",",":");
+            // await createdFilesList.current.forEach((i: string, idx: number) => {
+            //     const filesArgInner = "";
+            //     if(idx !== createdFilesList.current.length - 1) {
+            //         filesArgInner.concat(`/${i}:`);
+            //     } else {
+            //         filesArgInner.concat(`/${i}`);
+            //     }
+            //     return filesArgInner;
+            // }); 
+    
+            theChuck.runFileWithArgs("runLoop.ck", `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList.current.length}:${filesArg}`);
         }
         // theChuck.runFileWithArgs("runLoop.ck", `/${createdFilesList.current}:${bpm}:${running}:${lastBpm}:${numeratorSignature}`);
 

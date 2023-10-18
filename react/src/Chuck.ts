@@ -113,7 +113,7 @@ export default class Chuck extends window.AudioWorkletNode {
   ): Promise<Chuck> {
     
     const wasm = await loadWasm(whereIsChuck);
-    console.log("WHERE IS CHUCK@@@? ", whereIsChuck);
+    // console.log("WHERE IS CHUCK@@@? ", whereIsChuck);
     let defaultAudioContext: boolean  = false;
     // If an audioContext is not given, create a default one
     if (audioContext === undefined) {
@@ -886,7 +886,7 @@ export default class Chuck extends window.AudioWorkletNode {
    */
   public chuckPrint(message: string) {
     // Default ChucK output destination
-    console.log(message);
+    // console.log(message);
   }
 
   //--------------------------------------------------------

@@ -61,6 +61,8 @@ def detect_pitch(y, sr, times):
     }
     pitches, magnitudes = librosa.core.piptrack(y=y, sr=sr, S=None, n_fft=2048, hop_length=None, fmin=150.0, fmax=2000.0, threshold=0.1, win_length=None, window='hann', center=True, pad_mode='constant', ref=None)
     pitches[pitches > 1e308] = 0
+    if times == 0: 
+        times = np.arange(0, pitches.shape[1])
     for idx, t in enumerate(np.nditer(times)):
         index = magnitudes[:, t.astype(int)].argmax()
         print('HERE IS A PITCH: ', pitches[index, t.astype(int)].tolist())

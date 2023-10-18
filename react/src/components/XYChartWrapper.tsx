@@ -135,11 +135,8 @@ export default function Example({ height, librosaData, setTicksDatas, ticksDatas
         XYChart,
       }) => (
         <>
-        {console.log('DATA IS>>>>>>> ', config)}
-        {console.log('NEWDATA IS>>>>>>> ', newData)}
         
         <XYChart
-
           theme={theme}
           xScale={config.x}
           yScale={config.y}
