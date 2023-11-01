@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, createContext, useContext}
 // import Chuck from '../Chuck';
 import { Chuck } from 'webchuck'
 import axios, { AxiosResponse } from 'axios';
-import { FLASK_API_URL } from '../helpers/constants';
+import { FLASK_API_URL, MIDDLE_FONT_SIZE } from '../helpers/constants';
 import Box from '@mui/material/Box';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
@@ -11,16 +11,16 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Example from './XYChartWrapper';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import { useDeferredPromise } from './DefereredPromiseHook';
-import { Button, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, InputLabel } from '@mui/material';
+import { Button, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, InputLabel, Typography } from '@mui/material';
 import rawTree from '../helpers/rawTreeNode';
 import Example2 from './TreeViz';
 import CLARINET, { CHORUS, STFKRP, SITAR, MOOG, MOOG2, RHODEY, FRNCHRN, MANDOLIN, SAXOFONY, SAMPLER } from './stkHelpers'
-// import { onMIDISuccess, onMIDIFailure } from './helpers/midiAlerts'; 
+// import { onMIDISuccess, onMIDIFailure } from '../helpers/midiAlerts'; 
 import CircularSlider from '@fseehawer/react-circular-slider';
-import fs from 'node:fs';
-import tempWrite from 'temp-write';
+import {useMingusData} from '../hooks/useMingusData';
 import { midiHzConversions } from './midiHzConversions';
-
+import SampleTools from './SampleTools';
+import { useAppSelector } from '../app/hooks';
 
 declare global {
     interface HTMLLIElement {
@@ -102,7 +102,8 @@ export default function CreateChuck(props: any) {
     const [audioKey, setAudioKey] = useState('C');
     const [audioScale, setAudioScale] = useState('Major');
     const [audioChord, setAudioChord] = useState('M');
-    const [mingusData, setMingusData] = useState<any>([]);
+    const [mingusKeyboardData, setMingusKeyboardData] = useState<any>([]);
+    const [mingusData, setMingusData] = useState<Array<any>>([]);
     const [librosaData, setLibrosaData] = useState<LibrosaData>({
         beats: [],
         tempo: 60,
@@ -174,13 +175,11 @@ export default function CreateChuck(props: any) {
     const [vizItem, setVizItem] = useState(0);
     const [treeDepth, setTreeDepth] = React.useState<number>(0);
     const [treeAtSelected, setTreeAtSelected] = React.useState<TreeAtSelected>({data: {}, depth: 0, children: [], parent: {}});
-    const [vizComponent, setVizComponent] = useState<any>(<></>);
+    const [vizComponent, setVizComponent] = useState<any>(0);
     const [nextTreeItem, setNextTreeItem] = useState<any>('step');
     const [ticksDatas, setTicksDatas] = useState<any>([]);
 
     // const [createdFilesList, setCreatedFilesList] = useState([]);
-
-    const [isRecordingMic, setIsRecordingMic] = useState(false);
 
     const [positionDenominator, setPositionDenominator] = useState(2);
 
@@ -244,7 +243,6 @@ export default function CreateChuck(props: any) {
         //     console.log("CREATED FILES LIST: ", createdFilesList.current);
 
     
-    
     const handleUpdateRawTree = (name: string, operation: string) => {
         const arrContainerUpdateTree = [];
         const childrenUpdated = {name: name, children: []};
@@ -295,18 +293,25 @@ export default function CreateChuck(props: any) {
         setTicksDatas(ticks);
     };
 
+    const {getMingusData} = useMingusData();
+
+    // useEffect(() => {
+    //     (async() => {
+    //         const test = getMingusData(state => state);
+    //         console.log("GET MINGUS DATA!!!! ", test);
+    //     })();
+    // }, [getMingusData])
+
     useEffect(() => {
         console.log("TICKS DATA IN CREATE CHUCK: ", ticksDatas);
     }, [ticksDatas]);
 
-    const vizArray = [<Example width={500} height={500} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />, <Example2 key={newestSetting.name} width={800} height={500} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />, <Box>Updating...</Box>];
-
-    // setVizComponent(vizArray[vizItem]);
-
-    useEffect(() => {
-        setVizComponent(vizArray[1]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [newestSetting]);
+    // useEffect(() => {
+    //     (async() => {
+    //         const mData = await useMingusData();
+    //         setMingusData(mData);
+    //     })();
+    // },[]);
 
     const lastMidiNote: any = useRef('');
     lastMidiNote.current = '';
@@ -320,11 +325,8 @@ export default function CreateChuck(props: any) {
     midiNotesOff.current = [];
     const ranChuckInit = useRef(false);
     ranChuckInit.current = false;
-    // const playingInstrument: any = useRef([]);
-    // playingInstrument.current = [];
     const midiCode = useRef('');
     midiCode.current =  midiCode.current || '';
-    const currGraphEl: any = useRef()
     // console.log('datas: ', datas);
 
     const headerDict = {
@@ -336,27 +338,15 @@ export default function CreateChuck(props: any) {
     const requestOptions = {                                                                                                                                                                                 
         headers: headerDict,
         params: {
-            key: game.key
+            key: audioKey,
         }
     };
 
-    if (!game.audioContext) {
-        game.audioContext = new AudioContext();  
-    }
-
     useEffect(() => {
-        setVizComponent(vizArray[2]);
-        // vizComponent.current = vizArray[2];
-        return () => {
-            console.log("CLEANING UP!");
-        }
-    }, [newestSetting]);
-
-    useEffect(() => {
-        if (treeDepth !== treeAtSelected.depth) {
+        if (treeAtSelected.depth && treeDepth !== treeAtSelected.depth) {
             setTreeDepth(treeAtSelected.depth);
         }
-        setVizComponent(vizArray[1]);
+        // setVizComponent(1);
     }, [treeDepth, treeAtSelected]);
 
     useEffect(() => {
@@ -389,16 +379,6 @@ export default function CreateChuck(props: any) {
         setAudioChord(event.target.value as string);
     };
 
-    // const loadChuck = async (theChuck: any) => {
-    //     theChuck.loadFile('readData.ck').then(async () => {
-    //         await theChuck.loadFile('readData.txt').then(async () => {
-    //             theChuck.runFile('readData.ck');
-    //         });
-    //     });
-    //     setLoaded(true);
-    // }
-
-
     const loadChuck = async (theChuck: any) => {
         if (!uploadedFiles.length) {
             return;
@@ -409,6 +389,7 @@ export default function CreateChuck(props: any) {
         const arrayBuffer = this.result;
         const url = URL.createObjectURL(uploadedFiles[uploadedFiles.length - 1]);
         // console.log("THIS IS A TEST: ", uploadedFiles[uploadedFiles.length - 1]);
+        console.log("ABOUT TO fetch(url)");
         fetch(url)
             .then(data => data.arrayBuffer()).then(async (buffer: any) => {
                     const newestFileUpload = uploadedFiles[uploadedFiles.length - 1].name;
@@ -416,50 +397,18 @@ export default function CreateChuck(props: any) {
                     // console.log('THE FILE in loadchuck: ', uploadedFiles[uploadedFiles.length - 1]);
                     await chuckHook.createFile("", `${newestFileUpload}`, new Uint8Array(buffer));
                     createdFilesList.current.push(`${uploadedFiles[uploadedFiles.length - 1].name}`);
-                    
-                    // await chuckHook.runCode(`
-                    //     SndBuf buffer => dac;
-                    //     "${newestFileUpload}" => buffer.read;
-                    //     buffer.samples() => buffer.pos;
 
-                    //     0 => buffer.pos;
-                    //     buffer.length() => now;
-                    // `);
                     console.log("ALL GOOD WITH CHUCK!");
 
                 })
     
-            
-   
-   
-        //  snippet.log(arrayBuffer);
-        //  snippet.log(arrayBuffer.byteLength);
         }
-        // console.log("UPLOADED FILES TESTING HERE NOW: ", uploadedFiles);
+ 
 
-        
-        // .then((data: any) => {
-
-        // theChuck.loadFile(`${createdFilesList}`).then(async () => {
-        // console.log("BPM SHOULD BE... ", bpm);
-        // console.log("RUNNING???? ", running);
-        // console.log("created files list: ", createdFilesList.current);
-        // theChuck.runFileWithArgs('writeData.ck', `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList}`);
-        // theChuck.runFileWithArgs("uploadedFiles.ck", `/${createdFilesList.current[createdFilesList.current.length - 1]}`);
-        
         if (createdFilesList.current.length > 0) {
             // console.log("GGODDAMIT: ", createdFilesList.current);
             
             const filesArg = createdFilesList.current.toString().trim().replaceAll(",",":");
-            // await createdFilesList.current.forEach((i: string, idx: number) => {
-            //     const filesArgInner = "";
-            //     if(idx !== createdFilesList.current.length - 1) {
-            //         filesArgInner.concat(`/${i}:`);
-            //     } else {
-            //         filesArgInner.concat(`/${i}`);
-            //     }
-            //     return filesArgInner;
-            // }); 
     
             theChuck.runFileWithArgs("runLoop.ck", `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList.current.length}:${filesArg}`);
         }
@@ -478,11 +427,20 @@ export default function CreateChuck(props: any) {
     }
  
 
-    let midi = null; // global MIDIAccess object
+    // let midi = null; // global MIDIAccess object
+    const midi = useRef<any>(); // global MIDIAccess object
+    midi.current = null;
     const nav: any = navigator;
-    
-    midi = nav.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure)
-    
+    // const mData = useMingusData();
+    // setMingusData(mData);
+    // console.log("mDATA ", mData);
+    useEffect(() => {
+        midi.current = nav.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+    }, [nav]);
+
+    useEffect(() => {
+        console.log("MIDI CURRENT CHANGED: ", midi.current);
+    }, [midi]);
 
     useMemo(() => {  
         const serverFilesToPreload = [
@@ -553,17 +511,19 @@ export default function CreateChuck(props: any) {
         ranChuckInit.current = true;
         
         (async () => {
-            const gameExists = await game['theChuck'] || chuckHook;  
+            const gameExists = await chuckHook;  
             if (gameExists) {
                 return;
             }
             const theChuckTemp: any = await Chuck.init(serverFilesToPreload, undefined, 2, undefined);
             console.log("CHUCK: ", Chuck)
             // Promise.resolve(theChuckTemp.promise).then(async (i: any) => {
-                game['theChuck'] = theChuckTemp;
+                // setChuckHook(theChuckTemp);
                 // test beep
                 // await theChuckTemp.runCode(` SinOsc osc => dac; 0.2 => osc.gain; 220 => osc.freq; .3::second => now; `);
                 // const fromS3 = await theChuckTemp.loadFile(`https://teemp.s3.us-east-2.amazonaws.com/LakeHouse_Scratch1_Redo.wav`);
+                handleKeysVisible();
+                handleInstrumentsVisible();
                 return setChuckHook(theChuckTemp);
             // });       
         })();
@@ -610,78 +570,63 @@ export default function CreateChuck(props: any) {
         });
     };
 
-    const handleRecordAudio = async() => {
-        // const audioCtx = await chuckHook.context;
-        let recorder;
-        let stream;
-        const chuck = await chuckHook;
-        console.log("NAV DEVICES ", navigator.mediaDevices);
-        // Prompt the user to use their microphone.
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        recorder = new MediaRecorder(stream);
-        if(!isRecordingMic) {
-            console.log("CHUCKHOOK: ", await chuck);
-            let mic = chuck.context as unknown as AudioContext;
-
-            if (chuck.context) {
-                // mic = chuck.context.destination;
-                // const source = mic.createMediaStreamSource(stream);
-                // source.connect(chuckHook.context.destination);
-            }
-            // console.log('SRC ', source);
-                                // For the sake of more legible code, this sample only uses the
-            // `showSaveFilePicker()` method. In production, you need to
-            // cater for browsers that don't support this method, as
-            // outlined in https://web.dev/patterns/files/save-a-file/.
+    // const handleRecordAudio = async() => {
+    //     // const audioCtx = await chuckHook.context;
+    //     let recorder;
+    //     let stream;
+    //     console.log("NAV DEVICES ", navigator.mediaDevices);
+    //     // Prompt the user to use their microphone.
+    //     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    //     recorder = new MediaRecorder(stream);
+    //     if(!isRecordingMic) {          
+    //         // Prompt the user to choose where to save the recording file.
+    //         const suggestedName = "microphone-recording.webm";
+    //         const handle = await window.showSaveFilePicker({ suggestedName });
+    //         const writable = await handle.createWritable();
           
-            // Prompt the user to choose where to save the recording file.
-            const suggestedName = "microphone-recording.webm";
-            const handle = await window.showSaveFilePicker({ suggestedName });
-            const writable = await handle.createWritable();
-          
-            // Start recording.
-            recorder.start();
-            recorder.addEventListener("dataavailable", async (event) => {
-              // Write chunks to the file.
-              await writable.write(event.data);
-              if (recorder.state === "inactive") {
-                // Close the file when the recording stops.
-                await writable.close();
-              }
-            });
-        } else {
-            // Stop the recording.
-            recorder.stop();
-            // Stop the stream.
-            stream.getTracks().forEach(track => track.stop());
-        };
-        setIsRecordingMic(!isRecordingMic);        
-    }
+    //         // Start recording.
+    //         recorder.start();
+    //         recorder.addEventListener("dataavailable", async (event) => {
+    //           // Write chunks to the file.
+    //           await writable.write(event.data);
+    //           if (recorder.state === "inactive") {
+    //             // Close the file when the recording stops.
+    //             await writable.close();
+    //           }
+    //         });
+    //     } else {
+    //         // Stop the recording.
+    //         recorder.stop();
+    //         // Stop the stream.
+    //         stream.getTracks().forEach(track => track.stop());
+    //     };
+    //     setIsRecordingMic(!isRecordingMic);        
+    // }
 
     const tryGetNote = (note: any) => {
         const noteIndex1 = midiHzConversions.filter((i: any) => i.note === note);
         const noteReady = noteIndex1[0].data;
         return noteReady;
     };
+   
 
+    
     const organizeRows = async(rowNum: number, note: string) => {
         if (keysReady) {
             return;
         }
+        
+        // console.log("WWWWHHHHAAAATTTT IS MDDDDATA> ", mData);
+        // setMingusKeyboardData(mData);
         console.log("NOTE: ", note);
         console.log("ROW NUM: ", rowNum);
+        // if (mData && mData.length > 108) {
+        //     console.log("already have mData");
+        //     return;
+        // }
         const noteReady = await awaitNote(note);
         console.log("NOTEREADT ", noteReady);
-        // console.log("REAL NOTE READT: ", noteReady);
-        // const noteReady = await tryGetNote(note);
-
-        // const noteIndex1 = midiHzConversions.filter((i: any) => i.note === note);
-        // const noteReady = noteIndex1[0].data;
-        // console.log("Note ready: ", noteReady);
-        // const noteIndex = midiHzConversions.findIndex((i: any) => i.note === note);
-        // // const noteReady = noteIndex !== -1 ? midiHzConversions[noteIndex].data : null;
-
-        // console.log("noteVals: ", noteIndex);
+        getMingusData({...noteReady, note, rowNum});
         if (noteReady) {
             setKeysReady(true);
         } else {
@@ -756,7 +701,7 @@ export default function CreateChuck(props: any) {
             headers: {
               'Content-Type': 'application/json'
             }
-          }).then(({data}) => setMingusData(data));
+          }).then(({data}) => setMingusKeyboardData(data));
         console.log("TEST HERE 1#");
         axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, audioKey}, {
             headers: {
@@ -809,44 +754,6 @@ export default function CreateChuck(props: any) {
         });
     }
 
-    // useEffect(() => {
-    //     console.log('CHHHHHECKIT: ', uploadedFiles);
-    //     uploadedFiles.map(async (f: any, idx: number) => {
-    //         const reader = new FileReader();
-    //         // const dataURL = reader.readAsDataURL(f);
-    //         // console.log('WHAT IS DATA URL? ', dataURL);
-    //         console.log('CHHHHHECKIT: ', uploadedFiles);
-    //         const tryFetch = await axios.get('http://3.141.15.81/');
-    //         console.log('TRY FETCH SHIT: ', tryFetch);
-    //         const fileURLs = {};
-    //         reader.readAsDataURL(f);
-    //         reader.onload = async (e) => {
-    //             // fileURLs[idx] = reader.result as string;
-    //             console.log('DATAURL WITHIN: ', e.target.result);
-
-    //             const ch = chuckHook;
-    //             try {
-    //                 await ch.loadFile(e.target.result as string);
-    //                 await ch.runCode(`
-    //                 SndBuf buf => dac;
-
-    //                 me.dir() + ${e.target.result} => string test;
-    //                 test => buf.read;
-
-    //                 0.5 => buf.gain;
-    //                 1 => buf.pos;
-    //                 1 => buf.rate;
-    //                 0.5::second => now;
-    //                 0 => buf.pos;
-    //                 `)
-    //             } catch (e) {
-    //                 console.log('ERROR in loadfile: ', e);
-    //             }
-    //             console.log('CHUCK HOOK AFTER FILE UPLOAD IS ', ch);
-    //         }
-    //     });
-    // }, [uploadedFiles.length]);
-
     useEffect(() => {
         console.log('MINGUS DATA: ', mingusData);
         modsTemp.current.push({
@@ -858,6 +765,7 @@ export default function CreateChuck(props: any) {
             audioChord: audioChord || '',
             audioScale,
         });
+        console.log("MODS update: ", modsTemp.current);
     }, [mingusData]);
 
     useEffect(() => {
@@ -869,6 +777,7 @@ export default function CreateChuck(props: any) {
                 setModsCount(modsCount + 1);
                 setModsHook(newMod);
             }
+            console.log("MINGUS CHORDS DATA: ", mingusChordsData.current);
         }
         getSequenceList();
     }, [mingusChordsData.current]);
@@ -892,12 +801,13 @@ export default function CreateChuck(props: any) {
                 note = note[0];
             }
             console.log('JUST CHECKIN WHAT IS NOTE? ', note);
+            ///////////////////////////////
             axios.post(`${process.env.REACT_APP_FLASK_API_URL}/midi/${note}`, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             }).then(({data}) => { 
-                console.log('REALTIME MINGUS DATA: ', data);
+                console.log('VERY IIMPORTANT TO CHECK POST!@@ *** REALTIME MINGUS DATA: ', data);
                 const theOctave = data.midiNote[data.midiNote.length - 1];
                 let theNote = data.midiNote.slice(0, -1);
                 const index = theNote.indexOf('♯');
@@ -908,14 +818,14 @@ export default function CreateChuck(props: any) {
                 if (convertedNote) {
                     theNote = convertedNote;
                 }
-                console.log('THE NOTE IN CREATECHUCK: ', theNote);
-                console.log("TEST HERE 2$");
+                console.log('THE MIDI NOTE IN CREATECHUCK: ', theNote);
+ 
                 axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {theNote, audioScale, theOctave}, {
                     headers: {
                     'Content-Type': 'application/json'
                     }
                 }).then(async ({data}) => {
-                    console.log("REALTIME SCALES DATA: ", data);
+                    console.log("ALSO VERY IIMPORTANT TO CHECK POST!@@ *** REALTIME SCALES DATA: ", data);
                     const gotData = await data;
                     if (!gotData.length) {
                         console.log('NO MINGUS SCALES? ', gotData);
@@ -928,28 +838,24 @@ export default function CreateChuck(props: any) {
                     });
                 });
 
-                console.log("TEST HERE 2#");
                 axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, theNote, theOctave}, {
                     headers: {
                     'Content-Type': 'application/json'
                     }
                 }).then(async ({data}) => {
-                    console.log("REALTIME CHORDS DATA: ", data);
+                    console.log("ONCE AGAIN VERY IIMPORTANT TO CHECK POST!@@ *** REALTIME CHORDS DATA: ", data);
                     const gotData = await data;
                     if (!gotData.length) {
                         console.log('NO DATA 2? ', gotData);
                         return;
                     }
-                    // gotData.forEach((d: any) => {
-                    //     if (realTimeChordsDataObj.indexOf(d) === -1) {
-                    setRealTimeChordsDataObj((realTimeChordsDataObj) => [[], [gotData]]);
-                    //     }
-                    // });
 
+                    setRealTimeChordsDataObj((realTimeChordsDataObj) => [[], [gotData]]);
                     mingusChordsData.current = data;
                 });
             });
         }
+        
         lastMidiNote.current = note;
         if (midiNotesOn.current.indexOf(note) === -1) {
             midiNotesOn.current.push(note);
@@ -962,7 +868,7 @@ export default function CreateChuck(props: any) {
                 reject('nope');
             }
         });
-        console.log('CAN WE START USING MINGUS DATA? ', mingusChordsData.current);
+        console.log('CAN WE START USING MINGUS CHORDS DATA? ', mingusChordsData.current);
         if (!mingusChordsData.current)
         console.log('what is nope here? ', Promise.resolve(mg));
 
@@ -1045,8 +951,7 @@ export default function CreateChuck(props: any) {
                                 console.log('WHAT IS I (RUNNING CODE / RES IS ZERO) ', i);
                             });                        
                         });
-                    } 
-                    else {
+                    } else {
                         Promise.resolve(result.runCode(midiCode.current)).then(async (w: any) => {
                             console.log('WHAT IS (RUNNING CODE) in the ELSE? ', w);
                         });       
@@ -1065,7 +970,7 @@ export default function CreateChuck(props: any) {
         console.log('MIDI NOTES ON IN OFF: ', midiNotesOn.current);
         if (chuckHook === undefined) return;
         setPlaying(false);
-        console.log("WHAT IS CHUCKHOOK?? ", chuckHook);
+        console.log("WHAT IS CHUCKHOOK IN OFF?? ", chuckHook);
         const firstShredActive = chuckHook.isShredActive(1);
         Promise.resolve(firstShredActive).then(async (i: any) => {
             chuckHook.removeLastCode();
@@ -1073,7 +978,7 @@ export default function CreateChuck(props: any) {
     };
 
     function onMIDISuccess(midiAccess: any) {
-        midi = midiAccess;
+        midi.current = midiAccess;
           
         const inputs = midiAccess.inputs;
         const outputs = midiAccess.outputs;
@@ -1090,36 +995,41 @@ export default function CreateChuck(props: any) {
     };
       
     function getMIDIMessage(message: any) {
-    console.log('MIDI MSG> ', message);
-    const command = message.data[0];
-    const note = message.data[1];
-    const velocity = (message.data.length > 2) ? message.data[2] : 0; // a velocity value might not be included with a noteOff command
-    // console.log("YO MIDI MSG: ", message);
-    if (playing) {
-        console.log('DOES NOTE === LASTNOTE? ', note, lastMidiNote.current);
-        return;
-    }
+        const command = message.data[0];
+        const note = message.data[1];
+        const velocity = (message.data.length > 2) ? message.data[2] : 0; // a velocity value might not be included with a noteOff command
+        // console.log("YO MIDI MSG: ", message);
+        if (playing) {
+            console.log('DOES NOTE === LASTNOTE? ', note, lastMidiNote.current);
+            return;
+        }
     
-    // console.log('MIDI MSG!: ', message);
-    switch (command) {
-        case 144: // noteOn
-            if (velocity > 20) {
-                if (!note) {
-                    return;
+
+        switch (command) {
+            case 144: // noteOn
+                if (velocity > 20) {
+                    if (!note) {
+                        return;
+                    }
+                    console.log("NOTE ON MIDI MSG! command ", command);
+                    console.log("NOTE ON MIDI MSG! note ", note);
+                    console.log("NOTE ON MIDI MSG! velocity ", velocity);
+                    noteOn(Math.round(note), Math.round(parseInt(velocity)));
+                    // console.log('note ', note);
+                    // console.log('velocity ', velocity);
+                } else {
+                    console.log("********* TURNING OFF!");
+                    noteOff(note);
                 }
-                noteOn(Math.round(note), Math.round(parseInt(velocity)));
-                // console.log('note ', note);
-                // console.log('velocity ', velocity);
-            } else {
-                console.log("********* TURNING OFF!");
+                break;
+            case 128: // noteOff
+                console.log("should be noteoff command: ", command);
+                console.log("should be noteoff note: ", note);
+                console.log("should be noteoff velocity: ", velocity);
                 noteOff(note);
-            }
-            break;
-        case 128: // noteOff
-            noteOff(note);
-            break;
-        // we could easily expand this switch statement to cover other types of commands such as controllers or sysex
-    }
+                break;
+            // we could easily expand this switch statement to cover other types of commands such as controllers or sysex
+        }
     }
         
     const playChuckNote = (note: any) => {       
@@ -1156,11 +1066,11 @@ export default function CreateChuck(props: any) {
         console.log("vizItem.current is ", vizItem);
         if (vizItem === 0) {
             // handleSequencerVisible();
-            setVizComponent(vizArray[1]);
+            setVizComponent(1);
             setVizItem(1);
         } else {
             // handleSequencerVisible();
-            setVizComponent(vizArray[0]);
+            setVizComponent(0);
             setVizItem(0);
         }
     };
@@ -1205,251 +1115,293 @@ export default function CreateChuck(props: any) {
 
     return (
         <>
-            <Button onClick={handleDrumMachine}>DRUM</Button>
-            <Button onClick={handleKeysVisible}>KEYS</Button>
-            <Button onClick={handleInstrumentsVisible}>INSTRUMENT</Button>
-            {/* <Button onClick={handleSequencerVisible}>SEQUENCER</Button> */}
+        <Box>
+        <Box id="sequencerWrapperOuter">
+        
+            <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
 
-            {
+            <Box id="sequencerWrapperInner">
+                <Box className="sequencer-dropdown">
+                    <FormControl 
+                    fullWidth>
+                        <InputLabel
+                            id={"audioKey-simple-select-label"} sx={{ color: 'white !important', fontFamily: 'text.primary'}}>Key
+                        </InputLabel>
+                        <Select
+                            sx={{color: 'white', fontWeight: 'bold', fontSize: MIDDLE_FONT_SIZE, fontFamily: 'typography.fontFamily'}}
+                            labelId="audioKey-simple-select-label"
+                            id="audioKey-simple-select"
+                            value={audioKey}
+
+                            onChange={handleChangeAudioKey}
+                        >
+                            <MenuItem sx={{fontFamily: 'monospace'}} value={'C'}>C</MenuItem>
+                            <MenuItem sx={{fontFamily: 'monospace'}} value={'C♯'}>C♯</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'D'}>D</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'D♯'}>D♯</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'E'}>E</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'F'}>F</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'F♯'}>F♯</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'G'}>G</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'G♯'}>G♯</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'A'}>A</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'A♯'}>A♯</MenuItem>
+                            <MenuItem sx={{fontFamily: 'typography.fontFamily'}} value={'B'}>B</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+                <Box className="sequencer-dropdown">
+                    <FormControl fullWidth>
+                        <InputLabel
+                            id={"octave-simple-select-label"} sx={{ color: 'white !important', fontFamily: 'text.primary'}}>Octave
+                        </InputLabel>
+                        <Select
+                            sx={{color: 'white', fontWeight: 'bold', fontSize: '14px'}}
+                            labelId="octave-simple-select-label"
+                            id="octave-simple-select"
+                            value={octave}
+                            label="Octave"
+                            onChange={handleChangeOctave}
+                        >
+                            <MenuItem value={'1'}>1</MenuItem>
+                            <MenuItem value={'2'}>2</MenuItem>
+                            <MenuItem value={'3'}>3</MenuItem>
+                            <MenuItem value={'4'}>4</MenuItem>
+                            <MenuItem value={'5'}>5</MenuItem>
+                            <MenuItem value={'6'}>6</MenuItem>
+                            <MenuItem value={'7'}>7</MenuItem>
+                            <MenuItem value={'8'}>8</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+                <Box className="sequencer-dropdown">
+                    <FormControl fullWidth>
+                        <InputLabel
+                            id={"scale-simple-select-label"} sx={{ color: 'white !important', fontFamily: 'text.primary'}}>Scale
+                        </InputLabel>
+                        <Select
+                            sx={{color: 'white', fontWeight: 'bold', fontSize: MIDDLE_FONT_SIZE}}
+                            labelId="scale-simple-select-label"
+                            id="scale-simple-select"
+                            value={audioScale}
+                            label="Scale"
+                            onChange={handleChangeScale}
+                        >
+                            <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
+                            <MenuItem value={'Major'}>Major</MenuItem>
+                            <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
+                            <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
+                            <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
+                            <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
+                            <MenuItem value={'Bachian'}>Bachian</MenuItem>
+                            <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
+                            <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
+                            <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
+                            <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
+                            <MenuItem value={'Ionian'}>Ionian</MenuItem>
+                            <MenuItem value={'Dorian'}>Dorian</MenuItem>
+                            <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
+                            <MenuItem value={'Lydian'}>Lydian</MenuItem>
+                            <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
+                            <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
+                            <MenuItem value={'Locrian'}>Locrian</MenuItem>
+                            <MenuItem value={'Fifths'}>Fifths</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+                <Box className="sequencer-dropdown">
+                    <FormControl fullWidth>
+                        <InputLabel
+                            id={"chord-simple-select-label"} sx={{ color: 'white !important', fontFamily: 'text.primary'}}>Chord
+                        </InputLabel>
+                        <Select
+                            labelId="chord-simple-select-label"
+                            id="chord-simple-select"
+                            value={audioChord}
+                            label="Chord"
+                            onChange={handleChangeChord}
+                            sx={{
+                                color: 'white', 
+                                fontWeight: 'bold', 
+                                fontSize: MIDDLE_FONT_SIZE,
+                                '& .MuiList-root': {
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    background: 'var(--black-20)',
+                                    color: 'var(--white-20)',
+                                }
+                            }}
+                        >
+                            <MenuItem value={'M'}>Major Triad</MenuItem>
+                            <MenuItem value={'m'}>Minor Triad</MenuItem>
+                            <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
+                            <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
+                            <MenuItem value={'dim'}>Diminished Triad</MenuItem>
+                            <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
+                            <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
+                            <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
+                            <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
+                            <MenuItem value={'5'}>Perfect Fifth</MenuItem>
+                            <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
+                            <MenuItem value={'6'}>Major Sixth 1</MenuItem>
+                            <MenuItem value={'67'}>Dominant Sixth</MenuItem>
+                            <MenuItem value={'69'}>Sixth Ninth</MenuItem>
+                            <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
+                            <MenuItem value={'m6'}>Minor Sixth</MenuItem>
+                            <MenuItem value={'M7'}>Major Seventh</MenuItem>
+                            <MenuItem value={'m7'}>Minor Seventh</MenuItem>
+                            <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
+                            <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
+                            <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
+                            <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
+                            <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
+                            <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
+                            <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
+                            <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
+                            <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
+                            <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
+                            <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
+                            <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
+                            <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
+                            <MenuItem value={'M9'}>Major Ninth</MenuItem>
+                            <MenuItem value={'m9'}>Minor Ninth</MenuItem>
+                            <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
+                            <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
+                            <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
+                            <MenuItem value={'9'}>Dominant Ninth</MenuItem>
+                            <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
+                            <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
+                            <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
+                            <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
+                            <MenuItem value={'11'}>Eleventh</MenuItem>
+                            <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
+                            <MenuItem value={'add11'}>Add Eleventh</MenuItem>
+                            <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
+                            <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
+                            <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
+                            <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
+                            <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
+                            <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+            </Box>
+
+        </Box>
+        </Box>
+            {/* {
                 playingInstrument
                 ?
                     <Button onClick={handleSynthControlsVisible}>INSTRUMENT CONTROLS</Button>
                 :
                     null
-            }
+            } */}
 
-            <Button onClick={handleToggleViz}>TOGGLE VIZ</Button>
+            <Button onClick={handleToggleViz} sx={{position: "absolute", top: 0, right: 0, zIndex: 5}}>TOGGLE VIZ</Button>
 
-            {/* <Button onClick={handleAddStep}>Add Step</Button>
-            <Button onClick={handleRemoveStep}>Remove Step</Button> */}
+            <Box sx={{height: "calc(100% - 13.5rem)", border: "1px solid purple", position: "absolute"}} id="vizWrapper">
+            
+                <ParentSize key={newestSetting.name}>{( { width, height } ) =>
+                        vizComponent === 0 && vizItem === 0
+                        ?
+                            <Example width={width} height={height} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
+                        :
+                            // vizComponent === 1 
+                            // ?
+                            <Example2 key={newestSetting.name} width={width} height={height} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />
+                            // :
+                            //     <Box>Updating...</Box>
+                }
+                </ParentSize>
+            </Box>
 
 
-            {vizItem === 1
-            ?
-                <>
-                    <Button onClick={handleAddStep}>Add Step</Button>
-                    <Button onClick={handleRemoveStep}>Remove Step</Button>
-                    <FormControl sx={{position: 'absolute', left: '32px'}} id="treeBuilderWrapper">
-                    <FormLabel id="demo-controlled-radio-buttons-group-tree"></FormLabel>
-                    <RadioGroup
-                        aria-labelledby="demo-controlled-radio-buttons-group-tree"
-                        name="controlled-radio-buttons-group-tree"
-                        value={nextTreeItem}
-                        onChange={updateNextTreeItem}
-                    >
-                        <FormControlLabel value="step" control={<Radio />} label="Step" />
-                        <FormControlLabel value="pattern" control={<Radio />} label="Pattern" />
-                        <FormControlLabel value="effect" control={<Radio />} label="Effect" />
-                        
-                    </RadioGroup>
-                    </FormControl>
-                    <Box id="sequencerWrapperOuter">
-                    
-                        <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
 
-                        <Box id="sequencerWrapperInner">
-                            <Box className="sequencer-dropdown">
-                                <FormControl fullWidth>
-                                    <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
-                                    <Select
-                                        sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                        labelId="audioKey-simple-select-label"
-                                        id="audioKey-simple-select"
-                                        value={audioKey}
-                                        label="Key"
-                                        onChange={handleChangeAudioKey}
-                                    >
-                                        <MenuItem value={'C'}>C</MenuItem>
-                                        <MenuItem value={'C♯'}>C♯</MenuItem>
-                                        <MenuItem value={'D'}>D</MenuItem>
-                                        <MenuItem value={'D♯'}>D♯</MenuItem>
-                                        <MenuItem value={'E'}>E</MenuItem>
-                                        <MenuItem value={'F'}>F</MenuItem>
-                                        <MenuItem value={'F♯'}>F♯</MenuItem>
-                                        <MenuItem value={'G'}>G</MenuItem>
-                                        <MenuItem value={'G♯'}>G♯</MenuItem>
-                                        <MenuItem value={'A'}>A</MenuItem>
-                                        <MenuItem value={'A♯'}>A♯</MenuItem>
-                                        <MenuItem value={'B'}>B</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Box>
-                            <Box className="sequencer-dropdown">
-                                <FormControl fullWidth>
-                                    <InputLabel id="octave-simple-select-label">Octave</InputLabel>
-                                    <Select
-                                        sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                        labelId="octave-simple-select-label"
-                                        id="octave-simple-select"
-                                        value={octave}
-                                        label="Octave"
-                                        onChange={handleChangeOctave}
-                                    >
-                                        <MenuItem value={'1'}>1</MenuItem>
-                                        <MenuItem value={'2'}>2</MenuItem>
-                                        <MenuItem value={'3'}>3</MenuItem>
-                                        <MenuItem value={'4'}>4</MenuItem>
-                                        <MenuItem value={'5'}>5</MenuItem>
-                                        <MenuItem value={'6'}>6</MenuItem>
-                                        <MenuItem value={'7'}>7</MenuItem>
-                                        <MenuItem value={'8'}>8</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Box>
-                            <Box className="sequencer-dropdown">
-                                <FormControl fullWidth>
-                                    <InputLabel id="scale-simple-select-label">Scale</InputLabel>
-                                    <Select
-                                        sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                        labelId="scale-simple-select-label"
-                                        id="scale-simple-select"
-                                        value={audioScale}
-                                        label="Scale"
-                                        onChange={handleChangeScale}
-                                    >
-                                        <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
-                                        <MenuItem value={'Major'}>Major</MenuItem>
-                                        <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
-                                        <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
-                                        <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
-                                        <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
-                                        <MenuItem value={'Bachian'}>Bachian</MenuItem>
-                                        <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
-                                        <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
-                                        <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
-                                        <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
-                                        <MenuItem value={'Ionian'}>Ionian</MenuItem>
-                                        <MenuItem value={'Dorian'}>Dorian</MenuItem>
-                                        <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
-                                        <MenuItem value={'Lydian'}>Lydian</MenuItem>
-                                        <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
-                                        <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
-                                        <MenuItem value={'Locrian'}>Locrian</MenuItem>
-                                        <MenuItem value={'Fifths'}>Fifths</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Box>
-                            <Box className="sequencer-dropdown">
-                                <FormControl fullWidth>
-                                    <InputLabel id="chord-simple-select-label">Chord</InputLabel>
-                                    <Select
-                                        labelId="chord-simple-select-label"
-                                        id="chord-simple-select"
-                                        value={audioChord}
-                                        label="Chord"
-                                        onChange={handleChangeChord}
-                                        sx={{
-                                            color: 'white', 
-                                            fontWeight: 'bold', 
-                                            fontSize: '1rem',
-                                            '& .MuiList-root': {
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            background: 'var(--black-20)',
-                                            color: 'var(--white-20)',
-                                            }
-                                        }}
-                                    >
-                                        <MenuItem value={'M'}>Major Triad</MenuItem>
-                                        <MenuItem value={'m'}>Minor Triad</MenuItem>
-                                        <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
-                                        <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
-                                        <MenuItem value={'dim'}>Diminished Triad</MenuItem>
-                                        <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
-                                        <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
-                                        <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
-                                        <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
-                                        <MenuItem value={'5'}>Perfect Fifth</MenuItem>
-                                        <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
-                                        <MenuItem value={'6'}>Major Sixth 1</MenuItem>
-                                        <MenuItem value={'67'}>Dominant Sixth</MenuItem>
-                                        <MenuItem value={'69'}>Sixth Ninth</MenuItem>
-                                        <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
-                                        <MenuItem value={'m6'}>Minor Sixth</MenuItem>
-                                        <MenuItem value={'M7'}>Major Seventh</MenuItem>
-                                        <MenuItem value={'m7'}>Minor Seventh</MenuItem>
-                                        <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
-                                        <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
-                                        <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
-                                        <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
-                                        <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
-                                        <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
-                                        <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
-                                        <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
-                                        <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
-                                        <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
-                                        <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
-                                        <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
-                                        <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
-                                        <MenuItem value={'M9'}>Major Ninth</MenuItem>
-                                        <MenuItem value={'m9'}>Minor Ninth</MenuItem>
-                                        <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
-                                        <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
-                                        <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
-                                        <MenuItem value={'9'}>Dominant Ninth</MenuItem>
-                                        <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
-                                        <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
-                                        <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
-                                        <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
-                                        <MenuItem value={'11'}>Eleventh</MenuItem>
-                                        <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
-                                        <MenuItem value={'add11'}>Add Eleventh</MenuItem>
-                                        <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
-                                        <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
-                                        <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
-                                        <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
-                                        <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
-                                        <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Box>
+            {
+                vizComponent === 1
+                ?
+                    <Box id="sequenceToolsWrapper" sx={{color: 'text.primary', left: 0, height: "25vh", position: "absolute", display: 'flex', flexDirection: 'row', border: '1px solid aqua', overflow: 'hidden'}}>
+                        <Typography sx={{paddingRight: "10px"}}>Sequencer Tools </Typography>
+                        <Box sx={{ display: "flex", flexDirection: "row", border: "1px solid #f6f6f6"}}>
+                            <Button onClick={handleAddStep}>Add Step</Button>
+
+                            <FormControl sx={{display: "flex"}} id="treeBuilderWrapper">
+                                <FormLabel id="demo-controlled-radio-buttons-group-tree"></FormLabel>
+                                <RadioGroup
+                                    sx={{display: "flex", flexDirection: "row"}}
+                                    aria-labelledby="demo-controlled-radio-buttons-group-tree"
+                                    name="controlled-radio-buttons-group-tree"
+                                    value={nextTreeItem}
+                                    onChange={updateNextTreeItem}
+                                >
+                                    <FormControlLabel sx={{fontSize: "12px"}} value="step" control={<Radio />} label="Step" />
+                                    <FormControlLabel sx={{fontSize: "12px"}} value="pattern" control={<Radio />} label="Pattern" />
+                                    <FormControlLabel sx={{fontSize: "12px"}} value="effect" control={<Radio />} label="Effect" />
+                                    
+                                </RadioGroup>
+                            </FormControl>
                         </Box>
 
+                        <Box sx={{ display: "flex", flexDirection: "row", border: "1px solid #f6f6f6"}}>
+                            <Button onClick={handleRemoveStep}>Remove Step</Button>
+                        </Box>
+                        <Box sx={{ display: "flex", flexDirection: "row", border: "1px solid #f6f6f6"}}>
+                            <Button onClick={handleDrumMachine}>Play Sequence</Button>
+                        </Box>
                     </Box>
-                </>
-            : 
-                null
-            };
+                :
+                    <SampleTools
+                        bpm={bpm}
+                        sampleLength={sampleLength}
+                        sampleRates={sampleRates}
+                        samplePositionStart={samplePositionStart}
+                        handleChangeBPM={handleChangeBPM}
+                        handleChangeSampleStartPosition={handleChangeSampleStartPosition}
+                        handleChangeSampleLength={handleChangeSampleLength}
+                        handleChangeSampleRates={handleChangeSampleRates}
+                    ></SampleTools>
+            }
 
-
-            
-            <ParentSize key={newestSetting.name} style={{overflowY: "scroll"}}>{({ width, height }) => vizArray[vizItem]}</ParentSize>
+                        
             {
             chuckHook && Object.values(chuckHook).length && instrumentsVisible
             ?
-            <FormControl id="instrumentBuilderWrapper">
-                <FormLabel id="demo-controlled-radio-buttons-group"></FormLabel>
+            <FormControl sx={{left: 0, width: "100%"}} id="instrumentBuilderWrapper">
+                <FormLabel sx={{ color: '#f6f6f6 !important', fontSize: "12px", paddingRight: "16px" }} id="controlled-radio-buttons-group-instruments">Instruments</FormLabel>
                 <RadioGroup
                     aria-labelledby="demo-controlled-radio-buttons-group"
                     name="controlled-radio-buttons-group"
                     value={playingInstrument}
                     onChange={handleUpdateInstrument}
+                    sx={{ width: "100%" }}
                 >
-                    <FormControlLabel value="clarinet" control={<Radio />} label="Clarinet" />
-                    <FormControlLabel value="sitar" control={<Radio />} label="Sitar" />
-                    <FormControlLabel value="plucked" control={<Radio />} label="Plucked" />
-                    <FormControlLabel value="moog" control={<Radio />} label="Moog" />
-                    <FormControlLabel value="rhodes" control={<Radio />} label="Rhodes" />
-                    <FormControlLabel value="mandolin" control={<Radio />} label="Mandolin" />
-                    <FormControlLabel value="frenchhorn" control={<Radio />} label="French Horn" />
-                    <FormControlLabel value="saxofony" control={<Radio />} label="Saxofony" />
-
-                    <FormControlLabel value="sampler" control={<Radio />} label="Sampler" />
-                    
+                    <FormControlLabel className={"instrument-radio-selector"} value="clarinet" control={<Radio />} label="Clarinet" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="sitar" control={<Radio />} label="Sitar" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="plucked" control={<Radio />} label="Plucked" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="moog" control={<Radio />} label="Moog" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="rhodes" control={<Radio />} label="Rhodes" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="mandolin" control={<Radio />} label="Mandolin" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="frenchhorn" control={<Radio />} label="French Horn" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="saxofony" control={<Radio />} label="Saxofony" />
+                    <FormControlLabel className={"instrument-radio-selector"} value="sampler" control={<Radio />} label="Sampler" />
                 </RadioGroup>
+                {
+                playingInstrument
+                ?
+                    <Button sx={{height: "4rem"}} onClick={handleSynthControlsVisible}>EFFECTS</Button>
+                :
+                    null
+                }
             </FormControl>
             :
             <></>
             }
             {
-            chuckHook && Object.values(chuckHook).length && keysVisible
+                chuckHook && Object.values(chuckHook).length && keysVisible
                 ?
                     <Box 
-                      id="keyboardWrapper"
-                      style={{display: (chuckHook && Object.values(chuckHook).length && keysVisible) ? "flex" : "none"}}
+                      sx={{position: 'absolute', right: 0, bottom: 0}}
                     >
-                        <div id="keyboardControlsWrapper">
-                        </div>
                         <ul id="keyboard">
                             {createKeys()}
                         </ul>
@@ -1469,7 +1421,7 @@ export default function CreateChuck(props: any) {
                                 min={0}
                                 max={100}
                                 label="REED"
-                                labelFontSize="1rem"
+                                labelFontSize="14px"
                                 direction={1}
                                 dataIndex={valueReed * 100}
                                 knobPosition="bottom"
@@ -1512,7 +1464,7 @@ export default function CreateChuck(props: any) {
                                 max={12}
                                 label="VIBRATO FREQ"
                                 dataIndex={valueVibratoFreq}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -1558,7 +1510,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="PRESSURE"
                                 dataIndex={valuePressure * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -1600,7 +1552,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="REVERB MIX"
                                 dataIndex={valueReverbMix * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -1653,7 +1605,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="SUSTAIN"
                                 dataIndex={valueSustain * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -1698,7 +1650,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="PLUCK"
                                 dataIndex={valuePluck * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -1740,7 +1692,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="REVERB MIX"
                                 dataIndex={valueReverbMix * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -1791,7 +1743,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="REVERB MIX"
                                 dataIndex={valueReverbMix * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -1842,7 +1794,7 @@ export default function CreateChuck(props: any) {
                                     max={12}
                                     label="VIBRATO FREQ"
                                     dataIndex={valueVibratoFreq}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -1885,7 +1837,7 @@ export default function CreateChuck(props: any) {
                                     max={100}
                                     label="SWEEP RATE"
                                     dataIndex={valueFilterSweepRate * 100}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -1931,7 +1883,7 @@ export default function CreateChuck(props: any) {
                                     max={100}
                                     label="LFO DEPTH"
                                     dataIndex={valueLfoDepth * 100}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -1976,7 +1928,7 @@ export default function CreateChuck(props: any) {
                                     max={100}
                                     label="AFTERTOUCH"
                                     dataIndex={valueAftertouch * 100}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -2018,7 +1970,7 @@ export default function CreateChuck(props: any) {
                                     max={100}
                                     label="MOD DEPTH"
                                     dataIndex={valueModDepth * 100}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -2071,7 +2023,7 @@ export default function CreateChuck(props: any) {
                             max={100}
                             label="BODY SIZE"
                             dataIndex={valueBodySize * 100}
-                            labelFontSize="1rem"
+                            labelFontSize={MIDDLE_FONT_SIZE}
                             direction={1}
                             knobPosition="bottom"
                             appendToValue=""
@@ -2113,7 +2065,7 @@ export default function CreateChuck(props: any) {
                             max={100}
                             label="PLUCK POS"
                             dataIndex={valuePluckPos * 100}
-                            labelFontSize="1rem"
+                            labelFontSize={MIDDLE_FONT_SIZE}
                             direction={1}
                             knobPosition="bottom"
                             appendToValue=""
@@ -2157,7 +2109,7 @@ export default function CreateChuck(props: any) {
                             min={0}
                             max={12}
                             label="STRING DETUNE"
-                            labelFontSize="1rem"
+                            labelFontSize={MIDDLE_FONT_SIZE}
                             direction={1}
                             dataIndex={valueStringDetune * 100}
                             knobPosition="bottom"
@@ -2209,7 +2161,7 @@ export default function CreateChuck(props: any) {
                                 min={0}
                                 max={100}
                                 label="STIFFNESS"
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 dataIndex={valueStiffness * 100}
                                 knobPosition="bottom"
@@ -2252,7 +2204,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="NOISE GAIN"
                                 dataIndex={valueNoiseGain * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -2294,7 +2246,7 @@ export default function CreateChuck(props: any) {
                                 max={12}
                                 label="VIBRATO FREQ"
                                 dataIndex={valueVibratoFreq}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -2340,7 +2292,7 @@ export default function CreateChuck(props: any) {
                                 max={100}
                                 label="PRESSURE"
                                 dataIndex={valuePressure * 100}
-                                labelFontSize="1rem"
+                                labelFontSize={MIDDLE_FONT_SIZE}
                                 direction={1}
                                 knobPosition="bottom"
                                 appendToValue=""
@@ -2394,7 +2346,7 @@ export default function CreateChuck(props: any) {
                                     max={100}
                                     label="LFO SPEED"
                                     dataIndex={valueLfoSpeed * 100}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -2439,7 +2391,7 @@ export default function CreateChuck(props: any) {
                                     max={100}
                                     label="CONTROL ONE"
                                     dataIndex={valueControlOne * 100}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -2481,7 +2433,7 @@ export default function CreateChuck(props: any) {
                                     max={100}
                                     label="REVERB MIX"
                                     dataIndex={valueReverbMix * 100}
-                                    labelFontSize="1rem"
+                                    labelFontSize={MIDDLE_FONT_SIZE}
                                     direction={1}
                                     knobPosition="bottom"
                                     appendToValue=""
@@ -2502,292 +2454,7 @@ export default function CreateChuck(props: any) {
             }
             </Box>
 
-            <Box>
-                <FormControl
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                }}>
-                    <TextField
-                        inputProps={{ style: { color: "#f6f6f6"} }}
-                        sx={{
-                            input: { color: '#f6f6f6' },
-                            borderColor: "f6f6f6",
-                        }}
-                        placeholder="BPM"
-                        type="number"
-                        id="outlined-textarea"
-                        InputLabelProps={{
-                            shrink: false,
-                        }}
-                        value={bpm}
-                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                event.preventDefault();
-                                const inputBpm: any = parseInt(event.target.value);
-                                handleChangeBPM(inputBpm);
-                            }
-                        }
-                    />
-                </FormControl>
-            </Box>
 
-
-            
-            <Box>
-                <FormControl
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                }}>
-                    <TextField
-                        inputProps={{ style: { color: "#f6f6f6"} }}
-                        sx={{
-                            input: { color: '#f6f6f6' },
-                            borderColor: "f6f6f6",
-                        }}
-                        placeholder="Sample Start"
-                        type="number"
-                        id="outlined-textarea"
-                        InputLabelProps={{
-                            shrink: false,
-                        }}
-                        value={samplePositionStart}
-                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                event.preventDefault();
-                                const inputSampleStartPosition: any = parseInt(event.target.value);
-                                handleChangeSampleStartPosition(inputSampleStartPosition);
-                            }
-                        }
-                    />
-                </FormControl>
-            </Box>
-
-            <Box>
-                <FormControl
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                }}>
-                    <TextField
-                        inputProps={{ style: { color: "#f6f6f6"} }}
-                        sx={{
-                            input: { color: '#f6f6f6' },
-                            borderColor: "f6f6f6",
-                        }}
-                        placeholder="Sample Length"
-                        type="number"
-                        id="outlined-textarea"
-                        InputLabelProps={{
-                            shrink: false,
-                        }}
-                        value={sampleLength}
-                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                event.preventDefault();
-                                const inputSampleLength: any = parseInt(event.target.value);
-                                handleChangeSampleLength(inputSampleLength);
-                            }
-                        }
-                    />
-                </FormControl>
-            </Box>
-
-            <Box>
-                <FormControl
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                }}>
-                    <TextField
-                        inputProps={{ style: { color: "#f6f6f6"} }}
-                        sx={{
-                            input: { color: '#f6f6f6' },
-                            borderColor: "f6f6f6",
-                        }}
-                        placeholder="Sample Rate"
-                        type="any"
-                        id="outlined-textarea"
-                        InputLabelProps={{
-                            shrink: false,
-                        }}
-                        value={sampleRates}
-                        onInput={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                event.preventDefault();
-                                const sampleRateInput: any = event.target.value;
-                                handleChangeSampleRates(sampleRateInput);
-                            }
-                        }
-                    />
-                </FormControl>
-            </Box>
-            {/* {vizItem === 1
-            ?
-                <Box id="sequencerWrapperOuter" className="invisible">
-                    
-                    <Button id='submitMingus' onClick={submitMingus}>SUBMIT</Button>
-
-                    <Box id="sequencerWrapperInner">
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="audioKey-simple-select-label">Key</InputLabel>
-                                <Select
-                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                    labelId="audioKey-simple-select-label"
-                                    id="audioKey-simple-select"
-                                    value={audioKey}
-                                    label="Key"
-                                    onChange={handleChangeAudioKey}
-                                >
-                                    <MenuItem value={'C'}>C</MenuItem>
-                                    <MenuItem value={'C♯'}>C♯</MenuItem>
-                                    <MenuItem value={'D'}>D</MenuItem>
-                                    <MenuItem value={'D♯'}>D♯</MenuItem>
-                                    <MenuItem value={'E'}>E</MenuItem>
-                                    <MenuItem value={'F'}>F</MenuItem>
-                                    <MenuItem value={'F♯'}>F♯</MenuItem>
-                                    <MenuItem value={'G'}>G</MenuItem>
-                                    <MenuItem value={'G♯'}>G♯</MenuItem>
-                                    <MenuItem value={'A'}>A</MenuItem>
-                                    <MenuItem value={'A♯'}>A♯</MenuItem>
-                                    <MenuItem value={'B'}>B</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="octave-simple-select-label">Octave</InputLabel>
-                                <Select
-                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                    labelId="octave-simple-select-label"
-                                    id="octave-simple-select"
-                                    value={octave}
-                                    label="Octave"
-                                    onChange={handleChangeOctave}
-                                >
-                                    <MenuItem value={'1'}>1</MenuItem>
-                                    <MenuItem value={'2'}>2</MenuItem>
-                                    <MenuItem value={'3'}>3</MenuItem>
-                                    <MenuItem value={'4'}>4</MenuItem>
-                                    <MenuItem value={'5'}>5</MenuItem>
-                                    <MenuItem value={'6'}>6</MenuItem>
-                                    <MenuItem value={'7'}>7</MenuItem>
-                                    <MenuItem value={'8'}>8</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="scale-simple-select-label">Scale</InputLabel>
-                                <Select
-                                    sx={{color: 'white', fontWeight: 'bold', fontSize: '1rem'}}
-                                    labelId="scale-simple-select-label"
-                                    id="scale-simple-select"
-                                    value={audioScale}
-                                    label="Scale"
-                                    onChange={handleChangeScale}
-                                >
-                                    <MenuItem value={'Diatonic'}>Diatonic</MenuItem>
-                                    <MenuItem value={'Major'}>Major</MenuItem>
-                                    <MenuItem value={'HarmonicMajor'}>Harmonic Major</MenuItem>
-                                    <MenuItem value={'NaturalMinor'}>Natural Minor</MenuItem>
-                                    <MenuItem value={'HarmonicMinor'}>Harmonic Minor</MenuItem>
-                                    <MenuItem value={'MelodicMinor'}>Melodic Minor</MenuItem>
-                                    <MenuItem value={'Bachian'}>Bachian</MenuItem>
-                                    <MenuItem value={'MinorNeapolitan'}>Minor Neapolitan</MenuItem>
-                                    <MenuItem value={'Chromatic'}>Chromatic</MenuItem>
-                                    <MenuItem value={'WholeTone'}>Whole Tone</MenuItem>
-                                    <MenuItem value={'Octatonic'}>Octatonic</MenuItem>
-                                    <MenuItem value={'Ionian'}>Ionian</MenuItem>
-                                    <MenuItem value={'Dorian'}>Dorian</MenuItem>
-                                    <MenuItem value={'Phyrygian'}>Phrygian</MenuItem>
-                                    <MenuItem value={'Lydian'}>Lydian</MenuItem>
-                                    <MenuItem value={'Mixolydian'}>Mixolydian</MenuItem>
-                                    <MenuItem value={'Aeolian'}>Aeolian</MenuItem>
-                                    <MenuItem value={'Locrian'}>Locrian</MenuItem>
-                                    <MenuItem value={'Fifths'}>Fifths</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        <Box className="sequencer-dropdown">
-                            <FormControl fullWidth>
-                                <InputLabel id="chord-simple-select-label">Chord</InputLabel>
-                                <Select
-                                    labelId="chord-simple-select-label"
-                                    id="chord-simple-select"
-                                    value={audioChord}
-                                    label="Chord"
-                                    onChange={handleChangeChord}
-                                    sx={{
-                                        color: 'white', 
-                                        fontWeight: 'bold', 
-                                        fontSize: '1rem',
-                                        '& .MuiList-root': {
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        background: 'var(--black-20)',
-                                        color: 'var(--white-20)',
-                                        }
-                                    }}
-                                >
-                                    <MenuItem value={'M'}>Major Triad</MenuItem>
-                                    <MenuItem value={'m'}>Minor Triad</MenuItem>
-                                    <MenuItem value={'aug'}>Augmented Triad 1</MenuItem>
-                                    <MenuItem value={'+'}>Augmented Triad 2</MenuItem>
-                                    <MenuItem value={'dim'}>Diminished Triad</MenuItem>
-                                    <MenuItem value={'dim7'}>Diminished Seventh</MenuItem>
-                                    <MenuItem value={'sus2'}>Suspended Second Triad</MenuItem>
-                                    <MenuItem value={'sus'}>Suspended Fourth Triad</MenuItem>
-                                    <MenuItem value={'madd4'}>Minor Add Fourth</MenuItem>
-                                    <MenuItem value={'5'}>Perfect Fifth</MenuItem>
-                                    <MenuItem value={'7b5'}>Dominant Flat Five</MenuItem>
-                                    <MenuItem value={'6'}>Major Sixth 1</MenuItem>
-                                    <MenuItem value={'67'}>Dominant Sixth</MenuItem>
-                                    <MenuItem value={'69'}>Sixth Ninth</MenuItem>
-                                    <MenuItem value={'M6'}>Major Sixth 2</MenuItem>
-                                    <MenuItem value={'m6'}>Minor Sixth</MenuItem>
-                                    <MenuItem value={'M7'}>Major Seventh</MenuItem>
-                                    <MenuItem value={'m7'}>Minor Seventh</MenuItem>
-                                    <MenuItem value={'M7+'}>Augmented Major Seventh</MenuItem>
-                                    <MenuItem value={'m7+'}>Augmented Minor Seventh 1</MenuItem>
-                                    <MenuItem value={'m7+5'}>Augmented Minor Seventh 2</MenuItem>
-                                    <MenuItem value={'sus47'}>Suspended Seventh</MenuItem>
-                                    <MenuItem value={'m7b5'}>Half Diminished Seventh</MenuItem>
-                                    <MenuItem value={'mM7'}>Minor Major Seventh</MenuItem>
-                                    <MenuItem value={'dom7'}>Dominant Seventh 1</MenuItem>
-                                    <MenuItem value={'7'}>Dominant Seventh 2</MenuItem>
-                                    <MenuItem value={'7+'}>Augmented Major Seventh</MenuItem>
-                                    <MenuItem value={'7#5'}>Augmented Minor Seventh</MenuItem>
-                                    <MenuItem value={'7#11'}>Lydian Dominant Seventh</MenuItem>
-                                    <MenuItem value={'m/M7'}>Minor Major Seventh</MenuItem>
-                                    <MenuItem value={'7sus4'}>Suspended Seventh</MenuItem>
-                                    <MenuItem value={'M9'}>Major Ninth</MenuItem>
-                                    <MenuItem value={'m9'}>Minor Ninth</MenuItem>
-                                    <MenuItem value={'add9'}>Dominant Ninth</MenuItem>
-                                    <MenuItem value={'susb9'}>Suspended Fourth Ninth 1</MenuItem>
-                                    <MenuItem value={'sus4b9'}>Suspended Fourth Ninth 2</MenuItem>
-                                    <MenuItem value={'9'}>Dominant Ninth</MenuItem>
-                                    <MenuItem value={'m9b5'}>Minor Ninth Flat Five</MenuItem>
-                                    <MenuItem value={'7_#9'}>Dominant Sharp Ninth</MenuItem>
-                                    <MenuItem value={'7b9'}>Dominant Flat Ninth</MenuItem>
-                                    <MenuItem value={'6/9'}>Sixth Ninth</MenuItem>
-                                    <MenuItem value={'11'}>Eleventh</MenuItem>
-                                    <MenuItem value={'m11'}>Minor Eleventh</MenuItem>
-                                    <MenuItem value={'add11'}>Add Eleventh</MenuItem>
-                                    <MenuItem value={'7b12'}>Hendrix Chord 1</MenuItem>
-                                    <MenuItem value={'hendrix'}>Hendrix Chord 2</MenuItem>
-                                    <MenuItem value={'M13'}>Major Thirteenth</MenuItem>
-                                    <MenuItem value={'m13'}>Minor Thirteenth</MenuItem>
-                                    <MenuItem value={'13'}>Dominant Thirteenth</MenuItem>
-                                    <MenuItem value={'add13'}>Dominant Thirteenth</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                    </Box>
-
-                </Box>
-            : null} */}
-            <Button id="startMicrophoneButton" onClick={handleRecordAudio}>
-                {
-                !isRecordingMic 
-                    ? "START REC"
-                    : "STOP REC"
-                }
-            </Button>
 
         </>
     )

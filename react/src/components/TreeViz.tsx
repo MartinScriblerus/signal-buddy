@@ -14,7 +14,7 @@ const green = '#26deb0';
 const plum = '#71248e';
 const lightpurple = '#374469';
 const white = '#ffffff';
-export const background = '#272b4d';
+export const background = 'transparent';
 
 interface TreeNode {
   name: string;
@@ -111,7 +111,7 @@ function Node( x: NodeType) {
   const centerY = -height / 2;
   const isRoot = node.depth === 0;
   const isParent = !!node.children;
-  console.log('xxxxxxxx: ', x);
+  console.log('dddddddd: ', x);
   const getNode = (node: HierarchyNode) => {
     return getLatestTreeSettings(node);
   };
@@ -172,67 +172,15 @@ export type TreeProps = {
 };
 
 export default function Example2({ width, height, margin = defaultMargin, rawTree, handleUpdateRawTree, currPosData, getLatestTreeSettings, handleAddStep }: TreeProps) {
-  console.log('WHAT IS PROBLEMATIC RAW TREEE? ', rawTree);
+  // console.log('WHAT IS PROBLEMATIC RAW TREEE? ', rawTree);
   rawTree.children.map((child: any) => child !== undefined);
   const data = useMemo(() => hierarchy(rawTree), [rawTree]);
   const yMax = height - margin.top - margin.bottom;
   const xMax = width - margin.left - margin.right;
   const [currName, setCurrName] = React.useState("");
-  console.log('CURR POS DATA (where we need it): ', currPosData);
-  console.log('CURR TTTT?Reee DATA (where we need it): ', rawTree);
-  
-  useEffect(() => {
-    console.log("GOT CURR POS DATA: ", currPosData);
-    console.log("GOT LATEST TREE SETTINGS: ", getLatestTreeSettings);
-    // console.log("GOT CURR RAW TREE: ", rawTree);
-  }, [currPosData]);
-  
-  // const handleAddStep = () => {
-  //   const name = prompt('What is the name of your new node?');
-  //   setCurrName(name);
-  //   handleUpdateRawTree(name);
-  //   // console.log('nodeName: ', nodeName);
-  //   ///rawTree.children.push({name: `${nodeName}_par`, children: [{name: `${nodeName}`}]});
-  //   // console.log("WHAT IS THAT RAWTREE ARRAY??? ", rawTree);
-  //   console.log("WHAT IS CURR POS ARRAY??? ", currPosData);    
-  //   // rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
-  // };
-  // const handleRemoveStep = () => {
-  //   currPosData.data.children.splice(-1);
-  // };
-
-  const handleAddEffect = () => {
-    rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
-  };
-  const handleRemoveEffect = () => {
-    rawTree.children.splice(-1);
-  };
-  const handleAddPattern = () => {
-    rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
-  };
-  const handleRemovePattern = () => {
-    rawTree.children.splice(-1);
-  };
-  const handleAddInstrument = () => {
-    rawTree.children.push({name: "Inst_2", children:[{name: "FX_2"}, {name: "Pat_2"}]});
-  };
-  const handleRemoveInstrument = () => {
-    rawTree.children.splice(-1);
-  };
 
   return width < 10 ? null : (
     <>
-
-    {/* <Box sx={{position: "absolute"}}>
-      {/* <Button onClick={handleAddInstrument}>Add Instrument</Button>
-      <Button onClick={handleRemoveInstrument}>Remove Instrument</Button>
-      <Button onClick={handleRemoveEffect}>Remove Effect</Button>
-      <Button onClick={handleAddPattern}>Add Pattern</Button>
-      <Button onClick={handleRemovePattern}>Remove Pattern</Button>
-      <Button onClick={handleAddStep}>Add Step</Button>
-      <Button onClick={handleRemoveStep}>Remove Step / File</Button>
-    </Box> */}
-
     <svg width={width} height={height}>
       <LinearGradient id="lg" from={peach} to={pink} />
       <rect width={width} height={height} rx={14} fill={background} />

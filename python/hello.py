@@ -59,10 +59,15 @@ def detect_pitch(y, sr, times):
         'magnitudes': [],
         'times': [],
     }
+    print('YO:', y, sr, times)
+    if y.any() < 0.001:
+        return pitch_values
     pitches, magnitudes = librosa.core.piptrack(y=y, sr=sr, S=None, n_fft=2048, hop_length=None, fmin=150.0, fmax=2000.0, threshold=0.1, win_length=None, window='hann', center=True, pad_mode='constant', ref=None)
     pitches[pitches > 1e308] = 0
-    if times == 0: 
-        times = np.arange(0, pitches.shape[1])
+    # if times == 0: 
+    #     times = np.arange(0, pitches.shape[1])
+    if len(times) < 1:
+        return pitch_values
     for idx, t in enumerate(np.nditer(times)):
         index = magnitudes[:, t.astype(int)].argmax()
         print('HERE IS A PITCH: ', pitches[index, t.astype(int)].tolist())
@@ -159,6 +164,11 @@ def onsets(file_path):
         print('sending that data!')
 
         return json.dumps([{'data': {
+            'allData': y.tolist(),
+            'onsetEnv': onset_env.tolist(),
+            'harmonicData': y_harmonic.tolist(),
+            'onsetEnvHarmonic': onset_env_harmonic.tolist(),
+            'percussiveData': y_percussive.tolist(),
             'tempo': tempo,
             'pitches': pV,
             #'beatFeatures: ': beat_features.tolist(), 

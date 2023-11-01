@@ -16,10 +16,13 @@
   --white-50: hsla(0, 0%, 100%, 0.5);
   --white-80: hsla(0, 0%, 100%, 0.8);
 }
-#loadingScreen, #root {
-  width: 100%;
-  min-height: 100vh;
-  background-color: rgba(0,0,0,0.9);
+#loadingScreen, #root, html {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  /* background-color: rgba(0,0,0,0.9); */
 }
 
 #myFile {
@@ -52,30 +55,141 @@ body{
   text-align: center;
 }
 
+#fileManagerWrapper {
+  width: calc(100vw - 26rem);
+  height: 12vh;
+}
+
+#sequencerWrapperOuter {
+  display: inline-table;
+  position: absolute;
+  height: 10vh;
+  left: 0;
+  /* width: 90vw; */
+  flex-direction: row;
+  justify-content: center;
+  /* background: var(--black-60); */
+  bottom: 0;
+  z-index: 20;
+  max-height: 50vh;
+  overflow: scroll;
+  width: calc(100vw - 28rem);
+  padding: 1rem;
+}
+
+#vizWrapper {
+  width: 26rem;
+  top:0;
+  right: 0;
+  height: calc(100% - 13.5rem); 
+  border: 1px solid purple; 
+  position: absolute;
+}
+
+#sampleToolsWrapper {
+  width: calc(100vw - 28rem);
+  height: 25vh;
+  top: 12vh;
+  padding: 1rem;
+  overflow: scroll;
+}
+
+#sequenceToolsWrapper {
+  width: calc(100vw - 28rem);
+  height: 25vh;
+  top: 12vh;
+  padding: 1rem;
+  overflow: scroll;
+}
+
+#treeBuilderWrapper {
+  display: "flex";
+  flex-direction: "row";
+  position: relative;
+  padding: 0;
+  margin: 0;
+  width: 7rem;
+}
+
 #keyboard {
   border-radius: 24px;
   overflow: scroll;
   position: absolute;
-  max-height: 27rem;
+  max-height: 13.5rem;
   width: 26rem;
-  left: calc(50vw - 14.5rem);
-  top: 1.5rem;
-  /* top: 3rem; */
-  /* margin-top: 5rem; */
+  bottom: -14px;
+  right: -22px;
 }
 
-@media screen and (min-width: 900px) {
-  #keyboard {
-    left: calc(50vw - 27.25rem);
-    width: 52rem;
-    /* top: 1.5rem; */
-  }
-  #keyboardWrapper {
+#demo-controlled-radio-buttons-group {
+  overflow: scroll;
+}
 
+#instrumentBuilderWrapper {
+  /* flex-direction: ROW; */
+  display: flex;
+  justify-content: LEFT;
+  overflow-y: scroll;
+  position: absolute;
+  height: 30vh;
+  max-height: 20rem;
+  width: calc(100vw - 28rem);
+  border: solid 1px blue;
+  text-align: center;
+  right: 20vw;
+  top: 42.5vh;
+  flex-direction: row;
+  /* padding-top: 24px;
+  padding-left: 24px; */
+  padding: 1rem;
+  BACKGROUND: TRANSPARENT;
+  overflow: scroll;
+}
+
+.instrument-group-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: left;
+  padding: 8px; 
+  width: 100%;
+}
+
+.instrument-radio-selector {
+  min-width: 33%;
+}
+
+#inputFileWrapper {
+  flex-direction: column;
+}
+
+@media screen and (min-width: 1200px) {
+  #keyboard {
+    width: 52rem;
   }
-  /* left: calc(50vw - 25rem); */
-  
-  /* left: calc(50vw - 25rem); */
+  #inputFileWrapper {
+    flex-direction: column;
+  }
+  #fileManagerWrapper {
+    width: calc(100vw - 52rem);
+  }
+  #vizWrapper {
+    width: 52rem;
+  }
+  #sequencerWrapperOuter {
+    width: calc(100vw - 54rem);
+  }
+  #instrumentBuilderWrapper {
+    width: calc(100vw - 54rem);
+    overflow: scroll
+  }
+  #sampleToolsWrapper {
+    width: calc(100vw - 54rem);
+    /* flex-direction: column; */
+  }
+  #sequenceToolsWrapper {
+    width: calc(100vw - 54rem);
+    /* flex-direction: column !important; */
+  }
 }
 
 #keyboard li:first-child {
@@ -137,9 +251,40 @@ canvas {
   border-radius: 0 0 5px 5px;
   box-shadow: -1px 0 0 var(--white-80) inset, 0 0 5px hsl(0, 0%, 80%) inset,
     0 0 3px var(--black-20);
-  background: linear-gradient(to bottom, hsl(0, 0%, 93%) 0%, white 100%);
-  color: var(--black-30);
+  /* background: linear-gradient(to bottom, grey 0%, black 100%); */
+  background: linear-gradient(to bottom, rgba(0,0,0,.7), black 100%);
+  color: white;
   margin-left: -1rem;
+  font-family: monospace;
+}
+
+#startMicrophoneButton {
+  width: 12rem;
+}
+
+#inputFileWrapper {
+  display: flex;
+  flex-direction: row;
+}
+
+@media screen and (max-width: 800px) {
+  #inputFileWrapper {
+    flex-direction: column;
+  }
+  #treeBuilderWrapper {
+    flex-direction: "column";
+  }
+  #instrumentBuilderWrapper {
+    top: 49vh;
+    height: 23vh;
+  }
+  .instrument-group-wrapper {
+    flex-direction: column;
+  }
+  #sampleToolsWrapper, #sequenceToolsWrapper { 
+    top: 18vh !important;
+    flex-direction: column;
+  }
 }
 
 .half {
@@ -154,10 +299,12 @@ canvas {
   z-index: 2;
   border: 1px solid black;
   border-radius: 0 0 3px 3px;
-  box-shadow: -1px -1px 2px var(--white-20) inset,
+  /* box-shadow: -1px -1px 2px var(--white-20) inset,
     0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
-  background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%);
-  color: var(--white-50);
+  background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%); */
+  background: linear-gradient(45deg, rgba(20,80,160,1) 0%, hsl(0, 0%, 23%) 2%);
+  color: white;
+  font-family: monospace;
 }
 
 ul {
@@ -167,49 +314,41 @@ ul {
   position: absolute;
 }
 
-#keyboardWrapper {
-  width: 100vw;
-  max-width: 100vw;
-  height: 100vh;
+#vizControls {
+  position: absolute; 
+  top: 0;
   overflow: scroll;
-  background-color: transparent;
-  position: absolute;
-  top: 0vh;
-  margin-top: 4vh;
-  margin-bottom: 0vh;
 }
 
 #inputFileWrapper {
-  color: violet;
   display: flex;
-  position: absolute;
-  background: var(--black-80);
-  height: 25vh;
-  top: 25vh;
-  width: 50vw;
   float: center;
-  left: 25vw;
-  justify-content: center;
-  padding-top: 24px;
+  left: 0;
+  /* justify-content: center; */
 }
 
-#keyboardControlsWrapper {
+/* #keyboardControlsWrapper {
   color: violet;
   max-width: 100vw;
   width: 100vw;
   display: flex;
-  justify-content: center;
-  margin-top: 2rem;
+  justify-content: right;
+} */
+
+.MuiPopover-root {
+  max-height: 50vh;
 }
 
 .MuiList-root, .MuiPaper-root {
   display: flex !important;
   flex-direction: column !important;
   position: fixed;
-  top: 4vh;
+  height: 100vh;
   display: flex;
-  color: var(--white-80);
-  background: var(--black-60);
+  /* left: 0; */
+  right: 0;
+  top: 0;
+  /* background: var(--black-60); */
   /* background: var(--black-20) !important; */
 }
 
@@ -240,20 +379,9 @@ ul {
   justify-content: center;
 }
 
-#sequencerWrapperOuter {
-  display: inline-table;
-  position: absolute;
-  height: 10vh;
-  right: 0;
-  /* width: 90vw; */
-  flex-direction: row;
-  justify-content: center;
-  background: var(--black-60);
-  bottom: 0;
-}
-
 .sequencer-dropdown {
-  min-width: 80px; 
+  /* min-width: 80px; */
+  min-width: 25%;
 }
 
 #submitMingus {
@@ -272,7 +400,6 @@ ul {
 }
 
 #audioKey-simple-select-label #octave-simple-select-label #audioScale-simple-select-label #chord-simple-select-label{
-  color: blue;
   position: absolute;
   z-index: 15;
 }
@@ -286,6 +413,7 @@ ul {
   left: 0;
   /* position: absolute; */
   background: rgba(0,0,0,0.4);
+  
 }
 
 
@@ -302,23 +430,6 @@ ul {
   width: 100vw;
   text-align: center;
   background: var(--black-60);
-}
-
-#instrumentBuilderWrapper {
-  flex-direction: ROW;
-  justify-content: LEFT;
-  color: var(--white-80);
-  position: absolute;
-  border-bottom-right-radius: 80px 80px;
-  top: 2VH;
-  left: 2vw;
-  bottom: 20vh;
-  width: 40vw;
-  text-align: center;
-  right: 20vw;
-  margin-top: 36px;
-  BACKGROUND: TRANSPARENT;
-  PADDING-LEFT: 0;
 }
 
 #instrumentBuilder {
@@ -372,14 +483,44 @@ ul {
   color: var(--white-80) !important;
 }
 
-.MuiButtonBase-root {
+/* .MuiButtonBase-root {
   color: var(--white-80) !important;
-}
+} */
 
 .MuiInputLabel-root {
-  color: "#f6f6f6" !important;
+  color: #f6f6f6 !important;
+}
+
+.MuiTypography-root {
+  font-size: 12px !important;
+  color: #f6f6f6;
 }
 
 .MuiFormControl-root {
   position: relative;
+  color:#ffffff;
+}
+
+.midSizeButtons {
+  background: rgba(0,0,0,0.91);
+  min-height: 2rem;
+  width: 4rem;
+  color: #ffffff;
+  padding: 0.1rem;
+  width: 12rem;
+}
+
+.inputSampleInfo {
+  max-height: 2rem;
+}
+
+.introListLetter {
+  padding: 0; 
+  display: flex;
+  flex-direction: column !important;
+}
+
+.MuiMenu-paper {
+  width: 13rem !important;
+  right: 2rem !important;
 }

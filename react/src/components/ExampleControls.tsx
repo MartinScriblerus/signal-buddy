@@ -13,6 +13,7 @@ import customTheme from './customTheme';
 import userPrefersReducedMotion from './userPrefersReducedMotion';
 import getAnimatedOrUnanimatedComponents from './getAnimatedOrUnanimatedComponents';
 import buildChartTheme from './customTheme';
+import {Box, Typography, InputLabel} from '@mui/material';
 import styles from '../styles/VizControls.module.css';
 
 const dateScaleConfig = { type: 'band', paddingInner: 0.3 } as const;
@@ -35,6 +36,8 @@ type DataKey = keyof Accessors;
 type SimpleScaleConfig = { type: 'band' | 'linear'; paddingInner?: number };
 
 type ProvidedProps = {
+  width?: any;
+  height?: any;
   accessors: {
     x: Accessors;
     y: Accessors;
@@ -358,420 +361,264 @@ export default function ExampleControls({ children }: ControlsProps ) {
       })}
       {/** This style is used for annotated elements via colorAccessor. */}
 
-
-      <div id="vizControls"
-        className="invisible"
+      <Box sx={{fontFamily: 'text.primary', width: "100%"}} id="vizControls"
+        // className="invisible"
         style={{
-          position: 'absolute', 
-          textAlign: 'left',
-          background: 'rgba(0,0,0,.7)',
-          color: 'white',
-          bottom: 0,
-          height: '300px',
-          width:'400px',
-          left: '0px',
-          margin: 'auto',
-          right: '0',
-          top: '0',
+          position: "absolute",
+          textAlign: "left",
+          background: "rgba(0, 0, 0, 0.7)",
+          width: "40%",
+          paddingLeft: "1rem",
         }}
       >
-        {/** data */}
-        <div>
-          <strong>data</strong>
-          <label>
-            <input
-              type="checkbox"
-              onChange={() => setNegativeValues(!negativeValues)}
-              checked={negativeValues}
-            />
-            negative values (SF)
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              onChange={() => setFewerDatum(!fewerDatum)}
-              checked={fewerDatum}
-            />
-            fewer datum
-          </label>
-        </div>
-
-        {/* <br /> */}
-
-        {/** series */}
-        {/** orientation */}
-        <div>
-          <strong>series orientation</strong>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setRenderHorizontally(false)}
-              checked={!renderHorizontally}
-            />
-            vertical
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setRenderHorizontally(true)}
-              checked={renderHorizontally}
-            />
-            horizontal
-          </label>
-        </div>
-        <div>
-          <strong>line series</strong>
-          <label>
-            <input
-              type="radio"
-              onChange={() => {
-                if (renderBarStackOrGroup === 'barstack' || renderBarStackOrGroup === 'bargroup') {
-                  setRenderBarStackOrGroup('none');
-                }
-                setRenderAreaLineOrStack('line');
-              }}
-              checked={renderAreaLineOrStack === 'line'}
-            />
-            line
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => {
-                if (renderBarStackOrGroup === 'barstack' || renderBarStackOrGroup === 'bargroup') {
-                  setRenderBarStackOrGroup('none');
-                }
-                setRenderAreaLineOrStack('area');
-              }}
-              checked={renderAreaLineOrStack === 'area'}
-            />
+        <Box sx={{formFamily: 'text.primary', display: "flex", flexDirection: "row", width: "100%"}}>
+          <Typography sx={{formFamily: 'type.primary', width: "20%"}}>graph</Typography>
+          <Box sx={{display: "flex", width: "100%", flexDirection: "column"}}>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => setRenderHorizontally(false)}
+                checked={!renderHorizontally}
+              />
+              <Typography sx={{formFamily: 'type.primary', display: "flex", flexDirection: "row"}}>
+                data vertical
+              </Typography>
+            </InputLabel>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => setRenderHorizontally(true)}
+                checked={renderHorizontally}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+                data horizontal
+              </Typography>
+            </InputLabel>
+            {/* <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => setXAxisOrientation('bottom')}
+                checked={xAxisOrientation === 'bottom'}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+                axis bottom
+              </Typography>
+            </InputLabel>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => setXAxisOrientation('top')}
+                checked={xAxisOrientation === 'top'}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+                axis top
+              </Typography>
+            </InputLabel>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => setYAxisOrientation('left')}
+                checked={yAxisOrientation === 'left'}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+                axis left
+              </Typography>
+            </InputLabel>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => setYAxisOrientation('right')}
+                checked={yAxisOrientation === 'right'}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+              axis right
+              </Typography>
+            </InputLabel> */}
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="checkbox"
+                onChange={() => setNegativeValues(!negativeValues)}
+                checked={negativeValues}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+              negative values (SF)
+              </Typography>
+            </InputLabel>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="checkbox"
+                onChange={() => setFewerDatum(!fewerDatum)}
+                checked={fewerDatum}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+                fewer datum
+              </Typography>
+            </InputLabel>
+          </Box>
+        </Box>
+        <Box sx={{fontFamily: 'text.primary', display: "flex", flexDirection: "row", width: "100%" }}>
+          <Typography sx={{formFamily: 'type.primary', width: "20%" }}>viz</Typography>
+          <Box sx={{fontFamily: 'text.primary', display: "flex",  flexDirection: "column", width: "100%"}}>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => {
+                  if (renderBarStackOrGroup === 'barstack' || renderBarStackOrGroup === 'bargroup') {
+                    setRenderBarStackOrGroup('none');
+                  }
+                  setRenderAreaLineOrStack('line');
+                }}
+                checked={renderAreaLineOrStack === 'line'}
+              />
+              <Typography sx={{formFamily: 'type.primary'}}>
+              line
+              </Typography>
+            </InputLabel>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+              <input
+                type="radio"
+                onChange={() => {
+                  if (renderBarStackOrGroup === 'barstack' || renderBarStackOrGroup === 'bargroup') {
+                    setRenderBarStackOrGroup('none');
+                  }
+                  setRenderAreaLineOrStack('area');
+                }}
+                checked={renderAreaLineOrStack === 'area'}
+              />
+            <Typography sx={{formFamily: 'type.primary'}}>
             area
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => {
-                setRenderBarStackOrGroup('none');
-                setRenderAreaLineOrStack('areastack');
-              }}
-              checked={renderAreaLineOrStack === 'areastack'}
-            />
-            area stack
-          </label>
-          &nbsp;&nbsp;&nbsp;&nbsp;
-          <br/>
-        {          
+            </Typography>
+          </InputLabel>
+
+          <Box>
+        {/* {          
         renderAreaLineOrStack !== 'none' ?
-          <>
-            <strong>curve shape</strong>
-            <label>
-            <input
-              type="radio"
-              // disabled={renderAreaLineOrStack === 'none'}
-              onChange={() => setCurveType('linear')}
-              checked={curveType === 'linear'}
-            />
-            linear
-            </label>
-            <label>
-            <input
-              type="radio"
-              // disabled={renderAreaLineOrStack === 'none'}
-              onChange={() => setCurveType('cardinal')}
-              checked={curveType === 'cardinal'}
-            />
-            cardinal (smooth)
-            </label>
-            <label>
-            <input
-              type="radio"
-              // disabled={renderAreaLineOrStack === 'none'}
-              onChange={() => setCurveType('step')}
-              checked={curveType === 'step'}
-            />
-            step
-            </label> 
-          </> : null
-        }
-        </div>
-        <div>
-          <strong>bar series</strong>
-          <label>
-            <input
-              type="radio"
-              onChange={() => {
-                if (renderAreaLineOrStack === 'areastack') {
-                  setRenderAreaLineOrStack('none');
-                }
-                setRenderBarStackOrGroup('bar');
-              }}
-              checked={renderBarStackOrGroup === 'bar'}
-            />
-            bar
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => {
+          <Box
+            sx={{
+              display: "flex", 
+              flexDirection: "row", 
+              width: "100%" 
+            }}
+          >
+            <Typography sx={{formFamily: "text.primary"}} >curve shape</Typography>
+            <Box sx={{display: "flex", width: "60%", flexDirection: "column"}}>
+            <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+                <input
+                  type="radio"
+                  // disabled={renderAreaLineOrStack === 'none'}
+                  onChange={() => setCurveType('linear')}
+                  checked={curveType === 'linear'}
+                />
+                <Typography sx={{formFamily: 'type.primary'}}>
+                  linear
+                </Typography>
+              </InputLabel>
+              <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+                <input
+                  type="radio"
+                  // disabled={renderAreaLineOrStack === 'none'}
+                  onChange={() => setCurveType('cardinal')}
+                  checked={curveType === 'cardinal'}
+                />
+                <Typography sx={{formFamily: 'type.primary'}}>
+                cardinal (smooth)
+                </Typography>
+              </InputLabel>
+              <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+                <input
+                  type="radio"
+                  // disabled={renderAreaLineOrStack === 'none'}
+                  onChange={() => setCurveType('step')}
+                  checked={curveType === 'step'}
+                />
+                <Typography sx={{formFamily: 'type.primary'}}>
+                step
+                </Typography>
+              </InputLabel> 
+            </Box>
+          </Box> : null
+        } */}
+        </Box>
+        <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+          <input
+            type="radio"
+            onChange={() => {
+              if (renderAreaLineOrStack === 'areastack') {
                 setRenderAreaLineOrStack('none');
-                setRenderBarStackOrGroup('barstack');
-              }}
-              checked={renderBarStackOrGroup === 'barstack'}
-            />
-            bar stack
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => {
-                setRenderAreaLineOrStack('none');
-                setRenderBarStackOrGroup('bargroup');
-              }}
-              checked={renderBarStackOrGroup === 'bargroup'}
-            />
+              }
+              setRenderBarStackOrGroup('bar');
+            }}
+            checked={renderBarStackOrGroup === 'bar'}
+          />
+          <Typography sx={{formFamily: 'type.primary'}}>
+          bar
+          </Typography>
+        </InputLabel>
+        <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+          <input
+            type="radio"
+            onChange={() => {
+              setRenderAreaLineOrStack('none');
+              setRenderBarStackOrGroup('bargroup');
+            }}
+            checked={renderBarStackOrGroup === 'bargroup'}
+          />
+          <Typography sx={{formFamily: 'type.primary'}}>
             bar group
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setRenderBarStackOrGroup('none')}
-              checked={renderBarStackOrGroup === 'none'}
-            />
-            none
-          </label>
-        </div>
-        {
-          renderBarStackOrGroup === 'barstack' ? (
-          <div>
-          <strong>stack series offset</strong>
-          <label>
-            <input
-              type="radio"
-              disabled={
-                renderAreaLineOrStack !== 'areastack' && renderBarStackOrGroup !== 'barstack'
-              }
-              onChange={() => setStackOffset(undefined)}
-              checked={stackOffset == null}
-            />
-            auto (zero-baseline)
-          </label>
-          <label>
-            <input
-              type="radio"
-              disabled={
-                renderAreaLineOrStack !== 'areastack' && renderBarStackOrGroup !== 'barstack'
-              }
-              onChange={() => setStackOffset('expand')}
-              checked={stackOffset === 'expand'}
-            />
-            expand (values sum to 1)
-          </label>
-          <label>
-            <input
-              type="radio"
-              disabled={
-                renderAreaLineOrStack !== 'areastack' && renderBarStackOrGroup !== 'barstack'
-              }
-              onChange={() => setStackOffset('wiggle')}
-              checked={stackOffset === 'wiggle'}
-            />
-            wiggle (stream graph)
-          </label>
-          </div>) : null
-        }
-        {/* <br /> */}
-        {/** tooltip */}
+          </Typography>
+        </InputLabel>
+        <InputLabel sx={{display: "flex", flexDirection: "row"}}>
+          <input
+            type="radio"
+            onChange={() => setRenderBarStackOrGroup('none')}
+            checked={renderBarStackOrGroup === 'none'}
+          />
+          <Typography sx={{formFamily: 'type.primary'}}>
+          none
+          </Typography>
+        </InputLabel>
+      </Box>
+      {
+        renderBarStackOrGroup === 'barstack' ? (
         <div>
-          <strong>tooltip</strong>
-
-
-          <label>
-            <input
-              type="checkbox"
-              disabled={!showTooltip}
-              onChange={() => setShowHorizontalCrosshair(!showHorizontalCrosshair)}
-              checked={showTooltip && showHorizontalCrosshair}
-            />
-            horizontal crosshair
-          </label>
-        </div>
-        <div>
-          <strong>tooltip glyph</strong>
-          <label>
-            <input
-              type="checkbox"
-              onChange={() => setEnableTooltipGlyph(!enableTooltipGlyph)}
-              disabled={!canSnapTooltipToDatum}
-              checked={enableTooltipGlyph}
-            />
-            show custom tooltip glyph
-          </label>
-          &nbsp;&nbsp;&nbsp;&nbsp;
-          <label>
-            <input
-              type="radio"
-              disabled={!enableTooltipGlyph || !canSnapTooltipToDatum}
-              onChange={() => setTooltipGlyphComponent('circle')}
-              checked={tooltipGlyphComponent === 'circle'}
-            />
-            circle
-          </label>
-        </div>
-        {/** annotation */}
-        <div>
-          <strong>annotation</strong>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setAnnotationDataKey(null)}
-              checked={annotationDataKey == null}
-            />
-            none
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setAnnotationDataKey('San Francisco')}
-              checked={annotationDataKey === 'San Francisco'}
-            />
-            SF
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setAnnotationDataKey('New York')}
-              checked={annotationDataKey === 'New York'}
-            />
-            NY
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setAnnotationDataKey('Austin')}
-              checked={annotationDataKey === 'Austin'}
-            />
-            Austin
-          </label>
-          &nbsp;&nbsp;&nbsp;
-          <br />
-          <strong>type</strong>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setAnnotationType('circle')}
-              checked={annotationType === 'circle'}
-            />
-            circle
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setAnnotationType('line')}
-              checked={annotationType === 'line'}
-            />
-            line
-          </label>
-          &nbsp;&nbsp;&nbsp;
-          <label>
-            <input
-              type="checkbox"
-              onChange={() => setEditAnnotationLabelPosition(!editAnnotationLabelPosition)}
-              checked={editAnnotationLabelPosition}
-            />
-            edit label position
-          </label>
-        </div>
-        {/* <br /> */}
-
-        {/** axes */}
-        <div>
-          <strong>axes</strong>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setXAxisOrientation('bottom')}
-              checked={xAxisOrientation === 'bottom'}
-            />
-            bottom
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setXAxisOrientation('top')}
-              checked={xAxisOrientation === 'top'}
-            />
-            top
-          </label>
-          &nbsp;&nbsp;&nbsp;&nbsp;
-          <label>
-            <input
-              type="radio"
-              onChange={() => setYAxisOrientation('left')}
-              checked={yAxisOrientation === 'left'}
-            />
-            left
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setYAxisOrientation('right')}
-              checked={yAxisOrientation === 'right'}
-            />
-            right
-          </label>
-        </div>
-        {/** grid */}
-        {
-          !useAnimatedComponents ?
-          <div>
-          <strong>grid</strong>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setGridProps([true, false])}
-              checked={showGridRows && !showGridColumns}
-            />
-            rows
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setGridProps([false, true])}
-              checked={!showGridRows && showGridColumns}
-            />
-            columns
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setGridProps([true, true])}
-              checked={showGridRows && showGridColumns}
-            />
-            both
-          </label>
-          <label>
-            <input
-              type="radio"
-              onChange={() => setGridProps([false, false])}
-              checked={!showGridRows && !showGridColumns}
-            />
-            none
-          </label>
-          </div> : null
-        }
-        {/** animation trajectory */}
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              onChange={() => setUseAnimatedComponents(!useAnimatedComponents)}
-              checked={useAnimatedComponents}
-            />
-            use animated components
-          </label>
-        </div>
-      </div>
-
+        <strong>stack series offset</strong>
+        <label>
+          <input
+            type="radio"
+            disabled={
+              renderAreaLineOrStack !== 'areastack' && renderBarStackOrGroup !== 'barstack'
+            }
+            onChange={() => setStackOffset(undefined)}
+            checked={stackOffset == null}
+          />
+          auto (zero-baseline)
+        </label>
+        <label>
+          <input
+            type="radio"
+            disabled={
+              renderAreaLineOrStack !== 'areastack' && renderBarStackOrGroup !== 'barstack'
+            }
+            onChange={() => setStackOffset('expand')}
+            checked={stackOffset === 'expand'}
+          />
+          expand (values sum to 1)
+        </label>
+        <label>
+          <input
+            type="radio"
+            disabled={
+              renderAreaLineOrStack !== 'areastack' && renderBarStackOrGroup !== 'barstack'
+            }
+            onChange={() => setStackOffset('wiggle')}
+            checked={stackOffset === 'wiggle'}
+          />
+          wiggle (stream graph)
+        </label>
+        </div>) : null
+      }
+      </Box>
+    </Box>
     </>
   );
 }

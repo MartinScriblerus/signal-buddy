@@ -11,17 +11,19 @@ Std.atof(me.arg(0)) => float bpm;
 
 fun void loopBar(int numeratorSignature, string file[ ], dur beat, dur bar, int running, int pat_test[][][]) {
     beat / 4 => dur sixteenthBeat;
-    (secLenBeat / numeratorSignature)::second => bar;
+    (secLenBeat)::second => bar;
     SndBuf bufArr[file.size()];
     for (0 => int count; count < numeratorSignature * 4; count++) {
         // (secLenBeat / numeratorSignature)::second => bar;
         sixteenthBeat => dur thisBeat;
         for (0 => int p; p < file.size(); p++) {
-            if (count % pat_test[p][0][0] == 0) {
+            if (count % pat_test[p][0][0] == 0 ) {
                 // <<< "COUNT IS: ", count >>>;
                 <<< "PAT TEST: ", pat_test[p][0][0] >>>;
                 file[p] => string sample;
                 sample => bufArr[p].read;
+                0 => bufArr[p].pos;
+                0.3 => bufArr[p].gain;
                 bufArr[p] => dac;
             }
             me.yield(); 
@@ -61,12 +63,12 @@ if (secLenBeat > .000000001) {
     Std.atoi(me.arg(1)) => running;
 
     [   
+        [[6], [6], [3]],
+        [[3], [8], [16]],
+        [[6], [3], [9]],
         [[1], [6], [3]],
-        [[2], [8], [16]],
-        [[4], [3], [9]],
-        [[1], [6], [3]],
-        [[2], [8], [16]],
-        [[4], [3], [9]]  
+        [[3], [8], [16]],
+        [[6], [3], [9]]  
     ] @=> int patterns[][][];
         
     for (0 => int s; s < fileArrayUploaded.size(); s++) {
