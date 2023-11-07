@@ -64,16 +64,16 @@ body{
   display: inline-table;
   position: absolute;
   height: 10vh;
-  left: 0;
+  right: 0rem;
   /* width: 90vw; */
   flex-direction: row;
   justify-content: center;
   /* background: var(--black-60); */
-  bottom: 0;
+  bottom: 14rem;
   z-index: 20;
   max-height: 50vh;
   overflow: scroll;
-  width: calc(100vw - 28rem);
+  width: 40vw;
   padding: 1rem;
 }
 
@@ -131,7 +131,7 @@ body{
   justify-content: LEFT;
   overflow-y: scroll;
   position: absolute;
-  height: 30vh;
+  height: 25vh;
   max-height: 20rem;
   width: calc(100vw - 28rem);
   border: solid 1px blue;
@@ -145,6 +145,40 @@ body{
   BACKGROUND: TRANSPARENT;
   overflow: scroll;
 }
+
+#synthControlsWrapper {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 26vh;
+  /* top: 10vh !important; */
+  position: absolute;
+  background: transparent;
+  /* position: absolute; */
+  left: 0;
+  bottom: 0;
+  width: calc(100vw - 26rem);
+  text-align: center;
+  /* background: var(--black-60); */
+  overflow: scroll;
+}
+
+#instrumentBuilder {
+  display: flex;
+  flex-direction: column;
+}
+
+.instrumentCheckboxWrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center; 
+  align-items: center;
+  left: 10%;
+  top: 10%;
+  height: 80%;
+  width: 80%;
+}
+
 
 .instrument-group-wrapper {
   display: flex;
@@ -179,6 +213,10 @@ body{
     width: calc(100vw - 54rem);
   }
   #instrumentBuilderWrapper {
+    width: calc(100vw - 54rem);
+    overflow: scroll
+  }
+  #synthControlsWrapper {
     width: calc(100vw - 54rem);
     overflow: scroll
   }
@@ -276,7 +314,11 @@ canvas {
   }
   #instrumentBuilderWrapper {
     top: 49vh;
-    height: 23vh;
+    height: 26vh;
+  }
+  #synthControlsWrapper {
+    top: 75vh;
+    height: 25vh;
   }
   .instrument-group-wrapper {
     flex-direction: column;
@@ -317,7 +359,10 @@ ul {
 #vizControls {
   position: absolute; 
   top: 0;
+  right: 0;
   overflow: scroll;
+  display: none;
+  z-index: 30;
 }
 
 #inputFileWrapper {
@@ -416,38 +461,6 @@ ul {
   
 }
 
-
-#synthControlsWrapper {
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  top: 10vh !important;
-  position: absolute;
-  background: transparent;
-  position: absolute;
-  left: 0vw;
-  width: 100vw;
-  text-align: center;
-  background: var(--black-60);
-}
-
-#instrumentBuilder {
-  display: flex;
-  flex-direction: column;
-}
-
-.instrumentCheckboxWrapper {
-  display: flex;
-  flex-direction: row;
-  justify-content: center; 
-  align-items: center;
-  left: 10%;
-  top: 10%;
-  height: 80%;
-  width: 80%;
-}
-
 .li-to-drag {
   height: 80px;
   min-width: 1vw;
@@ -523,4 +536,8 @@ ul {
 .MuiMenu-paper {
   width: 13rem !important;
   right: 2rem !important;
+}
+
+.MuiListItemButton-root {
+  max-height: 3rem;
 }

@@ -1,34 +1,28 @@
 
 // file: store.ts
-import { configureStore } from '@reduxjs/toolkit'
-import _ from 'lodash'
+import { configureStore } from "@reduxjs/toolkit";
+import _ from "lodash";
 // We'll use redux-logger just as an example of adding another middleware
-import logger from 'redux-logger'
-
+import logger from "redux-logger";
+import { IInitialState } from "../interfaces/initialstate.interface";
 // And use redux-batched-subscribe as an example of adding enhancers
-import { batchedSubscribe } from 'redux-batched-subscribe'
+import { batchedSubscribe } from "redux-batched-subscribe";
 
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface AudioplayerState {
-  currentTime: number
-  value: boolean
-  currentTimeInterval: number
-  duration: number
-  startClip: number
-}
-
-interface MingusdataState {
-  noteData: [],
-}
-
-const initialState = {
+const initialState: IInitialState = {
+  audioplayer: {
     currentTime: 0,
     value: true,
     currentTimeInterval: 0,
     duration: 0,
     startClip: 0,
+  },
+  mingusdata: {
     noteData: [],
+  },
+    // isLoading: false,
+    // error: null,
 };
 
 export const audioplayerSlice = createSlice({
@@ -36,23 +30,28 @@ export const audioplayerSlice = createSlice({
   initialState,
   reducers: {
     setCurrentTime: (state, action: PayloadAction<number>) => {
-
-      // if (action.payload.length) {
-        state.currentTime = action.payload.currentTime;
+       console.log('what is state>? ', state);
+       console.log('what is action??? ', action.payload);
+       console.log("WHAT IS CURR TIME>? ", action.payload);
+      // if (state && action.payload && typeof action.payload !== "number") {
+      //   state.audioplayer.currentTime = action.payload.audioplayer.currentTime;
+      // } else {
+      //   console.log("what is act payload???? curr time: ", action.payload);
+      //   state.audioplayer.currentTime = action.payload;
       // }
     },
-    setValue: (state, action: PayloadAction<boolean>) => {
-      state.value = action.payload.value;
-    },
-    setCurrentTimeInterval: (state, action: PayloadAction<number>) => {
-      state.currentTimeInterval = action.payload.currentTimeInterval;
-    },
-    setDuration: (state, action: PayloadAction<number>) => {
-      state.duration = action.payload.duration;
-    },
-    setStartClip: (state, action: PayloadAction<number>) => {
-      state.startClip = action.payload.startClip;
-    },
+    // setValue: (state, action: PayloadAction<boolean>) => {
+    //   state.audioplayer.value = action.payload.audioplayer.value;
+    // },
+    // setCurrentTimeInterval: (state, action: PayloadAction<number>) => {
+    //   state.audioplayer.currentTimeInterval = action.payload.audioplayer.currentTimeInterval;
+    // },
+    // setDuration: (state, action: PayloadAction<number>) => {
+    //   state.audioplayer.duration = action.payload.audioplayer.duration;
+    // },
+    // setStartClip: (state, action: PayloadAction<number>) => {
+    //   state.audioplayer.startClip = action.payload.audioplayer.startClip;
+    // },
   },
 });
 
@@ -71,11 +70,9 @@ export const mingusdataSlice = createSlice({
   reducers: {
     setNoteData: (state, action: PayloadAction<number>) => {
      console.log('??? actionm p ', action.payload);
-      // state.noteData.concat(action.payload);
+      //state.mingusdata.noteData.concat(action.payload);
     },
-  },
-});
-
+  }});
 export const mingusdataReducer = mingusdataSlice.reducer;
 
 
@@ -85,7 +82,7 @@ const reducer = {
   mingusdata: mingusdataReducer,
 }
 
-const preloadedState = {
+const preloadedState: any = {
   audioplayer: {
       currentTime: 0,
       value: true,
@@ -96,8 +93,6 @@ const preloadedState = {
   mingusdata: {
       noteData: [],
   },
-    isLoading: false,
-    error: null,
 }
 
 const debounceNotify = _.debounce((notify) => notify())

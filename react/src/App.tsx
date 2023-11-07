@@ -3,8 +3,8 @@ import './App.css';
 import CreateChuck from './components/CreateChuck';
 import axios from 'axios';
 import { IGame } from './interfaces/IGame';
-import { Button, Box, Grid, ThemeProvider, createTheme, Input } from '@mui/material';
-import { useForm } from "react-hook-form";
+import { Button, Box, Grid, ThemeProvider, createTheme, Input, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
+import { set, useForm } from "react-hook-form";
 import StartButton from "./components/StartButton";
 import TitilliumWeb from './TitilliumWeb-Regular.ttf';
 import MicNoneIcon from '@material-ui/icons/MicNone';
@@ -35,10 +35,18 @@ function App() {
   const [datas, setDatas] = useState<any>([]);
   const [isRecordingMic, setIsRecordingMic] = useState(false);
   const [fileControlsVisible, setFileControlsVisible] = useState(false);
+  const [writableHook, setWritableHook] = useState({});
+  const [audioInputWrapperVisible, setAudioInputWrapperVisible] = useState(false);
+
+  const deviceLabels = useRef<any>([]);
+
+  const [deviceLabelsOpen, setDeviceLabelsOpen] = useState(false);
+ 
   const { register, handleSubmit } = useForm();
   const uploadedFilesRef: any = useRef([]);
   const midiNotesOn: any = useRef([]);
   const midiNotesOff: any = useRef([]);
+  const suggestedNameRef = useRef<string>("");
 
   const nav: any = navigator;
   const [data, setData] = useState<any>([]);
@@ -74,50 +82,198 @@ function App() {
     }
   }
 
-  const handleRecordAudio = async() => {
-    // const audioCtx = await chuckHook.context;
+  const deviceList = deviceLabels.current.map(
+    (i:any, ind: number) => 
+        <ListItemButton key={`devicelistbtn_${i}`}><ListItemText key={`devicelisttxt_${i}`} primary={i} /></ListItemButton>
+  )
+
+  const handleChangeInput = () => {
+    setAudioInputWrapperVisible(!audioInputWrapperVisible);
+  };
+
+  // const handleStopRecording = (recorder: any, stream: any) => {
+  //   if (recorder) {
+  //     recorder.stop();
+  //     console.log('STOPPING RECORDER: ', recorder);
+  //     recorder.removeEventListener("dataavailable", async (event: any) => {        
+  //     });
+  //     // Close the file when the recording stops. 
+  //     if (recorder.stream) {
+  //       recorder.stream.getTracks().forEach(async (track: any) => {
+  //         console.log("STOPPINNG TRACK: ", track);
+  //         await track;
+  //         if (track) {
+  //           track.stop();
+  //         }
+  //         track.enabled = false;
+  //       });
+  //     }
+  //   }
+
+  //   if (stream && stream.getTracks()) { 
+  //     // Stop the stream.
+  //     stream.getTracks().forEach(async (track: any) => {
+  //       console.log("STOPPINNG TRACK: ", track);
+  //       await track;
+  //       if (track) {
+  //         track.stop();
+  //       }
+  //       track.enabled = false;
+  //     });
+  //   }
+  //   stream = null;
+  //   recorder = null;
+  //   // setIsRecordingMic(false);  
+  // }
+  
+
+  const isRecRef = useRef<boolean>();
+  const deviceWrapper = useRef<any>(null);
+  const createFileFormCurrentRecordedData = async (recordedData: Array<any>) => {
+    const blob = new Blob(recordedData , {type: "audio/wav"});
+    const file = new File( [ blob ], suggestedNameRef.current, { type: "audio/wav"} );
+    /* then upload oder directly download your file / blob depending on your needs */
+
+    let url = URL.createObjectURL(blob);
+    let a: any = await document.createElement("a");
+    a.style = "z-index: 1000; position: absolute; top: 0px; left: 0px; background: green";
+    a.href = url;
+    document.body.appendChild(a);
+    a.download = file;
+  }
+  
+  useEffect(() => {
+    if (!nav) return; 
+    (async() => {
+      const devices = await nav.mediaDevices.enumerateDevices();
+      console.log("devices?>??? ", devices);
+      devices.filter((d:any) => d.kind === 'audioinput').map((i:any, ind: number) => {
+        
+        console.log('YO I: ', i.label)
+
+        if (deviceLabels.current.indexOf(i.label) === -1) {
+           deviceLabels.current.push(i.label);
+        }
+      });
+      console.log('WHAT ARE DDEVICES> ', deviceLabels.current);
+    }) ();
+  }, [nav, audioReady]);
+
+
+
+  const handleRecordAudio = async () => {
     let recorder;
     let stream;
-    console.log("NAV DEVICES ", navigator.mediaDevices);
-    // Prompt the user to use their microphone.
+    let writable;
+    let recordedData = [];
+
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     recorder = new MediaRecorder(stream);
-    if(!isRecordingMic) {          
-        // Prompt the user to choose where to save the recording file.
-        const suggestedName = "microphone-recording.webm";
-        const handle = await window.showSaveFilePicker({ suggestedName });
-        const writable = await handle.createWritable();
-      
-        // Start recording.
-        recorder.start();
-        recorder.addEventListener("dataavailable", async (event) => {
-          // Write chunks to the file.
-          await writable.write(event.data);
-          if (recorder.state === "inactive") {
-            // Close the file when the recording stops.
-            await writable.close();
-          }
-        });
+    recorder.onstop = createFileFormCurrentRecordedData(recordedData);
+    isRecRef.current = !isRecRef.current;
+
+    if (!suggestedNameRef.current) {
+      const suggestedName = "microphone-recording2.wav";
+      suggestedNameRef.current = suggestedName;
+      const handle = await window.showSaveFilePicker({ suggestedName });
+
+      writable = await handle.createWritable();
+    
+      // Start recording.
+      setIsRecordingMic(true);
+      if (recorder.state !== "recording" && isRecRef.current === true) {
+        (async () => {
+          recorder.addEventListener("dataavailable", async (event) => {
+            // Write chunks to the file.
+            if (recorder.state !== "inactive" && recorder.state !== "closed") {
+              writable.write(event.data);
+            }
+            recordedData.push(event.data);
+            if (isRecRef.current === false) {
+              if (recorder.state !== "inactive" && recorder.state !== "closed") {
+                writable.close();
+                setWritableHook(writable);
+              }
+              recorder.stop();
+
+              if (recorder.stream) {
+                recorder.stream.getTracks().forEach(async (track: any) => {
+                  console.log("STOPPINNG TRACK: ", track);
+                  await track;
+                  if (track) {
+                    track.stop();
+                  }
+                  track.enabled = false;
+                });
+              }
+
+              // Stop the stream.
+              stream.getTracks().forEach(async (track: any) => {
+                console.log("STOPPINNG TRACK: ", track);
+                await track;
+                if (track) {
+                  track.stop();
+                }
+                track.enabled = false;
+              });
+              isRecRef.current = false;
+              return;
+            }
+          });
+          /* this defines the start point - call when you want to start your audio to blob conversion */
+          recorder.start(1000);
+        }) ();
+      } else {
+        writable.close();
+        // setWritableHook(writable);
+      }
     } else {
-        // Stop the recording.
+      isRecRef.current = false;
+      setIsRecordingMic(false);
+      if (recorder instanceof MediaRecorder) {
         recorder.stop();
-        // Stop the stream.
-        stream.getTracks().forEach(track => track.stop());
-    };
-    setIsRecordingMic(!isRecordingMic);        
-}
+      }
+      if (recorder.stream) {
+        await recorder.stream.getTracks().forEach(async (track: any) => {
+          console.log("STOPPINNG TRACK: ", track);
+          await track;
+          if (track) {
+            track.stop();
+          }
+          track.enabled = false;
+        });
+      }
+
+      // // Stop the stream.
+      await stream.getTracks().forEach(async (track: any) => {
+        await track;
+        if (track) {
+          track.stop();
+        }
+        track.enabled = false;
+      });
+      stream = null;
+      recorder = null;
+      suggestedNameRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    console.log('WRITABLE HOOK CHANGED IN APP! ', writableHook);
+  }, [writableHook])
 
   return (
     <ThemeProvider theme={theme}>
-      <Grid sx={{fontFamily: 'TitilliumWeb-Regular', backgroundColor: 'background.paper', height: '100vh', maxHeight: '100vh', overflow: 'hidden'}} className="App">
-        <Box>
+      <Grid sx={{fontFamily: 'TitilliumWeb-Regular', backgroundColor: 'background.paper', height: '100vh', maxHeight: '100vh', maxWidth: "100vw", overflow: 'hidden'}} className="App">
+        <Box sx={{width: '100%', height: '100%'}}>
           {!audioReady  
           ? 
             <StartButton 
               handleAudioReady={(e) => handleAudioReady(e)}
             />
           :
-            <Box>
+            <Box sx={{top: "0", bottom: "0", left: "0", right: "0", display: "flex", flexDirection: "row"}}>
+
               <Box id="fileManagerWrapper" sx={{left: 0, top: 0, height: "12vh", background: 'background.paper', border: "1px solid yellow"}}>
                 {/* <Button onClick={handleChangeFileControls}>FILES</Button> */}
                 {audioReady && fileControlsVisible && (
@@ -148,19 +304,22 @@ function App() {
                   </Box>
                 )}
 
-                {/* <Button id="startMicrophoneButton" onClick={handleRecordAudio}>
-                    {
-                    !isRecordingMic 
-                        ? "START REC"
-                        : "STOP REC"
-                    }
-                </Button> */}
+
               </Box>
+
               <CreateChuck
                 audioReady={audioReady} 
                 datas={datas}
                 uploadedFiles={uploadedFilesRef.current}
+                writableHook={writableHook}
+                handleChangeInput={handleChangeInput}
               />
+              {/* <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", background: 'background.paper', border: "1px solid blue", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
+                    {deviceList}
+              </List> */}
+              <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
+                {deviceList}
+              </List>
             </Box>
           }
         </Box>

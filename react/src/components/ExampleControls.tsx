@@ -366,7 +366,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
         style={{
           position: "absolute",
           textAlign: "left",
-          background: "rgba(0, 0, 0, 0.7)",
+          background: "rgba(0, 0, 0, 0.91)",
           width: "40%",
           paddingLeft: "1rem",
         }}
@@ -619,6 +619,7 @@ export default function ExampleControls({ children }: ControlsProps ) {
       }
       </Box>
     </Box>
+
     </>
   );
 }

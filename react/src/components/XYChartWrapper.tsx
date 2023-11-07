@@ -18,20 +18,21 @@ export type XYChartProps = {
 type City = 'San Francisco' | 'New York' | 'Austin' | 'Times' | 'Hzs' | 'Magnitudes';
 
 export default function Example({ width, height, librosaData, setTicksDatas, ticksDatas }: XYChartProps) {
-    const [dataVizControlsOpen, setDataVizControlsOpen] = useState(false);  
+    // const [dataVizControlsOpen, setDataVizControlsOpen] = useState(false);  
     const [newData, setNewData] = useState([]);
 
 
-    const handleChangeDataVizControls = async () => {
-      console.log('here in handleChangeDataVizControls!');
-      const el = await document.getElementById('vizControls');
-      if (dataVizControlsOpen) {
-        setDataVizControlsOpen(false);
-      } else {
-        setDataVizControlsOpen(true);
-      }
-      setDataVizControlsOpen(!dataVizControlsOpen);
-    }
+    // const handleChangeDataVizControls = async () => {
+    //   console.log('here in handleChangeDataVizControls!');
+    //   const el = await document.getElementById('vizControls');
+    //   if (dataVizControlsOpen) {
+    //     setDataVizControlsOpen(false);
+    //     document.getElementById("vizControls").style.display = "none";
+    //   } else {
+    //     setDataVizControlsOpen(true);
+    //     document.getElementById("vizControls").style.display = "block";
+    //   }
+    // }
 
     useEffect(() => {
       setNewData([]);
@@ -75,8 +76,8 @@ export default function Example({ width, height, librosaData, setTicksDatas, tic
 
     return (
     <>
-      <Button sx={{position: "absolute", top: 0, right: "8rem"}} id="btnDataVizControls" onClick={handleChangeDataVizControls}>Data Controls</Button>
-      { dataVizControlsOpen && (
+      {/* <Button sx={{position: "relative", justifyContent: "left", width: "100%", left: "0rem"}} id="btnDataVizControls" onClick={handleChangeDataVizControls}>Data Controls</Button> */}
+      {/* { dataVizControlsOpen && ( */}
         <ExampleControls>
           { ({
             width,
@@ -119,6 +120,7 @@ export default function Example({ width, height, librosaData, setTicksDatas, tic
             theme,
             xAxisOrientation,
             yAxisOrientation,
+            // dataVizControlsOpen,
 
             // components are animated or not depending on selection
             Annotation,
@@ -412,8 +414,8 @@ export default function Example({ width, height, librosaData, setTicksDatas, tic
             </>
           )}
           </ExampleControls>
-        )
-      }
+        {/* )
+      } */}
     </>
   );
 }
