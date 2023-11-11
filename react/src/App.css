@@ -131,7 +131,7 @@ body{
   justify-content: LEFT;
   overflow-y: scroll;
   position: absolute;
-  height: 25vh;
+  height: 23vh;
   max-height: 20rem;
   width: calc(100vw - 28rem);
   border: solid 1px blue;
@@ -150,7 +150,7 @@ body{
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 26vh;
+  height: 28vh;
   /* top: 10vh !important; */
   position: absolute;
   background: transparent;
@@ -222,7 +222,6 @@ body{
   }
   #sampleToolsWrapper {
     width: calc(100vw - 54rem);
-    /* flex-direction: column; */
   }
   #sequenceToolsWrapper {
     width: calc(100vw - 54rem);
@@ -260,6 +259,11 @@ canvas {
   background-color:orange;
   height: 100vh;
   width: 100vw;
+}
+
+#sampleDropdowns {
+  display: flex;
+  flex-direction: row;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -314,19 +318,26 @@ canvas {
   }
   #instrumentBuilderWrapper {
     top: 49vh;
-    height: 26vh;
+    height: 16vh;
   }
   #synthControlsWrapper {
-    top: 75vh;
-    height: 25vh;
+    top: 70vh;
+    height: 30vh;
   }
   .instrument-group-wrapper {
     flex-direction: column;
   }
   #sampleToolsWrapper, #sequenceToolsWrapper { 
     top: 18vh !important;
+    flex-direction: row;
+  }
+  #sampleDropdowns {
+    display: flex;
     flex-direction: column;
   }
+  /* #sampleToolsWrapper {
+    flex-direction: column;
+  } */
 }
 
 .half {
@@ -404,6 +415,7 @@ ul {
 
 .MuiFormLabel-root {
   color: var(--black-50) !important;
+  padding-right: 3rem; 
 }
 
 /* .MuiBox-root {
@@ -540,4 +552,13 @@ ul {
 
 .MuiListItemButton-root {
   max-height: 3rem;
+}
+
+.MuiPaper-root-MuiPopover-paper {
+  background: var(--black-60) !important;
+  left: 0 !important;
+}
+
+.selected {
+  border: solid 1px white !important;
 }

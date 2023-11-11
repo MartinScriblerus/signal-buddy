@@ -70,9 +70,9 @@ def detect_pitch(y, sr, times):
         return pitch_values
     for idx, t in enumerate(np.nditer(times)):
         index = magnitudes[:, t.astype(int)].argmax()
-        print('HERE IS A PITCH: ', pitches[index, t.astype(int)].tolist())
-        print('HERE IS MEAN: ', pitches.mean())
-        print('HERE IS STD: ', pitches.std())
+        # print('HERE IS A PITCH: ', pitches[index, t.astype(int)].tolist())
+        # print('HERE IS MEAN: ', pitches.mean())
+        # print('HERE IS STD: ', pitches.std())
         if (f'note_{t.astype(int)}' not in pitch_values['notes'] and pitches[index, t.astype(int)]):
             pitch_values['notes'].append(librosa.hz_to_note(pitches[index, t.astype(int)]))
             pitch_values['midis'].append(librosa.hz_to_midi(pitches[index, t.astype(int)]))
@@ -122,7 +122,7 @@ def onsets(file_path):
         onset_env = librosa.onset.onset_strength(y=y, sr=sr, aggregate=np.median)
         print('got onset env')
         onset_times = librosa.frames_to_time(librosa.onset.onset_detect(onset_envelope=onset_env, sr=sr), sr=sr)
-        print('got onset times: ', onset_times)
+        print('got onset times')
         tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr)
         beat_times = librosa.frames_to_time(beats, sr=sr)
         
@@ -166,6 +166,7 @@ def onsets(file_path):
         return json.dumps([{'data': {
             'allData': y.tolist(),
             'onsetEnv': onset_env.tolist(),
+            'onsetTimes': onset_times.tolist(),
             'harmonicData': y_harmonic.tolist(),
             'onsetEnvHarmonic': onset_env_harmonic.tolist(),
             'percussiveData': y_percussive.tolist(),
@@ -191,9 +192,9 @@ def midi_name_to_num_helper(idx, scale):
     start = notes.note_to_int(scale[0])
     end = notes.note_to_int(scale[idx])
     note_num_in_key = end - start
-    print('sanity note_num_in_key for midinametonum ', note_num_in_key)
     if (note_num_in_key < 0):
         note_num_in_key = note_num_in_key + 12
+    print('sanity note_num_in_key for midinametonum ', note_num_in_key)
     return note_num_in_key
 
 def midi_name_to_num_prog_helper(idx, orig_start, scale):
@@ -439,6 +440,8 @@ def progression_num_helper(note):
         note = 'Eb'
     if (note == 'G#'): 
         note = 'Ab'
+    if (note == 'A#'): 
+        note = 'Bb'
     return {
         'progs': {
             'I': chords.I(note),
@@ -491,6 +494,8 @@ def mingus_scales():
         data['audioKey'] = 'Eb'
     if (data['audioKey'] == 'G#'): 
         data['audioKey'] = 'Ab'
+    if (data['audioKey'] == 'A#'): 
+        data['audioKey'] = 'Bb'
     if not notes.is_valid_note(data['audioKey']):
         return [{"data": data['audioKey'] + ' is not a valid note!'}]
     scales_to_return = []
@@ -628,10 +633,12 @@ def mingus_chords():
             if idx == 0:
                 prog_num_helper = progression_num_helper(data['audioKey'])
             
-            print('MINI NUM HELPER ', midi_num_helper)
+            # print('MINI NUM HELPER ', midi_num_helper)
             print('PROG NUM HELPER ', prog_num_helper)
-            nums_chords.append(midi_num_helper)
-            nums_chords.append(prog_num_helper)
+            # if midi_num_helper not in nums_chords:
+            #     nums_chords.append(midi_num_helper)
+            if prog_num_helper not in nums_chords:
+                nums_chords.append(prog_num_helper)
             print('NUMS CHORDS!!!!! ', nums_chords)
         return json.dumps(nums_chords)
     elif data['audioChord'] == 'm':

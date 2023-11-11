@@ -30,6 +30,18 @@ const theme = createTheme({
 declare module "*.module.css";
 declare module "*.module.scss";
 
+interface MediaStreamAudioSourceNode extends AudioNode {
+    
+}
+
+// interface MediaElementAudioSourceNode extends AudioNode {
+//   createAnalyser(): AnalyserNode;
+// }
+
+// interface MediaStreamAudioDestinationNode extends AudioNode {
+//     stream: MediaStream;
+// }
+
 function App() {
   const [audioReady, setAudioReady] = useState(false);
   const [datas, setDatas] = useState<any>([]);
@@ -37,8 +49,9 @@ function App() {
   const [fileControlsVisible, setFileControlsVisible] = useState(false);
   const [writableHook, setWritableHook] = useState({});
   const [audioInputWrapperVisible, setAudioInputWrapperVisible] = useState(false);
-
+  const [rtAudio, setRtAudio] = useState<any>(null);
   const deviceLabels = useRef<any>([]);
+  const audioInputDeviceId = useRef<any>(null);
 
   const [deviceLabelsOpen, setDeviceLabelsOpen] = useState(false);
  
@@ -73,6 +86,20 @@ function App() {
     setFileControlsVisible(!fileControlsVisible);
   }
 
+  function handleUpdateInputDevice(label: string, deviceId: string, selected: boolean) {
+    if (deviceId === audioInputDeviceId.current) {
+      const oldSel = document.getElementsByClassName("selected");
+      if (oldSel.length > 0) {
+        oldSel[0].classList.remove("selected");
+      }
+      document.getElementById(`devicelistbtn_${deviceId}`)?.classList.add("selected");
+    } else {
+      //if ( document.getElementById(`devicelistbtn_${deviceId}`)?.classList.contains("selected")) {
+        document.getElementById(`devicelistbtn_${deviceId}`)?.classList.remove("selected");
+      //}
+    }
+  };
+
   async function handleAudioReady(audioReadyMsg: boolean) {
     if (audioReady === false && audioReadyMsg === true) {
       setAudioReady(true);
@@ -82,58 +109,20 @@ function App() {
     }
   }
 
-  const deviceList = deviceLabels.current.map(
+  const deviceList = deviceLabels.current.filter((a: any) => a.label.length > 0).map(
     (i:any, ind: number) => 
-        <ListItemButton key={`devicelistbtn_${i}`}><ListItemText key={`devicelisttxt_${i}`} primary={i} /></ListItemButton>
+        <ListItemButton  style={{zIndex: 3, border: i.selected ? "solid 2px magenta" : "none"}} onClick={() => {audioInputDeviceId.current = i.deviceId; handleUpdateInputDevice(i.label, i.deviceId, i.selected)}} id={`devicelistbtn_${i.deviceId}`} key={`devicelistbtn_${i.label}`}><ListItemText key={`devicelisttxt_${i.label}`} primary={i.label} /></ListItemButton>
   )
 
   const handleChangeInput = () => {
     setAudioInputWrapperVisible(!audioInputWrapperVisible);
   };
 
-  // const handleStopRecording = (recorder: any, stream: any) => {
-  //   if (recorder) {
-  //     recorder.stop();
-  //     console.log('STOPPING RECORDER: ', recorder);
-  //     recorder.removeEventListener("dataavailable", async (event: any) => {        
-  //     });
-  //     // Close the file when the recording stops. 
-  //     if (recorder.stream) {
-  //       recorder.stream.getTracks().forEach(async (track: any) => {
-  //         console.log("STOPPINNG TRACK: ", track);
-  //         await track;
-  //         if (track) {
-  //           track.stop();
-  //         }
-  //         track.enabled = false;
-  //       });
-  //     }
-  //   }
-
-  //   if (stream && stream.getTracks()) { 
-  //     // Stop the stream.
-  //     stream.getTracks().forEach(async (track: any) => {
-  //       console.log("STOPPINNG TRACK: ", track);
-  //       await track;
-  //       if (track) {
-  //         track.stop();
-  //       }
-  //       track.enabled = false;
-  //     });
-  //   }
-  //   stream = null;
-  //   recorder = null;
-  //   // setIsRecordingMic(false);  
-  // }
-  
-
   const isRecRef = useRef<boolean>();
   const deviceWrapper = useRef<any>(null);
   const createFileFormCurrentRecordedData = async (recordedData: Array<any>) => {
     const blob = new Blob(recordedData , {type: "audio/wav"});
     const file = new File( [ blob ], suggestedNameRef.current, { type: "audio/wav"} );
-    /* then upload oder directly download your file / blob depending on your needs */
-
     let url = URL.createObjectURL(blob);
     let a: any = await document.createElement("a");
     a.style = "z-index: 1000; position: absolute; top: 0px; left: 0px; background: green";
@@ -146,20 +135,63 @@ function App() {
     if (!nav) return; 
     (async() => {
       const devices = await nav.mediaDevices.enumerateDevices();
-      console.log("devices?>??? ", devices);
       devices.filter((d:any) => d.kind === 'audioinput').map((i:any, ind: number) => {
-        
-        console.log('YO I: ', i.label)
-
-        if (deviceLabels.current.indexOf(i.label) === -1) {
-           deviceLabels.current.push(i.label);
+      if (deviceLabels.current.map(f => f.label).indexOf(i.label) === -1) {
+          deviceLabels.current.push({'label': i.label, 'deviceId': i.deviceId, 'selected': i.deviceId === audioInputDeviceId.current ? true : false });
         }
       });
-      console.log('WHAT ARE DDEVICES> ', deviceLabels.current);
     }) ();
-  }, [nav, audioReady]);
+  }, [nav, audioReady, audioInputDeviceId]);
 
 
+  const stopTracks = async (recorder: any, stream: any) => {
+    if (recorder instanceof MediaRecorder) {
+      recorder.stop();
+    }
+    if (recorder.stream) {
+      await recorder.stream.getTracks().forEach(async (track: any) => {
+        console.log("STOPPINNG TRACK NOOW: ", track);
+        await track;
+        if (track) {
+          track.stop();
+        }
+        track.enabled = false;
+      });
+    }
+
+    // // Stop the stream.
+    await stream.getTracks().forEach(async (track: any) => {
+      await track;
+      if (track) {
+        track.stop();
+      }
+      track.enabled = false;
+    });
+    stream = null;
+    recorder = null;
+    suggestedNameRef.current = null;
+  }
+
+  const runAnalyserNode = async (analyser: AnalyserNode) => {
+    const bufferFftSize = analyser.fftSize;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArrayFreqByte = new Uint8Array(bufferLength);
+    const dataArrayFft = new Float32Array(bufferFftSize);
+    const dataArrayFreqFloat = new Float32Array(bufferLength);
+    analyser.getFloatFrequencyData(dataArrayFft);
+    analyser.getByteFrequencyData(dataArrayFreqByte);
+    analyser.getByteTimeDomainData(dataArrayFreqByte);
+    analyser.getFloatTimeDomainData(dataArrayFreqFloat);
+    const analysisObj = {
+      bufferFftSize:  bufferFftSize,
+      bufferLength: bufferLength,
+      dataArrayFreqByte: dataArrayFreqByte,
+      dataArrayFft: dataArrayFft,
+      dataArrayFreqFloat: dataArrayFreqFloat,
+      analyser: analyser,
+    }
+    return analysisObj;
+  };
 
   const handleRecordAudio = async () => {
     let recorder;
@@ -167,7 +199,17 @@ function App() {
     let writable;
     let recordedData = [];
 
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let audio = new Audio();
+    const constraints = {
+      audio: {muted: true, deviceId: audioInputDeviceId.current ? audioInputDeviceId.current : deviceLabels.current[0].deviceId},
+      video: false
+    };
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    audio.srcObject = stream;
+    const audioContext = new AudioContext();
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+
     recorder = new MediaRecorder(stream);
     recorder.onstop = createFileFormCurrentRecordedData(recordedData);
     isRecRef.current = !isRecRef.current;
@@ -178,9 +220,8 @@ function App() {
       const handle = await window.showSaveFilePicker({ suggestedName });
 
       writable = await handle.createWritable();
-    
-      // Start recording.
       setIsRecordingMic(true);
+
       if (recorder.state !== "recording" && isRecRef.current === true) {
         (async () => {
           recorder.addEventListener("dataavailable", async (event) => {
@@ -189,33 +230,20 @@ function App() {
               writable.write(event.data);
             }
             recordedData.push(event.data);
+            const arrayBuffer = await new Response(new Blob(recordedData)).arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(analyser);
+            source.start();
+            const analysisObj = await runAnalyserNode(analyser);
+            setRtAudio(analysisObj);
             if (isRecRef.current === false) {
               if (recorder.state !== "inactive" && recorder.state !== "closed") {
                 writable.close();
                 setWritableHook(writable);
               }
-              recorder.stop();
-
-              if (recorder.stream) {
-                recorder.stream.getTracks().forEach(async (track: any) => {
-                  console.log("STOPPINNG TRACK: ", track);
-                  await track;
-                  if (track) {
-                    track.stop();
-                  }
-                  track.enabled = false;
-                });
-              }
-
-              // Stop the stream.
-              stream.getTracks().forEach(async (track: any) => {
-                console.log("STOPPINNG TRACK: ", track);
-                await track;
-                if (track) {
-                  track.stop();
-                }
-                track.enabled = false;
-              });
+              stopTracks(recorder, stream);
               isRecRef.current = false;
               return;
             }
@@ -225,41 +253,18 @@ function App() {
         }) ();
       } else {
         writable.close();
-        // setWritableHook(writable);
       }
     } else {
       isRecRef.current = false;
       setIsRecordingMic(false);
-      if (recorder instanceof MediaRecorder) {
-        recorder.stop();
-      }
-      if (recorder.stream) {
-        await recorder.stream.getTracks().forEach(async (track: any) => {
-          console.log("STOPPINNG TRACK: ", track);
-          await track;
-          if (track) {
-            track.stop();
-          }
-          track.enabled = false;
-        });
-      }
-
-      // // Stop the stream.
-      await stream.getTracks().forEach(async (track: any) => {
-        await track;
-        if (track) {
-          track.stop();
-        }
-        track.enabled = false;
-      });
-      stream = null;
-      recorder = null;
-      suggestedNameRef.current = null;
+      stopTracks(recorder, stream);
     }
   }
 
   useEffect(() => {
-    console.log('WRITABLE HOOK CHANGED IN APP! ', writableHook);
+    if (writableHook && Object.keys(writableHook) && Object.keys(writableHook).length > 0) {
+      console.log('WRITABLE HOOK CHANGED IN APP! ', writableHook);
+    }
   }, [writableHook])
 
   return (
@@ -273,9 +278,7 @@ function App() {
             />
           :
             <Box sx={{top: "0", bottom: "0", left: "0", right: "0", display: "flex", flexDirection: "row"}}>
-
               <Box id="fileManagerWrapper" sx={{left: 0, top: 0, height: "12vh", background: 'background.paper', border: "1px solid yellow"}}>
-                {/* <Button onClick={handleChangeFileControls}>FILES</Button> */}
                 {audioReady && fileControlsVisible && (
                   <Box id="inputFileWrapper" sx={{color: 'text.primary', borderColor: "solid 10px green"}}>
                     <form style={{display: "flex", width: "100%", flexDirection: "column"}} onSubmit={handleSubmit(onSubmit)}>
@@ -295,16 +298,14 @@ function App() {
                     </form>
                     <Button id="startMicrophoneButton" onClick={handleRecordAudio}>
                       <MicNoneIcon />
-                    {
-                    !isRecordingMic 
-                        ? "START REC"
-                        : "STOP REC"
-                    }
-                </Button>
+                      {
+                      !isRecordingMic 
+                          ? "START REC"
+                          : "STOP REC"
+                      }
+                    </Button>
                   </Box>
                 )}
-
-
               </Box>
 
               <CreateChuck
@@ -313,10 +314,8 @@ function App() {
                 uploadedFiles={uploadedFilesRef.current}
                 writableHook={writableHook}
                 handleChangeInput={handleChangeInput}
+                rtAudio={rtAudio}
               />
-              {/* <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", background: 'background.paper', border: "1px solid blue", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
-                    {deviceList}
-              </List> */}
               <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
                 {deviceList}
               </List>

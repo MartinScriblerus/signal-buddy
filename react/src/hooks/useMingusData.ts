@@ -68,7 +68,7 @@ export const useMingusData = () => {
         });
         return {data, state};
     };
-    console.log("STATE IN MINGUS DATA: ", state);
+    // console.log("STATE IN MINGUS DATA: ", state);
     const storedNames = JSON.parse(localStorage.getItem("keyboard"));
     if (state.mingusdata.noteData && state.mingusdata.noteData.length === 108 && !storedNames.length) {
         localStorage.setItem("keyboard", JSON.stringify(state.mingusdata.noteData));

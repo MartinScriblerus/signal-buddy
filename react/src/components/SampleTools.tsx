@@ -30,7 +30,8 @@ const SampleTools = (props: SampleToolsProps) => {
                 overflow: 'scroll'
             }}
         >
-            <Typography sx={{paddingRight: "10px"}}>Looper Tools </Typography>
+            <Typography sx={{width: "10%", paddingRight: "10px"}}>Looper Tools </Typography>
+    <Box id="sampleDropdowns" sx={{ width: "60%", display: "flex" }}>         
             <Box
                 sx={{display: 'flex', flexDirection: 'column'}}
             >
@@ -48,7 +49,8 @@ const SampleTools = (props: SampleToolsProps) => {
                                 color: 'primary.main',
                                 paddingTop: 0,
                                 paddingBottom: 0,
-                                margin: "1rem"
+                                margin: "1rem",
+                                maxWidth: "6rem",
                             }}
                             label={"BPM"}
                             placeholder="BPM"
@@ -82,7 +84,8 @@ const SampleTools = (props: SampleToolsProps) => {
                                 input: { color: 'primary.main' },
                                 paddingTop: 0,
                                 paddingBottom: 0,
-                                margin: "1rem"
+                                margin: "1rem",
+                                maxWidth: "6rem",
                             }}
                             label="Start"
                             placeholder="Start"
@@ -117,7 +120,8 @@ const SampleTools = (props: SampleToolsProps) => {
                                 input: { color: 'primary' },
                                 paddingTop: 0,
                                 paddingBottom: 0,
-                                margin: "1rem"
+                                margin: "1rem",
+                                maxWidth: "6rem",
                             }}
                             label={"Length"}
                             placeholder="Length"
@@ -150,7 +154,8 @@ const SampleTools = (props: SampleToolsProps) => {
                                 input: { color: 'primary.main' },
                                 paddingTop: 0,
                                 paddingBottom: 0,
-                                margin: "1rem"
+                                margin: "1rem",
+                                maxWidth: "6rem",
                             }}
                             label={"Rate"}
                             placeholder="Rate"
@@ -171,8 +176,9 @@ const SampleTools = (props: SampleToolsProps) => {
                     </FormControl>
                 </Box>
             </Box>
-            <Box sx={{ width: "30%", display: "flex", flexDirection: "row", border: "1px solid green"}}>
-                <Button onClick={handleDrumMachine}>Play Sequence</Button>
+    </ Box>
+            <Box sx={{ width: "30%", display: "flex", flexDirection: "row", justifyContent: "right" }}>
+                <Button sx={{ border: "1px solid green" }} onClick={handleDrumMachine}>Play Sequence</Button>
             </Box>
         </Box>
     )

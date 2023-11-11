@@ -36,19 +36,22 @@ export default function Example({ width, height, librosaData, setTicksDatas, tic
 
     useEffect(() => {
       setNewData([]);
-      console.log('librosaData in XYChartWrapper: ', librosaData);
       if (!librosaData) {
         return;
       }
-      
+      console.log('librosaData in XYChartWrapper: ', librosaData);
       (async() => {
         const newLibrosaData: LibrosaData | Promise<LibrosaData> = await librosaData;
         // newLibrosaData.pitches.times.forEach((a: any, idx: number) => {
         const testPitchMap = newLibrosaData.pitches.times.map((a: any) => a);
         const ticksData = newLibrosaData.boundTimes.map((a: any) => a);
         setTicksDatas(ticksData);
-        console.log("TICKS DATA: ", ticksData);
-        console.log("TEST PITCH MAP: ", testPitchMap);
+        if (ticksData && ticksData.length > 0) {
+          console.log("TICKS DATA: ", ticksData);
+        }
+        if (testPitchMap && testPitchMap.length > 0) {
+          console.log("TEST PITCH MAP: ", testPitchMap);
+        }
         newLibrosaData.beats.forEach((a: any, idx: number) => {
           const index = newLibrosaData.pitches.times.indexOf(Math.floor(parseInt(String(a))));
           const midiNums = librosaData.pitches.midis.map((i) => +i);
@@ -56,7 +59,7 @@ export default function Example({ width, height, librosaData, setTicksDatas, tic
           const parsedString: string | number = +a;
           const d = {
             // date: librosaData.pitches.times[index],
-            date: +a.toFixed(3),
+            date: +a.toFixed(1),
           };
           d['San Francisco'] = [];
           d.date = parsedString;
@@ -71,7 +74,9 @@ export default function Example({ width, height, librosaData, setTicksDatas, tic
     }, [librosaData]);
 
     useEffect(() => {
-      console.log('^^^^^^^^^^^newData in XYChartWrapper: ', newData);
+      if (newData.length > 0) {
+        console.log('^XYChartWrapper DATA: ', newData);
+      }
     }, [newData]);
 
     return (
