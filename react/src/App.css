@@ -55,6 +55,11 @@ body{
   text-align: center;
 }
 
+#vizParentWrapper {
+  width: 26rem;
+  height: calc(100% - 13.5rem); 
+}
+
 #fileManagerWrapper {
   width: calc(100vw - 26rem);
   height: 12vh;
@@ -209,6 +214,9 @@ body{
   #vizWrapper {
     width: 52rem;
   }
+  #vizParentWrapper {
+    width: 52rem;
+  }
   #sequencerWrapperOuter {
     width: calc(100vw - 54rem);
   }
@@ -301,7 +309,7 @@ canvas {
 }
 
 #startMicrophoneButton {
-  width: 12rem;
+  min-width: 12rem;
 }
 
 #inputFileWrapper {

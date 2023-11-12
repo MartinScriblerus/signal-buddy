@@ -254,18 +254,18 @@ export default function CreateChuck(props: any) {
             });
     }
     
-    useEffect(() => {
-        // const audioContext  = new AudioContext();
-        console.log("RT RT RTRT ??? ", rtAudio);
-        // if (!rtAudio || rtAudio.length < 1) return;
-        // rtAudio.connect(audioContext.destination);
-        // const analyser = audioContext.createAnalyser();
-        // analyser.fftSize = 2048;
-        // const bufferLength = analyser.frequencyBinCount;
-        // const dataArray = new Uint8Array(bufferLength);
-        // analyser.getByteTimeDomainData(dataArray);
-        // console.log('HEY ANALYZER! ', analyser);
-    }, [rtAudio]);
+    // useEffect(() => {
+    //     // const audioContext  = new AudioContext();
+    //     console.log("RT RT RTRT ??? ", rtAudio);
+    //     // if (!rtAudio || rtAudio.length < 1) return;
+    //     // rtAudio.connect(audioContext.destination);
+    //     // const analyser = audioContext.createAnalyser();
+    //     // analyser.fftSize = 2048;
+    //     // const bufferLength = analyser.frequencyBinCount;
+    //     // const dataArray = new Uint8Array(bufferLength);
+    //     // analyser.getByteTimeDomainData(dataArray);
+    //     // console.log('HEY ANALYZER! ', analyser);
+    // }, [rtAudio]);
 
     const handleUpdateRawTree = (name: string, operation: string) => {
         const arrContainerUpdateTree = [];
@@ -1131,6 +1131,10 @@ export default function CreateChuck(props: any) {
         }
     }
 
+    useEffect(() => {
+        console.log('RT AUD IN PARENT: ', rtAudio);
+    }, [rtAudio])
+
     return (
         <>
             <Box>
@@ -1342,12 +1346,12 @@ export default function CreateChuck(props: any) {
 
                 </Box>
 
-                <ParentSize key={newestSetting.name}>{( { width, height } ) =>
+                <ParentSize id="vizParentWrapper" key={newestSetting.name}>{( { width, height } ) =>
                         vizComponent === 0 || vizItem === 0
                         ?
                             isRealtime
                             ?
-                            <RealtimeAudioInput  width={width} height={height} data={rtAudio} />
+                            <RealtimeAudioInput width={width} height={height} data={rtAudio} />
                             :
                             <Example width={width} height={height} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
                         :
