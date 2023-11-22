@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef, createContext, useContext} from 'react';
+import React, { useState, useEffect, useMemo, useRef} from 'react';
 // import Chuck from '../Chuck';
 import { Chuck } from 'webchuck'
 import axios, { AxiosResponse } from 'axios';
 import { FLASK_API_URL, MIDDLE_FONT_SIZE } from '../helpers/constants';
 import Box from '@mui/material/Box';
 import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Example from './XYChartWrapper';
@@ -95,7 +94,7 @@ interface AudioContext {
 }
 
 export default function CreateChuck(props: any) {
-    const {game, datas, audioReady, uploadedFiles, writableHook, handleChangeInput, rtAudio} = props;
+    const {game, datas, audioReady, uploadedFiles, writableHook, handleChangeInput, rtAudio, isRecProp} = props;
     const theChuck = useRef<any>(undefined);
     const modsTemp: any = useRef([]);
     modsTemp.current = [];
@@ -254,19 +253,6 @@ export default function CreateChuck(props: any) {
             });
     }
     
-    // useEffect(() => {
-    //     // const audioContext  = new AudioContext();
-    //     console.log("RT RT RTRT ??? ", rtAudio);
-    //     // if (!rtAudio || rtAudio.length < 1) return;
-    //     // rtAudio.connect(audioContext.destination);
-    //     // const analyser = audioContext.createAnalyser();
-    //     // analyser.fftSize = 2048;
-    //     // const bufferLength = analyser.frequencyBinCount;
-    //     // const dataArray = new Uint8Array(bufferLength);
-    //     // analyser.getByteTimeDomainData(dataArray);
-    //     // console.log('HEY ANALYZER! ', analyser);
-    // }, [rtAudio]);
-
     const handleUpdateRawTree = (name: string, operation: string) => {
         const arrContainerUpdateTree = [];
         const childrenUpdated = {name: name, children: []};
@@ -425,10 +411,9 @@ export default function CreateChuck(props: any) {
             
             const filesArg = createdFilesList.current.toString().trim().replaceAll(",",":");
     
-            theChuck.runFileWithArgs("runLoop.ck", `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList.current.length}:${filesArg}`);
+            theChuck.runFileWithArgs("runLoop.ck", `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList.current.length}:${filesArg}:'playing_file'`);
         }
-        // theChuck.runFileWithArgs("runLoop.ck", `/${createdFilesList.current}:${bpm}:${running}:${lastBpm}:${numeratorSignature}`);
-
+    
         if (running === 1) {
             setRunning(0);
         } else {
@@ -1131,10 +1116,6 @@ export default function CreateChuck(props: any) {
         }
     }
 
-    useEffect(() => {
-        console.log('RT AUD IN PARENT: ', rtAudio);
-    }, [rtAudio])
-
     return (
         <>
             <Box>
@@ -1351,7 +1332,7 @@ export default function CreateChuck(props: any) {
                         ?
                             isRealtime
                             ?
-                            <RealtimeAudioInput width={width} height={height} data={rtAudio} />
+                            <RealtimeAudioInput width={width} height={height} data={rtAudio} isRecProp={isRecProp} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
                             :
                             <Example width={width} height={height} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
                         :

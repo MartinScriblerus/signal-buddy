@@ -1,11 +1,10 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CityTemperature } from '@visx/mock-data/lib/mocks/cityTemperature';
-import Button from '@mui/material/Button'
 import ExampleControls from './ExampleControls';
 import CustomChartBackground from './CustomChartBackground';
-import BaseBrush from '@visx/brush/lib/BaseBrush';
+// import BaseBrush from '@visx/brush/lib/BaseBrush';
 import { LibrosaData } from './CreateChuck';
-import { Box } from '@mui/material';
+// import { Box } from '@mui/material';
 
 export type XYChartProps = {
   width: number;

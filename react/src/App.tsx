@@ -172,6 +172,31 @@ function App() {
     suggestedNameRef.current = null;
   }
 
+  const count = useRef(0);
+  const interval_global = 10;
+  let requestID;
+
+       // Animation using requestAnimationFrame
+      let start = Date.now();
+
+      function globalRequestAnimationTick() {
+        const interval = Date.now() - start;
+        requestID = requestAnimationFrame(globalRequestAnimationTick);
+        if (interval - (start * count.current) > interval_global) {
+          start = Date.now();
+          count.current = count.current + 1;
+          if (!isRecRef.current) {
+              cancelAnimationFrame(requestID);
+          }
+          
+        }
+      }
+      
+
+
+
+
+
   const runAnalyserNode = async (analyser: AnalyserNode) => {
     const bufferFftSize = analyser.fftSize;
     const bufferLength = analyser.frequencyBinCount;
@@ -182,6 +207,8 @@ function App() {
     analyser.getByteFrequencyData(dataArrayFreqByte);
     analyser.getByteTimeDomainData(dataArrayFreqByte);
     analyser.getFloatTimeDomainData(dataArrayFreqFloat);
+    // new Float32Array(1024);
+    // console.log("YO ANALYSER => ", analyser);
     const analysisObj = {
       bufferFftSize:  bufferFftSize,
       bufferLength: bufferLength,
@@ -226,12 +253,18 @@ function App() {
         (async () => {
           recorder.addEventListener("dataavailable", async (event) => {
             // Write chunks to the file.
-            if (recorder.state !== "inactive" && recorder.state !== "closed") {
-              writable.write(event.data);
+            try {
+              if (typeof writable !== 'undefined' && writable.length && event.data && recorder.state !== "inactive" && recorder.state !== "closed") {
+                writable.write(event.data);
+              }
+              recordedData.push(event.data);
+            } catch (error) {
+              console.log("ERROR: ", error);
             }
-            recordedData.push(event.data);
             const arrayBuffer = await new Response(new Blob(recordedData)).arrayBuffer();
             const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            const channelData = audioBuffer.getChannelData(0);
+            // console.log("CHAN DATA: ", channelData)
             const source = audioContext.createBufferSource();
             source.buffer = audioBuffer;
             source.connect(analyser);
@@ -249,7 +282,7 @@ function App() {
             }
           });
           /* this defines the start point - call when you want to start your audio to blob conversion */
-          recorder.start(1000);
+          recorder.start(requestAnimationFrame(globalRequestAnimationTick));
         }) ();
       } else {
         writable.close();
@@ -266,7 +299,7 @@ function App() {
       console.log('WRITABLE HOOK CHANGED IN APP! ', writableHook);
     }
   }, [writableHook])
-
+// console.log('what is rtaudio? ', rtAudio);
   return (
     <ThemeProvider theme={theme}>
       <Grid sx={{fontFamily: 'TitilliumWeb-Regular', backgroundColor: 'background.paper', height: '100vh', maxHeight: '100vh', maxWidth: "100vw", overflow: 'hidden'}} className="App">
@@ -315,6 +348,7 @@ function App() {
                 writableHook={writableHook}
                 handleChangeInput={handleChangeInput}
                 rtAudio={rtAudio}
+                isRecProp={isRecordingMic}
               />
               <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
                 {deviceList}
