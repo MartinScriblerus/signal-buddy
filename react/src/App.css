@@ -570,3 +570,11 @@ ul {
 .selected {
   border: solid 1px white !important;
 }
+
+.litAscending {
+  background: linear-gradient(45deg, rgba(120,120,120,1) 0%, rgba(120,120,180,1) 40%);
+}
+
+.litDescending {
+  background: linear-gradient(45deg, rgba(70,120,120,1) 0%, rgba(70,120,180,1) 40%);
+}

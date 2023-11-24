@@ -379,7 +379,8 @@ export default function CreateChuck(props: any) {
         console.log('WHAT IS EVENT IN HANDLECHANNGECHORD? ', event);
         setAudioChord(event.target.value as string);
     };
-
+const totalTime = useRef(0);
+const totalBeats = useRef(0);
     const loadChuck = async (theChuck: any) => {
         if (!uploadedFiles.length) {
             return;
@@ -412,6 +413,11 @@ export default function CreateChuck(props: any) {
             const filesArg = createdFilesList.current.toString().trim().replaceAll(",",":");
     
             theChuck.runFileWithArgs("runLoop.ck", `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList.current.length}:${filesArg}:'playing_file'`);
+            totalTime.current = theChuck.getFloat(`totalSeconds`);
+            totalBeats.current = theChuck.getInt(`beatCount`);
+            console.log('HEY TOTAL TIME: ', totalTime.current);
+console.log('HEY TOTAL BEATS: ', totalBeats.current);
+
         }
     
         if (running === 1) {
@@ -591,6 +597,7 @@ export default function CreateChuck(props: any) {
         const parsedNote = note.charAt(1) === '♯' ? note.slice(0, 2) + "-" + note.slice(2) : note.slice(0, 1) + "-" + note.slice(1);
         const el: any = await document.getElementById(parsedNote);
         if (el && !el['data-midiNote'] && !el['data-midiHz']) {
+            el.classList.add(`keyRow`);
             el.classList.add(`keyRow_${rowNum}`);
             el.setAttribute('data-midiNote', await noteReady.midiNote);
             el.setAttribute('data-midiHz', await noteReady.midiHz);
@@ -603,6 +610,7 @@ export default function CreateChuck(props: any) {
         const parsedNote = theNote.note.charAt(1) === '♯' ? theNote.note.slice(0, 2) + "-" + theNote.note.slice(2) : theNote.note.slice(0, 1) + "-" + theNote.note.slice(1);
         const el: any = await document.getElementById(parsedNote);
         if (el && !el['data-midiNote'] && !el['data-midiHz']) {
+            el.classList.add(`keyRow`);
             el.classList.add(`keyRow_${theNote.rowNum}`);
             el.setAttribute('data-midiNote', await theNote.midiNote);
             el.setAttribute('data-midiHz', await theNote.midiHz);
@@ -661,9 +669,9 @@ export default function CreateChuck(props: any) {
                     <li id={`F♯-${i}`} key={`F♯-${i}`} onClick={(e) => playChuckNote(e)} className="black">{`F♯${i}`}</li>
                     <li id={`G-${i}`} key={`G-${i}`} onClick={(e) => playChuckNote(e)} className="white offset">{`G${i}`}</li>
                     <li id={`G♯-${i}`} key={`G♯-${i}`} onClick={(e) => playChuckNote(e)} className="black">{`G♯${i}`}</li>
-                    <li id={`A-${i}`} key={`A-${i}`} onClick={(e) => playChuckNote(e)} className="white offset">{`A${i}`}</li>
-                    <li id={`A♯-${i}`} key={`A♯-${i}`} onClick={(e) => playChuckNote(e)} className="black">{`A♯${i}`}</li>
-                    <li id={`B-${i}`}  key={`B-${i}`} onClick={(e) => playChuckNote(e)} className="white offset half">{`B${i}`}</li>
+                    <li id={`A-${i + 1}`} key={`A-${i + 1}`} onClick={(e) => playChuckNote(e)} className="white offset">{`A${i + 1}`}</li>
+                    <li id={`A♯-${i + 1}`} key={`A♯-${i + 1}`} onClick={(e) => playChuckNote(e)} className="black">{`A♯${i + 1}`}</li>
+                    <li id={`B-${i + 1}`}  key={`B-${i + 1}`} onClick={(e) => playChuckNote(e)} className="white offset half">{`B${i + 1}`}</li>
                 </React.Fragment>
             );
             const addBreak = (<span className="break" key={`octaveBreakWrapper_${i}`}><br key={`octaveBreak_${i}`} /></span>);
@@ -787,8 +795,71 @@ export default function CreateChuck(props: any) {
     }, [mingusChordsData.current]);
 
     useEffect(() => {
+        const keys = Array.from(document.getElementsByClassName("keyRow"));
+        keys.forEach((k) => {
+            if (k.classList.contains('litAscending')) {
+                setTimeout(()=>{
+                    k.classList.remove(`litAscending`);
+                }, 2000);
+            }
+            if (k.classList.contains('litDescending')) {
+                setTimeout(()=>{
+                    k.classList.remove(`litDescending`);
+                }, 2000);
+            }
+            
+        });
         if (realTimeScalesDataObj && realTimeScalesDataObj.length > 0) {
-            console.log('REALTIME SCALES DATA IN USE EFFECT: ', realTimeScalesDataObj);
+            console.log('REALTIME SCALES DATA IN USE EFFECT: ', realTimeScalesDataObj[0]);
+            realTimeScalesDataObj.filter((d) => typeof d[0] === 'string' )
+            realTimeScalesDataObj.forEach((d: any) => {
+                const bFlat = d.indexOf('Bb') !== -1;
+                const dFlat = d.indexOf('Db') !== -1;
+                const eFlat = d.indexOf('Eb') !== -1;
+                const gFlat = d.indexOf('Gb') !== -1;
+                const aFlat = d.indexOf('Ab') !== -1; 
+                if (bFlat) {
+                    d.splice(d.indexOf('Bb'), 1, `A♯`); 
+                }
+                if (dFlat) {
+                    d.splice(d.indexOf('Db'), 1, `C♯`); 
+                }
+                if (eFlat) {
+                    d.splice(d.indexOf('Eb'), 1, `D♯`); 
+                }
+                if (gFlat) {
+                    d.splice(d.indexOf('Gb'), 1, `F♯`); 
+                }
+                if (aFlat) {
+                    d.splice(d.indexOf('Ab'), 1, `G♯`); 
+                }
+                
+                let direction = "ascending";
+                if (d[0][0] < d[1][0] && d[0][0] !== 'G' && d[0][0] != `G♯`) {
+                    direction = "ascending";
+                    // console.log("GOT IT ASCENDING!! ", d)
+                } else {
+                    direction = "descending";
+                    // console.log("GOT IT DESCENDING!! ", d)
+                }
+                d.forEach((note: any) => {
+
+                    let adjustedOctave; 
+                    if (direction === "ascending") {
+                        adjustedOctave = note[0] <= d[0][0] ? `${parseInt(octave) + 1}`: octave;
+                        adjustedOctave.replaceAll('#','♯');
+                    } else {
+                        adjustedOctave = note[0] >= d[0][0] ? `${parseInt(octave) - 1}`: octave;
+                        adjustedOctave.replaceAll('#','♯');
+                    }
+                    const aKeyToLightUp = document.getElementById(`${note}-${adjustedOctave}`);
+                    if (aKeyToLightUp && direction === "ascending") {
+                        aKeyToLightUp.classList.add('litAscending');
+                    } else if (aKeyToLightUp && direction === "descending") {
+                        aKeyToLightUp.classList.add('litDescending');
+                    }
+                })
+            })
         }
         if (realTimeChordsDataObj && realTimeChordsDataObj.length > 0) {
             console.log('REALTIME CHORDS DATA IN USE EFFECT: ', realTimeChordsDataObj);
@@ -811,7 +882,8 @@ export default function CreateChuck(props: any) {
 
             const audioKey = note[0].slice(0, -1);
             handleChangeAudioKey(audioKey);
-
+            // setRealTimeScalesDataObj([]);
+            setRealTimeChordsDataObj([]);
             axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_scales`, {audioKey, audioScale, theOctave}, {
                 headers: {
                 'Content-Type': 'application/json'
@@ -822,11 +894,13 @@ export default function CreateChuck(props: any) {
                     console.log('NO MINGUS SCALES? ', gotData);
                     return;
                 }
-                gotData.data.forEach((d: any) => {
-                    if (realTimeScalesDataObj.indexOf(d) === -1) {
-                        setRealTimeScalesDataObj((realTimeScalesDataObj) => [...realTimeScalesDataObj, d]);
-                    }
-                });
+                
+                // gotData.data.forEach((d: any) => {
+                //     if (realTimeScalesDataObj.indexOf(d) === -1) {
+                //         setRealTimeScalesDataObj((realTimeScalesDataObj) => [...realTimeScalesDataObj, d]);
+                //     }
+                // });
+                setRealTimeScalesDataObj([...gotData.data])
             });
 
             axios.post(`${process.env.REACT_APP_FLASK_API_URL}/mingus_chords`, {audioChord, audioKey, theOctave}, {
@@ -1166,6 +1240,7 @@ export default function CreateChuck(props: any) {
                                     label="Octave"
                                     // onChange={handleChangeOctave}
                                 >
+                                    <MenuItem value={'0'}>0</MenuItem>
                                     <MenuItem value={'1'}>1</MenuItem>
                                     <MenuItem value={'2'}>2</MenuItem>
                                     <MenuItem value={'3'}>3</MenuItem>

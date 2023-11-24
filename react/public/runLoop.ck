@@ -3,13 +3,14 @@ SndBuf buf => dac;
 me.args() - 1 => int argsSize;
 
 string fileArrayUploaded[argsSize - 4];
-Machine.loglevel(0);
-// set bpm
+// Machine.loglevel(0);
+// set bpm3
 Std.atof(me.arg(0)) => float bpm;
 
 ((60.0 / bpm)) => float secLenBeat;
 
-
+int totalSeconds = 0;
+int beatCount = 0;
 
 fun void loopBar(int numeratorSignature, string file[ ], dur beat, dur bar, int running, int pat_test[][][]) {
     beat / 4 => dur sixteenthBeat;
@@ -35,6 +36,8 @@ fun void loopBar(int numeratorSignature, string file[ ], dur beat, dur bar, int 
             }
             me.yield(); 
         }
+        totalSeconds = totalSeconds + thisBeat;
+        beatCount = beatCount + 1; 
         1::thisBeat => now;
     }
     for (int f; f < file.size(); f++){    
