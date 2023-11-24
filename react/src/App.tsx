@@ -173,7 +173,7 @@ function App() {
   }
 
   const count = useRef(0);
-  const interval_global = 10;
+  const interval_global = 1000;
   let requestID;
 
        // Animation using requestAnimationFrame
@@ -204,15 +204,15 @@ function App() {
     const dataArrayFft = new Float32Array(bufferFftSize);
     const dataArrayFreqFloat = new Float32Array(bufferLength);
     analyser.getFloatFrequencyData(dataArrayFft);
-    analyser.getByteFrequencyData(dataArrayFreqByte);
-    analyser.getByteTimeDomainData(dataArrayFreqByte);
+    // analyser.getByteFrequencyData(dataArrayFreqByte);
+    // analyser.getByteTimeDomainData(dataArrayFreqByte);
     analyser.getFloatTimeDomainData(dataArrayFreqFloat);
     // new Float32Array(1024);
     // console.log("YO ANALYSER => ", analyser);
     const analysisObj = {
       bufferFftSize:  bufferFftSize,
       bufferLength: bufferLength,
-      dataArrayFreqByte: dataArrayFreqByte,
+      // dataArrayFreqByte: dataArrayFreqByte,
       dataArrayFft: dataArrayFft,
       dataArrayFreqFloat: dataArrayFreqFloat,
       analyser: analyser,
@@ -235,6 +235,7 @@ function App() {
     audio.srcObject = stream;
     const audioContext = new AudioContext();
     const analyser = audioContext.createAnalyser();
+    analyser.smoothingTimeConstant = 0.2;
     analyser.fftSize = 2048;
 
     recorder = new MediaRecorder(stream);
@@ -267,6 +268,8 @@ function App() {
             // console.log("CHAN DATA: ", channelData)
             const source = audioContext.createBufferSource();
             source.buffer = audioBuffer;
+            const gain: any = audioContext.createGain();
+            gain.value = 1;
             source.connect(analyser);
             source.start();
             const analysisObj = await runAnalyserNode(analyser);

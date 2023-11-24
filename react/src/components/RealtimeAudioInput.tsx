@@ -47,7 +47,7 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
             const z = datums.current.dataArrayFreqFloat[i];
 
             if (z) {
-                mappedFreq.current[i] = {'x': i, 'y0': 0, 'y1': z * 100};
+                mappedFreq.current[i] = {'x': i, 'y0': 0, 'y1': z};
             }
         }
     }, [data, width]);
@@ -84,7 +84,7 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
         let xAxis:any = d3.axisBottom(xScale).ticks(4);
 
         let yScale = d3.scaleLinear()
-            .domain([-1,1])
+            .domain([0,1])
             .range([height - (margin*2), 0]);
         let yAxis:any = d3.axisRight(yScale);
         d3.select(bottomA.current)
@@ -107,8 +107,8 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
             .x(function(d: any) {
                 return xScale(d.x * vizSkipAdjuster);
             })
-            .y(function(d: any) { 
-                return yScale(d.y) / 255; 
+            .y(function(d: any) { ;
+                return yScale(Math.abs((Math.abs(d.y) - 128) / 128)); 
             });
 
         const lineselection = d3.select(pathRef.current).join('path');
@@ -116,7 +116,8 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
         lineselection.interrupt()
             .transition()
             .ease(d3.easeLinear)
-            .duration(durationRef.current)
+            // .duration(durationRef.current)
+            .duration(100)
             // .attr('transform', 'translate(' + -(xScale.range()[0]/((duration / 100)-2)) + ',' + margin + ')');
         const mappedFft = [];
         
@@ -152,19 +153,19 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
             .attr("stroke-width", 1.5)
             .style('fill', 'none')
             .style('stroke', 'blue')
-            .transition().ease(d3.easeLinear)
-            
+            .transition().ease(d3.easeLinear).duration(100);
 
         const barRect = d3.area()
             .x(function(d: any) {
                 return xScale(d.x * vizSkipAdjuster);
             })
             .y0(function(d: any) { 
-                return height - (margin * 2) - d.y1 * 100;})
+                return (height - (2 * margin)) - yScale(d.y1)})
             .y1(function(d: any) { 
-                return yScale(d.y1 * 100); 
+                // return yScale(d.y1 * 100); 
+                return yScale(Math.abs(d.y1))
             });
-
+        
         d3.select(d3Container.current)
             .data([mappedFreq.current]);
         mappedFreq.current = mappedFreq.current.filter((d: any) => d && d.y1);
@@ -179,13 +180,15 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
             d3.selectAll("#bar-rect_" + i)
                 .transition()
                 .ease(d3.easeLinear)
-                .duration(durationRef.current)
+                // .duration(durationRef.current)
+                .duration(100)
+
             d3.selectAll("#bar-rect_" + i)    
                 .attr('d', barRect)
                 .attr("x", d.x * vizSkipAdjuster)
-                .attr("y", Math.abs(height/4 - (d.y1 * 100)))
+                .attr("y",  yScale(Math.abs(d.y1)))
                 .attr("width", barWidth)
-                .attr("height", Math.abs((height/2) - (d.y1 * 100)));
+                .attr("height", (height - (2 * margin)) * Math.abs(d.y1));
 
             const barselection = d3.select("#bar-rect_" + i).data(mappedFreq.current); 
 
@@ -194,8 +197,7 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
                 lineselection.attr('d', line(mappedFft.map((d)=>d)))
                     .classed('line_', true)
 
-                barselection
-                    .attr('d', barRect(mappedFreq.current.map((d)=>{
+                barselection.attr('d', barRect(mappedFreq.current.map((d)=>{
                         return d
                     })))
                     .classed('bar_', true)
@@ -223,9 +225,9 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
             viewBox={`0 0 ${width} ${height}`}
             style={{ backgroundColor: "grey", fill: "green", overflow: "scroll" }}
         >
-            <g style={{transform:'translate(0,0)'}} width={width} height={height + 2*margin} ref={barRef}>     
+            <g style={{transform:'translate(0,0)'}} width={width} height={height + 2 * margin} ref={barRef}>     
                 {mappedFreq.current && mappedFreq.current.length > 0 && (mappedFreq.current.map((d: any, i: number) => {
-                    return <rect  key={`bar-rect_${i}`} id={`bar-rect_${i}`} className="bar_rect"></rect>
+                    return <rect style={{transform:'translate(0,0)'}} key={`bar-rect_${i}`} id={`bar-rect_${i}`} className="bar_rect"></rect>
                     }))
                 }  
             </g>
