@@ -20,7 +20,7 @@ fun void loopBar(int numeratorSignature, float beat, dur bar, int denominatorSig
         <<< "READY" >>>;
         for (0 => int i; i < (numeratorSignature * 2); i++) {
             <<< "subTick-", i >>>;
-            beat::second => now;
+            (beat/4)::second => now;
             if (i == (numeratorSignature * 2) - 1) {
                 beatCount + 1 => beatCount;
                 <<< "tick-", beatCount >>>;
