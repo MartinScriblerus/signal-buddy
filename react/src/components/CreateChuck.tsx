@@ -22,6 +22,7 @@ import SampleTools from './SampleTools';
 import PatternMapper from './PatternMapper';
 import RealtimeAudioInput from './RealtimeAudioInput';
 import { useAppSelector } from '../app/hooks';
+import GlobalTickViz from './GlobalTickViz';
 import { store } from '../app/store';
 
 declare global {
@@ -94,7 +95,7 @@ interface AudioContext {
 }
 
 export default function CreateChuck(props: any) {
-    const {game, datas, audioReady, uploadedFiles, writableHook, handleChangeInput, rtAudio, isRecProp} = props;
+    const {game, datas, audioReady, uploadedFiles, writableHook, handleChangeInput, rtAudio, isRecProp, recordedFileLoaded, recordedFileToLoad} = props;
     const theChuck = useRef<any>(undefined);
     const modsTemp: any = useRef([]);
     modsTemp.current = [];
@@ -104,6 +105,9 @@ export default function CreateChuck(props: any) {
     const [audioKey, setAudioKey] = useState('C');
     const [audioScale, setAudioScale] = useState('Major');
     const [audioChord, setAudioChord] = useState('M');
+    const [lastChuckMessage, setLastChuckMessage] = useState<string>('');
+    const [currentCount, setCurrentCount] = useState(0);
+    const [latestCount, setLatestCount] = useState(0);
     const [mingusKeyboardData, setMingusKeyboardData] = useState<any>([]);
     const [mingusData, setMingusData] = useState<Array<any>>([]);
     const [librosaData, setLibrosaData] = useState<LibrosaData>({
@@ -168,6 +172,7 @@ export default function CreateChuck(props: any) {
 
     const [bpm, setBpm] = useState(60);
     const [numeratorSignature, setNumeratorSignature] = useState<number>(4);
+    const [denominatorSignature, setDDenominatorSignature] = useState<number>(4);
     const [lastBpm, setLastBpm] = useState(60);
     const [running, setRunning] = useState(1);
     const [timeSignature, setTimeSignature] = useState(5/4);
@@ -182,7 +187,8 @@ export default function CreateChuck(props: any) {
     const [ticksDatas, setTicksDatas] = useState<any>([]);
 
     // const [createdFilesList, setCreatedFilesList] = useState([]);
-
+    const currentCountRef = useRef<number>(0);
+    const latestCountRef = useRef<number>(0);
     const [positionDenominator, setPositionDenominator] = useState(2);
 
     const [newestSetting, setNewestSetting] = useState(rawTree);
@@ -199,7 +205,7 @@ export default function CreateChuck(props: any) {
     // const treeContext = useContext(TreeContext);
     const [keyBoard, setKeyBoard] = useState<any>();
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
-
+    const loopReady = useRef(false);
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       setAnchorEl(event.currentTarget);
     };
@@ -230,7 +236,7 @@ export default function CreateChuck(props: any) {
             // const arrayBuffer = this.result;
             console.log('uploaded file loaded');
         }
-       
+        uploadedFiles && uploadedFiles.filter((f: any, ind: number) => f && f !== 'null' && uploadedFiles.indexOf(f) === ind);
         const url = URL.createObjectURL(uploadedFiles[uploadedFiles.length - 1]);
 
         fetch(url)
@@ -244,8 +250,13 @@ export default function CreateChuck(props: any) {
                 } else {
                     console.log('THE FILE: ', uploadedFiles[uploadedFiles.length - 1]);
                 }
+                createdFilesList.current = createdFilesList.current.filter((f: any, ind: number) => f && f !== 'null' && createdFilesList.current.indexOf(f) === ind);
                 if (`${uploadedFiles[uploadedFiles.length - 1].name}`.length > 0) {
-                    createdFilesList.current.push(`${uploadedFiles[uploadedFiles.length - 1].name}`);
+                    if (createdFilesList.current.indexOf(`${uploadedFiles[uploadedFiles.length - 1].name}`) !== -1) {
+                        createdFilesList.current.push(`${uploadedFiles.length}-${uploadedFiles[uploadedFiles.length - 1].name}`);
+                    } else {
+                        createdFilesList.current.push(`${uploadedFiles[uploadedFiles.length - 1].name}`);
+                    }
                 }
                 console.log("CREATED FILES: ", createdFilesList.current);
    
@@ -310,6 +321,46 @@ export default function CreateChuck(props: any) {
             console.log("TICKS DATA IN CREATE CHUCK: ", ticksDatas);
         }
     }, [ticksDatas]);
+
+    const lastTickCountRef = useRef<number>();
+    lastTickCountRef.current = 0;
+
+   
+    useEffect(() => {
+        (async() => {
+            console.log('LAST CHUCK MESSAGE! ', lastChuckMessage);
+            console.log('IS LOOP READY? ', loopReady.current);
+            if (lastChuckMessage === "READY") {
+                loopReady.current = true;
+            } 
+            console.log('what is LM? ', lastChuckMessage)
+            if (lastChuckMessage.split("-")[0] === 'tick') {
+                //chuckHook.runFileWithArgs("testTick.ck", `${chuckTickCount.current}:${bpm}:${numeratorSignature}:${isRecProp}:${chuckTickStart.current}`);
+                            // }                );
+                console.log("HEY CHECK THIS TTTTTOOOOOOOCCCKKK: ", lastChuckMessage.split(" ")[1].trim());
+
+                if (parseInt(lastChuckMessage.split(" ")[1].trim()) % 2 === 0) {
+                    document.getElementById("sequencerWrapperOuter").style.background = "red";
+                } else {
+                    document.getElementById("sequencerWrapperOuter").style.background = "green";
+                }
+                setLatestCount(parseInt(lastChuckMessage.split(" ")[1].trim()));
+            } 
+            if (lastChuckMessage.split("-")[0] === 'subTick') { 
+                console.log("HEY CHECK THIS: ", lastChuckMessage.split(" ")[1].trim());
+                
+                // const el = document.getElementById(`tick_circle_${lastChuckMessage.split(" ")[1].trim()}`);
+                // el.style.background = "pink";
+                // console.log('ARE WE GETTING EL? ', el);
+                currentCountRef.current = parseInt(lastChuckMessage.split(" ")[1].trim()); 
+                if (parseInt(lastChuckMessage.split(" ")[1].trim()) % 2 === 0) {
+                    document.getElementById("sequencerWrapperOuter").style.background = "white";
+                } else {
+                    document.getElementById("sequencerWrapperOuter").style.background = "black";
+                }
+            }
+        })()
+    }, [lastChuckMessage])
 
     const lastMidiNote: any = useRef('');
     lastMidiNote.current = '';
@@ -413,8 +464,8 @@ const totalBeats = useRef(0);
             const filesArg = createdFilesList.current.toString().trim().replaceAll(",",":");
     
             theChuck.runFileWithArgs("runLoop.ck", `${bpm}:${running}:${lastBpm}:${numeratorSignature}:${createdFilesList.current.length}:${filesArg}:'playing_file'`);
-            totalTime.current = theChuck.getFloat(`totalSeconds`);
-            totalBeats.current = theChuck.getInt(`beatCount`);
+            // totalTime.current = theChuck.getFloat(`totalSeconds`);
+            // totalBeats.current = theChuck.getInt(`beatCount`);
             console.log('HEY TOTAL TIME: ', totalTime.current);
 console.log('HEY TOTAL BEATS: ', totalBeats.current);
 
@@ -427,12 +478,11 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
         }
         // });
         setLoaded(true);
+        console.log('bpm!!: ', bpm);
         setLastBpm(bpm);
         // });
-
     }
  
-
     // let midi = null; // global MIDIAccess object
     const midi = useRef<any>(); // global MIDIAccess object
     midi.current = null;
@@ -447,6 +497,12 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
     useEffect(() => {
         console.log("MIDI CURRENT CHANGED: ", midi.current);
     }, [midi]);
+
+    const chuckTickCount = useRef<any>();
+    chuckTickCount.current = 0;
+    const chuckTickStart = useRef<any>();
+    chuckTickStart.current = Date.now();
+
 
     useMemo(() => {  
         const serverFilesToPreload = [
@@ -465,6 +521,10 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
             {
                 serverFilename: '/runLoop.ck',
                 virtualFilename: 'runLoop.ck'
+            },
+            {
+                serverFilename: '/testTick.ck',
+                virtualFilename: 'testTick.ck'
             },
             {
                 serverFilename: '/loner.wav',
@@ -522,12 +582,23 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                 return;
             }
             const theChuckTemp: any = await Chuck.init(serverFilesToPreload, undefined, 2, undefined);
-            console.log("CHUCK: ", Chuck)
+            console.log("CHUCK: ", Chuck);
             handleKeysVisible();
             handleInstrumentsVisible();
+            
+            theChuckTemp.chuckPrint = (message) => { setLastChuckMessage(message) }
+            console.log("ERRR BPM? ", bpm);
+            setChuckHook(theChuckTemp); 
+            
+            await theChuckTemp.runFileWithArgs("testTick.ck", `${chuckTickCount.current}:${bpm}:${numeratorSignature}:${isRecProp}`);
+            // setInterval(() => {
+                    // console.log(theChuckTemp.getFloat(`totalTime`));
+                // }, 1000);
+
             return setChuckHook(theChuckTemp);      
         })();
-    }, [game, chuckHook]);
+    }, []);
+
 
     useEffect(() => {
         getFile(uploadedFiles);
@@ -543,6 +614,8 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
         if (!chuckHook || !datas) {
             return;
         }
+
+    
         if (datas[0] && datas[0].data) {
             // TODO: write data to file
             // COME UP WITH A TIME DIVISION AND STRATEGY FOR CALLING CHUCK
@@ -1151,6 +1224,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
 
     const handleChangeBPM = (inputBPM: any) => {
         if (inputBPM) {
+            console.log('Hit set bpm: ', inputBPM);
             setBpm(inputBPM);
         }
     };
@@ -1200,7 +1274,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box id="sequencerWrapperInner">
                         <Box className="sequencer-dropdown">
                             <FormControl 
-                            fullWidth>
+                                fullWidth>
                                 <InputLabel
                                     id={"audioKey-simple-select-label"} sx={{ color: 'white !important', fontFamily: 'text.primary'}}>Key
                                 </InputLabel>
@@ -1367,40 +1441,24 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
 
             <Box sx={{height: "calc(100% - 13.5rem)", border: "1px solid purple", position: "absolute"}} id="vizWrapper">
                 
-                <Box sx={{position: "absolute", right: "0", top: "0"}}>
+                <Box sx={{position: "relative", width: "100%", left: "0", top: "0"}}>
                     {(vizComponent === 0 || vizItem === 0) && (
                         <Button sx={{background: "green", position: "relative", top: 0, minWidth: "6rem", margin: "0.5rem", zIndex: 5}} id="btnDataVizControls" onClick={handleChangeDataVizControls}>Data Controls</Button>
                     )}
-                    {(vizComponent === 1 || vizItem === 1) && (
-                            <>
-                                <Button sx={{background: "green", position: "relative", top: 0, minWidth: "6rem", margin: "0.5rem", zIndex: 5}} aria-describedby={id} variant="contained" onClick={handleClick}>
-                                Open Popover
-                                </Button>
-                                <Popover
-                                    id={id}
-                                    open={open}
-                                    sx={{position: "absolute", left: "0rem"}}
-                                    anchorEl={anchorEl}
-                                    onClose={handleClose}
-                                    anchorOrigin={{
-                                        vertical: 'bottom',
-                                        horizontal: 'left',
-                                    }}
-                                >
-                                    <>
-                                        <Typography sx={{ p: 2 }}>The content of the Popover.</Typography>
-                                        <PatternMapper width={900} height={1600} />
-                                    </>
-                                </Popover>
-                            </>
 
-                    )}
 
                     <Button onClick={handleToggleViz} sx={{background: "blue", position: "relative", top: 0, minWidth: "6rem", margin: "0.5rem", zIndex: 5}}>TOGGLE VIZ</Button>
 
                     <Button onClick={handleChangeInput} sx={{background: "red", position: "relative", top: 0, minWidth: "6rem", margin: "0.5rem", zIndex: 5}}>AUDIO INPUT</Button>
+<br/>
 
+<GlobalTickViz numeratorSignature={numeratorSignature} denominatorSignature={denominatorSignature} currentCount={currentCountRef.current} latestCount={latestCount} />
+
+<Box>
+
+            </Box>
                 </Box>
+
 
                 <ParentSize id="vizParentWrapper" key={newestSetting.name}>{( { width, height } ) =>
                         vizComponent === 0 || vizItem === 0
@@ -1502,10 +1560,10 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                 playingInstrument === 'clarinet'
                 ?
                 <>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ scale: 0.5, position: "relative", }}>
+                    <Box sx={{display: "flex", flexDirection: "row",  position: "relative", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ scale: 0.5, position: "relative", padding: "16px"  }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REED"
@@ -1526,7 +1584,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="NOISE GAIN"
@@ -1547,7 +1605,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={12}
                                 label="VIBRATO FREQ"
@@ -1569,7 +1627,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="VIBRATO GAIN"
@@ -1593,7 +1651,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="PRESSURE"
@@ -1614,7 +1672,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REVERB GAIN"
@@ -1635,7 +1693,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REVERB MIX"
@@ -1666,7 +1724,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="PICKUP POS"
@@ -1688,7 +1746,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="SUSTAIN"
@@ -1709,7 +1767,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="STRETCH"
@@ -1733,7 +1791,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="PLUCK"
@@ -1754,7 +1812,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="LOOP GAIN"
@@ -1775,7 +1833,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REVERB MIX"
@@ -1805,7 +1863,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="PLUCK"
@@ -1826,7 +1884,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REVERB MIX"
@@ -1856,7 +1914,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="GAIN"
@@ -1877,7 +1935,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={12}
                                     label="VIBRATO FREQ"
@@ -1899,7 +1957,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="VIBRATO GAIN"
@@ -1920,7 +1978,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="SWEEP RATE"
@@ -1944,7 +2002,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={12}
                                     label="LFO SPEED"
@@ -1966,7 +2024,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="LFO DEPTH"
@@ -1987,7 +2045,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="FILTER Q"
@@ -2011,7 +2069,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="AFTERTOUCH"
@@ -2032,7 +2090,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="MOD SPEED"
@@ -2053,7 +2111,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="MOD DEPTH"
@@ -2074,7 +2132,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={-1}
                                     max={4}
                                     label="OP MODE"
@@ -2100,125 +2158,38 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     null
             }
             { 
-            playingInstrument === 'mandolin'
-            ?
-            <>
-                <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="BODY SIZE"
-                            dataIndex={valueBodySize * 100}
-                            labelFontSize={MIDDLE_FONT_SIZE}
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValueBodySize(value/100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="PLUCK"
-                            dataIndex={valuePluck * 100}
-                            labelFontSize="1rem"
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValuePluck(value/100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="PLUCK POS"
-                            dataIndex={valuePluckPos * 100}
-                            labelFontSize={MIDDLE_FONT_SIZE}
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValuePluckPos(value/100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="STRING DAMPING"
-                            dataIndex={valueStringDamping * 100}
-                            labelFontSize="1rem"
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValueStringDamping(value/100) } }
-                        />
-                    </div>
-                </Box>
-                <br/>
-                <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={12}
-                            label="STRING DETUNE"
-                            labelFontSize={MIDDLE_FONT_SIZE}
-                            direction={1}
-                            dataIndex={valueStringDetune * 100}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValueStringDetune(value / 100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                playingInstrument === 'mandolin'
+                ?
+                <>
+                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
+                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
-                                label="REVERB MIX"
-                                dataIndex={valueReverbMix * 100}
+                                label="BODY SIZE"
+                                dataIndex={valueBodySize * 100}
+                                labelFontSize={MIDDLE_FONT_SIZE}
+                                direction={1}
+                                knobPosition="bottom"
+                                appendToValue=""
+                                valueFontSize="1.7rem"
+                                trackColor="#eeeeee"
+                                trackDraggable={true}
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
+                                onChange={ (value: any) => { setValueBodySize(value/100) } }
+                            />
+                        </div>
+                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                            <CircularSlider
+                                width={104}
+                                min={0}
+                                max={100}
+                                label="PLUCK"
+                                dataIndex={valuePluck * 100}
                                 labelFontSize="1rem"
                                 direction={1}
                                 knobPosition="bottom"
@@ -2230,12 +2201,99 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                                 knobColor="#0fb29d"
                                 progressColorFrom="#0fb29d"
                                 progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueReverbMix(value/100) } }
+                                onChange={ (value: any) => { setValuePluck(value/100) } }
                             />
                         </div>
-                </Box> 
-            </>
-            :
+                        <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
+                            <CircularSlider
+                                width={104}
+                                min={0}
+                                max={100}
+                                label="PLUCK POS"
+                                dataIndex={valuePluckPos * 100}
+                                labelFontSize={MIDDLE_FONT_SIZE}
+                                direction={1}
+                                knobPosition="bottom"
+                                appendToValue=""
+                                valueFontSize="1.7rem"
+                                trackColor="#eeeeee"
+                                trackDraggable={true}
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
+                                onChange={ (value: any) => { setValuePluckPos(value/100) } }
+                            />
+                        </div>
+                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                            <CircularSlider
+                                width={104}
+                                min={0}
+                                max={100}
+                                label="STRING DAMPING"
+                                dataIndex={valueStringDamping * 100}
+                                labelFontSize="1rem"
+                                direction={1}
+                                knobPosition="bottom"
+                                appendToValue=""
+                                valueFontSize="1.7rem"
+                                trackColor="#eeeeee"
+                                trackDraggable={true}
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
+                                onChange={ (value: any) => { setValueStringDamping(value/100) } }
+                            />
+                        </div>
+                    </Box>
+                    <br/>
+                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
+                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                            <CircularSlider
+                                width={104}
+                                min={0}
+                                max={12}
+                                label="STRING DETUNE"
+                                labelFontSize={MIDDLE_FONT_SIZE}
+                                direction={1}
+                                dataIndex={valueStringDetune * 100}
+                                knobPosition="bottom"
+                                appendToValue=""
+                                valueFontSize="1.7rem"
+                                trackColor="#eeeeee"
+                                trackDraggable={true}
+                                labelColor="#0fb29d"
+                                knobColor="#0fb29d"
+                                progressColorFrom="#0fb29d"
+                                progressColorTo="#0fb29d"
+                                onChange={ (value: any) => { setValueStringDetune(value / 100) } }
+                            />
+                        </div>
+                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+                                <CircularSlider
+                                    width={104}
+                                    min={0}
+                                    max={100}
+                                    label="REVERB MIX"
+                                    dataIndex={valueReverbMix * 100}
+                                    labelFontSize="1rem"
+                                    direction={1}
+                                    knobPosition="bottom"
+                                    appendToValue=""
+                                    valueFontSize="1.7rem"
+                                    trackColor="#eeeeee"
+                                    trackDraggable={true}
+                                    labelColor="#0fb29d"
+                                    knobColor="#0fb29d"
+                                    progressColorFrom="#0fb29d"
+                                    progressColorTo="#0fb29d"
+                                    onChange={ (value: any) => { setValueReverbMix(value/100) } }
+                                />
+                            </div>
+                    </Box> 
+                </>
+                :
                 null
             }
             {
@@ -2245,7 +2303,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="STIFFNESS"
@@ -2266,7 +2324,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="APERTURE"
@@ -2287,7 +2345,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="NOISE GAIN"
@@ -2308,7 +2366,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="BLOW POSITION"
@@ -2329,7 +2387,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={12}
                                 label="VIBRATO FREQ"
@@ -2351,7 +2409,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="VIBRATO GAIN"
@@ -2375,7 +2433,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="PRESSURE"
@@ -2396,7 +2454,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REVERB MIX"
@@ -2427,7 +2485,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="LFO SPEED"
@@ -2448,7 +2506,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="LFO DEPTH"
@@ -2472,7 +2530,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="CONTROL ONE"
@@ -2493,7 +2551,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="CONTROL TWO"
@@ -2514,7 +2572,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                             </div>
                             <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                                 <CircularSlider
-                                    width={140}
+                                    width={104}
                                     min={0}
                                     max={100}
                                     label="REVERB MIX"
@@ -2561,15 +2619,14 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                 : null
             }
   
-            {/* <Box id="synthControlsWrapper" className="invisible">
-            {
-                playingInstrument === 'clarinet'
+          
+                {/* playingInstrument === 'clarinet'
                 ?
                 <>
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REED"
@@ -2590,7 +2647,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="NOISE GAIN"
@@ -2611,7 +2668,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={12}
                                 label="VIBRATO FREQ"
@@ -2633,7 +2690,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="VIBRATO GAIN"
@@ -2657,7 +2714,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                     <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="PRESSURE"
@@ -2678,7 +2735,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REVERB GAIN"
@@ -2699,7 +2756,7 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                         </div>
                         <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
                             <CircularSlider
-                                width={140}
+                                width={104}
                                 min={0}
                                 max={100}
                                 label="REVERB MIX"
@@ -2716,894 +2773,13 @@ console.log('HEY TOTAL BEATS: ', totalBeats.current);
                                 progressColorFrom="#0fb29d"
                                 progressColorTo="#0fb29d"
                                 onChange={ (value: any) => { setValueReverbMix(value) } }
-                            />
-                        </div>
-                    </Box>
-                </>
+                            /> */}
+                        {/* </div> */}
+                    {/* </Box>
+                // </>
                 :
-                null
-            }
-            {
-                playingInstrument === 'plucked'
-                ?
-                <>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="PICKUP POS"
-                                dataIndex={valuePickupPosition * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                initialValue={0}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValuePickupPosition(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="SUSTAIN"
-                                dataIndex={valueSustain * 100}
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueSustain(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="STRETCH"
-                                dataIndex={valueStretch * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueStretch(value/100) } }
-                            />
-                        </div>
-                    </Box>
-                    <br/>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="PLUCK"
-                                dataIndex={valuePluck * 100}
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValuePluck(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="LOOP GAIN"
-                                dataIndex={valueBaseLoopGain * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueBaseLoopGain(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="REVERB MIX"
-                                dataIndex={valueReverbMix * 100}
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueReverbMix(value/100) } }
-                            />
-                        </div>
-                    </Box>
-                </>
-                :
-                null
-            }
-            {
-                playingInstrument === 'sitar'
-                ?                     
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="PLUCK"
-                                dataIndex={valuePluck * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValuePluck(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="REVERB MIX"
-                                dataIndex={valueReverbMix * 100}
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueReverbMix(value/100) } }
-                            />
-                        </div>
-                    </Box>
-                :
-                    null
-            }
-            {
-                playingInstrument === 'moog'
-                ?
-                    <>
-                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="GAIN"
-                                    dataIndex={valueMoogGain * 100}
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueMoogGain(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={12}
-                                    label="VIBRATO FREQ"
-                                    dataIndex={valueVibratoFreq}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
-                                    onChange={ (value: any) => { setValueVibratoFreq(value) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="VIBRATO GAIN"
-                                    dataIndex={valueVibratoGain * 100}
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueVibratoGain(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="SWEEP RATE"
-                                    dataIndex={valueFilterSweepRate * 100}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueFilterSweepRate(value/100) } }
-                                />
-                            </div>
-                        </Box>
-                        <br/>
-                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={12}
-                                    label="LFO SPEED"
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    dataIndex={valueLfoSpeed}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
-                                    onChange={ (value: any) => { setValueLfoSpeed(value) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="LFO DEPTH"
-                                    dataIndex={valueLfoDepth * 100}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueLfoDepth(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="FILTER Q"
-                                    dataIndex={valueFilterQ * 100}
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueFilterQ(value/100) } }
-                                />
-                            </div>
-                        </Box>
-                        <br/>
-                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="AFTERTOUCH"
-                                    dataIndex={valueAftertouch * 100}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueAftertouch(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="MOD SPEED"
-                                    dataIndex={valueModSpeed * 100}
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueModSpeed(value) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="MOD DEPTH"
-                                    dataIndex={valueModDepth * 100}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueModDepth(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={-1}
-                                    max={4}
-                                    label="OP MODE"
-                                    dataIndex={valueOpMode}
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    data={[-1,0,1,2,3,4]}
-                                    onChange={ (value: any) => { setValueOpMode(value) } }
-                                />
-                            </div>
-                        </Box>
-                    </>
-                :
-                    null
-            }
-            { 
-            playingInstrument === 'mandolin'
-            ?
-            <>
-                <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="BODY SIZE"
-                            dataIndex={valueBodySize * 100}
-                            labelFontSize={MIDDLE_FONT_SIZE}
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValueBodySize(value/100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="PLUCK"
-                            dataIndex={valuePluck * 100}
-                            labelFontSize="1rem"
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValuePluck(value/100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="PLUCK POS"
-                            dataIndex={valuePluckPos * 100}
-                            labelFontSize={MIDDLE_FONT_SIZE}
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValuePluckPos(value/100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={100}
-                            label="STRING DAMPING"
-                            dataIndex={valueStringDamping * 100}
-                            labelFontSize="1rem"
-                            direction={1}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValueStringDamping(value/100) } }
-                        />
-                    </div>
-                </Box>
-                <br/>
-                <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                        <CircularSlider
-                            width={140}
-                            min={0}
-                            max={12}
-                            label="STRING DETUNE"
-                            labelFontSize={MIDDLE_FONT_SIZE}
-                            direction={1}
-                            dataIndex={valueStringDetune * 100}
-                            knobPosition="bottom"
-                            appendToValue=""
-                            valueFontSize="1.7rem"
-                            trackColor="#eeeeee"
-                            trackDraggable={true}
-                            labelColor="#0fb29d"
-                            knobColor="#0fb29d"
-                            progressColorFrom="#0fb29d"
-                            progressColorTo="#0fb29d"
-                            onChange={ (value: any) => { setValueStringDetune(value / 100) } }
-                        />
-                    </div>
-                    <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="REVERB MIX"
-                                dataIndex={valueReverbMix * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueReverbMix(value/100) } }
-                            />
-                        </div>
-                </Box> 
-            </>
-            :
-                null
-            }
-            {
-                playingInstrument === 'saxofony'
-                ?
-                <>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="STIFFNESS"
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                dataIndex={valueStiffness * 100}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueStiffness(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="APERTURE"
-                                dataIndex={valueAperture * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueAperture(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="NOISE GAIN"
-                                dataIndex={valueNoiseGain * 100}
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueNoiseGain(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="BLOW POSITION"
-                                dataIndex={valueBlowPosition * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueBlowPosition(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={12}
-                                label="VIBRATO FREQ"
-                                dataIndex={valueVibratoFreq}
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                data={[0,1,2,3,4,5,6,7,8,9,10,11,12]}
-                                onChange={ (value: any) => { setValueVibratoFreq(value) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5,position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="VIBRATO GAIN"
-                                dataIndex={valueVibratoGain * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueVibratoGain(value/100) } }
-                            />
-                        </div>
-                    </Box>
-                    <br/>
-                    <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="PRESSURE"
-                                dataIndex={valuePressure * 100}
-                                labelFontSize={MIDDLE_FONT_SIZE}
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValuePressure(value/100) } }
-                            />
-                        </div>
-                        <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                            <CircularSlider
-                                width={140}
-                                min={0}
-                                max={100}
-                                label="REVERB MIX"
-                                dataIndex={valueReverbMix * 100}
-                                labelFontSize="1rem"
-                                direction={1}
-                                knobPosition="bottom"
-                                appendToValue=""
-                                valueFontSize="1.7rem"
-                                trackColor="#eeeeee"
-                                trackDraggable={true}
-                                labelColor="#0fb29d"
-                                knobColor="#0fb29d"
-                                progressColorFrom="#0fb29d"
-                                progressColorTo="#0fb29d"
-                                onChange={ (value: any) => { setValueReverbMix(value) } }
-                            />
-                        </div>
-                    </Box>
-                </>
-                :
-                null
-            }
-            {
-                playingInstrument === 'frenchhorn'
-                ?
-                    <>
-                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="LFO SPEED"
-                                    dataIndex={valueLfoSpeed * 100}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueLfoSpeed(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="LFO DEPTH"
-                                    dataIndex={valueLfoDepth * 100}
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueLfoDepth(value/100) } }
-                                />
-                            </div>
-                        </Box>
-                        <br/>
-                        <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center", paddingTop: "10vh" }}>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="CONTROL ONE"
-                                    dataIndex={valueControlOne * 100}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueControlOne(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="CONTROL TWO"
-                                    dataIndex={valueControlTwo * 100}
-                                    labelFontSize="1rem"
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueControlTwo(value/100) } }
-                                />
-                            </div>
-                            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
-                                <CircularSlider
-                                    width={140}
-                                    min={0}
-                                    max={100}
-                                    label="REVERB MIX"
-                                    dataIndex={valueReverbMix * 100}
-                                    labelFontSize={MIDDLE_FONT_SIZE}
-                                    direction={1}
-                                    knobPosition="bottom"
-                                    appendToValue=""
-                                    valueFontSize="1.7rem"
-                                    trackColor="#eeeeee"
-                                    trackDraggable={true}
-                                    labelColor="#0fb29d"
-                                    knobColor="#0fb29d"
-                                    progressColorFrom="#0fb29d"
-                                    progressColorTo="#0fb29d"
-                                    onChange={ (value: any) => { setValueReverbMix(value/100) } }
-                                />
-                            </div>
-                        </Box>
-                    </>
-                :
-                    null
-            }
-            </Box> */}
-
+                null */}
+ 
 
 
         </>

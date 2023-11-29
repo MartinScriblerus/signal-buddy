@@ -166,6 +166,8 @@ body{
   text-align: center;
   /* background: var(--black-60); */
   overflow: scroll;
+  padding-left: 6rem;
+  padding-right: 6rem;
 }
 
 #instrumentBuilder {
@@ -222,11 +224,11 @@ body{
   }
   #instrumentBuilderWrapper {
     width: calc(100vw - 54rem);
-    overflow: scroll
+    overflow: scroll;
   }
   #synthControlsWrapper {
     width: calc(100vw - 54rem);
-    overflow: scroll
+    overflow: scroll;
   }
   #sampleToolsWrapper {
     width: calc(100vw - 54rem);
@@ -573,8 +575,10 @@ ul {
 
 .litAscending {
   background: linear-gradient(45deg, rgba(120,120,120,1) 0%, rgba(120,120,180,1) 40%);
+  background-color: linear-gradient(45deg, rgba(120,120,120,1) 0%, rgba(120,120,180,1) 40%);
 }
 
 .litDescending {
   background: linear-gradient(45deg, rgba(70,120,120,1) 0%, rgba(70,120,180,1) 40%);
+  background-color: linear-gradient(45deg, rgba(70,120,120,1) 0%, rgba(70,120,180,1) 40%);
 }

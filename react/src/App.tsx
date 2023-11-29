@@ -50,6 +50,7 @@ function App() {
   const [writableHook, setWritableHook] = useState({});
   const [audioInputWrapperVisible, setAudioInputWrapperVisible] = useState(false);
   const [rtAudio, setRtAudio] = useState<any>(null);
+  const [recordedFileToLoad, setRecordedFileToLoad] = useState(false);
   const deviceLabels = useRef<any>([]);
   const audioInputDeviceId = useRef<any>(null);
 
@@ -128,6 +129,9 @@ function App() {
     a.style = "z-index: 1000; position: absolute; top: 0px; left: 0px; background: green";
     a.href = url;
     document.body.appendChild(a);
+    console.log("CHECK THIS FILE! ", file);
+    uploadedFilesRef.current.push(file);
+    setRecordedFileToLoad(true);
     a.download = file;
   }
   
@@ -173,17 +177,18 @@ function App() {
   }
 
   const count = useRef(0);
-  const interval_global = 1000;
+  const interval_global = 100;
   let requestID;
 
        // Animation using requestAnimationFrame
       let start = Date.now();
+      let barStart = start;
 
       function globalRequestAnimationTick() {
         const interval = Date.now() - start;
         requestID = requestAnimationFrame(globalRequestAnimationTick);
-        if (interval - (start * count.current) > interval_global) {
-          start = Date.now();
+        if (interval - (barStart * count.current) > interval_global) {
+          barStart = Date.now();
           count.current = count.current + 1;
           if (!isRecRef.current) {
               cancelAnimationFrame(requestID);
@@ -255,7 +260,7 @@ function App() {
           recorder.addEventListener("dataavailable", async (event) => {
             // Write chunks to the file.
             try {
-              if (typeof writable !== 'undefined' && writable.length && event.data && recorder.state !== "inactive" && recorder.state !== "closed") {
+              if (event.data && recorder.state !== "inactive" && recorder.state !== "closed") {
                 writable.write(event.data);
               }
               recordedData.push(event.data);
@@ -275,19 +280,27 @@ function App() {
             const analysisObj = await runAnalyserNode(analyser);
             setRtAudio(analysisObj);
             if (isRecRef.current === false) {
+              // stopTracks(recorder, stream);
               if (recorder.state !== "inactive" && recorder.state !== "closed") {
+                // setIsRecordingMic(false);
+                // stopTracks(recorder, stream);
+                // await analyser.disconnect();
                 writable.close();
+                console.log("HEY  WRITABLE 1: ", writable);
+                // readFile(writable, source.buffer);
+                
                 setWritableHook(writable);
               }
               stopTracks(recorder, stream);
-              isRecRef.current = false;
-              return;
+              // isRecRef.current = false;
+              
             }
           });
           /* this defines the start point - call when you want to start your audio to blob conversion */
-          recorder.start(requestAnimationFrame(globalRequestAnimationTick));
+          recorder.start(1000);
         }) ();
       } else {
+        console.log("HEY  WRITABLE 2: ", writable);
         writable.close();
       }
     } else {
@@ -297,11 +310,15 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    if (writableHook && Object.keys(writableHook) && Object.keys(writableHook).length > 0) {
-      console.log('WRITABLE HOOK CHANGED IN APP! ', writableHook);
-    }
-  }, [writableHook])
+  const handleRecordedFileLoaded = () => {
+    setRecordedFileToLoad(false);
+  }
+
+  // useEffect(() => {
+  //   if (writableHook && Object.keys(writableHook) && Object.keys(writableHook).length > 0) {
+  //     console.log('WRITABLE HOOK CHANGED IN APP! ', writableHook);
+  //   }
+  // }, [writableHook])
 // console.log('what is rtaudio? ', rtAudio);
   return (
     <ThemeProvider theme={theme}>
@@ -352,6 +369,8 @@ function App() {
                 handleChangeInput={handleChangeInput}
                 rtAudio={rtAudio}
                 isRecProp={isRecordingMic}
+                recordedFileToLoad={recordedFileToLoad}
+                recordedFileLoaded={handleRecordedFileLoaded}
               />
               <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
                 {deviceList}
