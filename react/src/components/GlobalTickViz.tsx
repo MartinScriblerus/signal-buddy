@@ -1,5 +1,6 @@
 import React, {useRef, useEffect} from 'react';
 import * as d3 from 'd3';
+import { Box } from '@mui/material';
 
 const GlobalTickViz = ({numeratorSignature, denominatorSignature, currentCount, latestCount}:{numeratorSignature: number, denominatorSignature: number, currentCount: number, latestCount:number}) => {
     const d3TickVizContainer = useRef<any>(null);
@@ -32,15 +33,11 @@ const GlobalTickViz = ({numeratorSignature, denominatorSignature, currentCount, 
     }, [currentCount]); 
 
     return(
-        <div 
-            // style={{
-            //     width: '100%',
-            //     height: '300px',
-            //     display: 'flex',
-            //     justifyContent: 'center',
-            //     alignItems: 'center',
-            //     flexDirection: 'column'
-            // }}
+        <Box 
+            style={{
+                width: '100%',
+                position: 'absolute',
+            }}
         >
             <svg
                 className="d3-component-circles"
@@ -67,10 +64,10 @@ const GlobalTickViz = ({numeratorSignature, denominatorSignature, currentCount, 
                 }
             </svg>
             <svg
-                className="d3-component-circles-2"
+                className="d3-component-circles-3"
                 width={'100%'}
                 height={'2rem'}
-                ref={d3TickVizContainer2}
+                ref={d3TickVizContainer3}
                 viewBox={`0 0 ${window.innerWidth} 2rem`}
                 style={{ backgroundColor: "grey", fill: "green", overflow: "scroll" }}
             >
@@ -79,10 +76,10 @@ const GlobalTickViz = ({numeratorSignature, denominatorSignature, currentCount, 
                 }
             </svg>
             <svg
-                className="d3-component-circles-2"
+                className="d3-component-circles-4"
                 width={'100%'}
                 height={'2rem'}
-                ref={d3TickVizContainer2}
+                ref={d3TickVizContainer4}
                 viewBox={`0 0 ${window.innerWidth} 2rem`}
                 style={{ backgroundColor: "grey", fill: "green", overflow: "scroll" }}
             >
@@ -90,7 +87,7 @@ const GlobalTickViz = ({numeratorSignature, denominatorSignature, currentCount, 
                     circles.current.slice(numeratorSignature * numeratorSignature * 6, circles.current.length)
                 }
             </svg>
-        </div>
+        </Box>
     )
 };
 

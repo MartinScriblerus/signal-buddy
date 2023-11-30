@@ -77,8 +77,8 @@ interface ReusableSliderProps {
 
 const ReusableSlider = ({data, label, min, max, dataIndex, onChange}: ReusableSliderProps) => {
     return (
-        <Box sx={{display: "flex", flexDirection: "row",  position: "relative", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ scale: 0.5, position: "relative", padding: "16px" }}>
+        <Box sx={{display: "flex", flexDirection: "row",  position: "relative", alignItems: "left", justifyContent: "left" }}>
+            <div style={{ scale: 0.5, position: "relative", padding: "8px" }}>
                 <CircularSlider
                     width={104}
                     min={min}
@@ -89,13 +89,13 @@ const ReusableSlider = ({data, label, min, max, dataIndex, onChange}: ReusableSl
                     direction={1}
                     knobPosition="bottom"
                     appendToValue=""
-                    valueFontSize="1.7rem"
+                    valueFontSize="1.3rem"
                     trackColor="#eeeeee"
                     trackDraggable={true}
                     labelColor="#0fb29d"
-                    knobColor="#0fb29d"
+                    knobColor="#0f1f23"
                     progressColorFrom="#0fb29d"
-                    progressColorTo="#0fb29d"
+                    progressColorTo="#aaf"
                     data={data || []}
                     onChange={ onChange }
                 />
@@ -174,7 +174,7 @@ const EffectsControls = (
             playingInstrument === 'clarinet'
             ?
             <Box sx={{display: "flex", flexDirection: "row", position: "relative", alignItems: "center", justifyContent: "center" }}>
-                <ReusableSlider label={"NOISE GAIN"} min={0} max={100} dataIndex={valueNoiseGain * 100} onChange={(value: any) => { setValueNoiseGain(value/100) } } />
+                <ReusableSlider label={"NOISE"} min={0} max={100} dataIndex={valueNoiseGain * 100} onChange={(value: any) => { setValueNoiseGain(value/100) } } />
 
                 <ReusableSlider label={"REED"} min={0} max={100} dataIndex={valueReed * 100} onChange={(value: any) => { setValueReed(value/100) } } />
 
@@ -276,9 +276,9 @@ const EffectsControls = (
 
                     <ReusableSlider label={"PLUCK POS"} min={0} max={100} dataIndex={valuePluckPos * 100} onChange={ (value: any) => { setValuePluckPos(value) } } />
 
-                    <ReusableSlider label={"STRING DAMPING"} min={0} max={100} dataIndex={valueStringDamping * 100} onChange={ (value: any) => { setValueStringDamping(value) } } />
+                    <ReusableSlider label={"STR DAMP"} min={0} max={100} dataIndex={valueStringDamping * 100} onChange={ (value: any) => { setValueStringDamping(value) } } />
                     
-                    <ReusableSlider label={"STRING DETUNE"} min={0} max={12} dataIndex={valueStringDetune * 100} onChange={ (value: any) => { setValueStringDetune(value/100) } } />
+                    <ReusableSlider label={"STR DETUNE"} min={0} max={12} dataIndex={valueStringDetune * 100} onChange={ (value: any) => { setValueStringDetune(value/100) } } />
                 
                 </Box>
             :
@@ -293,7 +293,7 @@ const EffectsControls = (
 
                 <ReusableSlider label={"APERTURE"} min={0} max={100} dataIndex={valueAperture * 100} onChange={ (value: any) => { setValueAperture(value) } } />
 
-                <ReusableSlider label={"NOISE GAIN"} min={0} max={100} dataIndex={valueNoiseGain * 100} onChange={(value: any) => { setValueNoiseGain(value/100) } } />
+                <ReusableSlider label={"NOISE"} min={0} max={100} dataIndex={valueNoiseGain * 100} onChange={(value: any) => { setValueNoiseGain(value/100) } } />
 
                 <ReusableSlider label={"BLOW POS"} min={0} max={100} dataIndex={valueBlowPosition * 100} onChange={ (value: any) => { setValueBlowPosition(value/100) } } />
 

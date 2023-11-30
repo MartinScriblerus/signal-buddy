@@ -1175,18 +1175,17 @@ useEffect(() => {
     return (
         <>
             {/* // this is the popover with chord & scale info (move into separate file) */}
-            <Box>
-                <MingusPopup 
-                    submitMingus={submitMingus}
-                    audioKey={audioKey}
-                    octave={octave}
-                    audioScale={audioScale}
-                    audioChord={audioChord}
-                    handleChangeScale={handleChangeScale}
-                    handleChangeChord={handleChangeChord}
-                />
 
-            </Box>
+            <MingusPopup 
+                submitMingus={submitMingus}
+                audioKey={audioKey}
+                octave={octave}
+                audioScale={audioScale}
+                audioChord={audioChord}
+                handleChangeScale={handleChangeScale}
+                handleChangeChord={handleChangeChord}
+            />
+
 
             {/* this is the viz area -- move into separate file & position relative */}
             <Box sx={{height: "calc(100% - 13.5rem)", border: "1px solid purple", position: "absolute"}} id="vizWrapper">

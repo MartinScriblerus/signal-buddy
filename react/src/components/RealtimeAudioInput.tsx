@@ -223,7 +223,7 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
             height={height}
             ref={d3Container}
             viewBox={`0 0 ${width} ${height}`}
-            style={{ backgroundColor: "grey", fill: "green", overflow: "scroll" }}
+            style={{ backgroundColor: "pink", fill: "green", overflow: "scroll" }}
         >
             <g style={{transform:'translate(0,0)'}} width={width} height={height + 2 * margin} ref={barRef}>     
                 {mappedFreq.current && mappedFreq.current.length > 0 && (mappedFreq.current.map((d: any, i: number) => {
