@@ -280,27 +280,17 @@ function App() {
             const analysisObj = await runAnalyserNode(analyser);
             setRtAudio(analysisObj);
             if (isRecRef.current === false) {
-              // stopTracks(recorder, stream);
               if (recorder.state !== "inactive" && recorder.state !== "closed") {
-                // setIsRecordingMic(false);
-                // stopTracks(recorder, stream);
-                // await analyser.disconnect();
                 writable.close();
-                console.log("HEY  WRITABLE 1: ", writable);
-                // readFile(writable, source.buffer);
-                
                 setWritableHook(writable);
               }
-              stopTracks(recorder, stream);
-              // isRecRef.current = false;
-              
+              stopTracks(recorder, stream);              
             }
           });
           /* this defines the start point - call when you want to start your audio to blob conversion */
           recorder.start(1000);
         }) ();
       } else {
-        console.log("HEY  WRITABLE 2: ", writable);
         writable.close();
       }
     } else {
@@ -314,23 +304,19 @@ function App() {
     setRecordedFileToLoad(false);
   }
 
-  // useEffect(() => {
-  //   if (writableHook && Object.keys(writableHook) && Object.keys(writableHook).length > 0) {
-  //     console.log('WRITABLE HOOK CHANGED IN APP! ', writableHook);
-  //   }
-  // }, [writableHook])
-// console.log('what is rtaudio? ', rtAudio);
   return (
     <ThemeProvider theme={theme}>
       <Grid sx={{fontFamily: 'TitilliumWeb-Regular', backgroundColor: 'background.paper', height: '100vh', maxHeight: '100vh', maxWidth: "100vw", overflow: 'hidden'}} className="App">
         <Box sx={{width: '100%', height: '100%'}}>
           {!audioReady  
-          ? 
+          ? // this is the start screen
             <StartButton 
               handleAudioReady={(e) => handleAudioReady(e)}
             />
-          :
+          : // this is the top row of side control bar (see notes below)
             <Box sx={{top: "0", bottom: "0", left: "0", right: "0", display: "flex", flexDirection: "row"}}>
+              
+              {/* this is the very top of left nav (make this one special in its style / positioning) */}
               <Box id="fileManagerWrapper" sx={{left: 0, top: 0, height: "12vh", background: 'background.paper', border: "1px solid yellow"}}>
                 {audioReady && fileControlsVisible && (
                   <Box id="inputFileWrapper" sx={{color: 'text.primary', borderColor: "solid 10px green"}}>
@@ -372,11 +358,16 @@ function App() {
                 recordedFileToLoad={recordedFileToLoad}
                 recordedFileLoaded={handleRecordedFileLoaded}
               />
-              <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
+
+              {/* This is a free-floating popup for audio inputs (move out of this div) */}
+              {/* <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
                 {deviceList}
-              </List>
+              </List> */}
             </Box>
           }
+                        <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
+                {deviceList}
+              </List>
         </Box>
       </Grid>
     </ThemeProvider>
