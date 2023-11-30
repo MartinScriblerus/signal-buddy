@@ -1075,6 +1075,10 @@ export default function CreateChuck(props: any) {
         }
     }
         
+useEffect(() => {
+    console.log('YO VAL REED!!!! ', valueReed);
+},[valueReed])
+
     const playChuckNote = (note: any) => {      
         if (!note.target || !note.target ) { 
             return null;
