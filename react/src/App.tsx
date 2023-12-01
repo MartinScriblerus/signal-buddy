@@ -317,7 +317,7 @@ function App() {
             <Box sx={{top: "0", bottom: "0", left: "0", right: "0", display: "flex", flexDirection: "row"}}>
               
               {/* this is the very top of left nav (make this one special in its style / positioning) */}
-              <Box id="fileManagerWrapper" sx={{left: 0, top: 0, height: "12vh", background: 'background.paper', border: "1px solid yellow"}}>
+              <Box id="fileManagerWrapper" sx={{position: "absolute", left: 0, top: 0, height: "12vh", background: 'background.paper', zIndex: "10000", boxShadow: "4px 4px 1px 1px rgba(255, 255, 255, .2)", border: "1px solid yellow"}}>
                 {audioReady && fileControlsVisible && (
                   <Box id="inputFileWrapper" sx={{color: 'text.primary', borderColor: "solid 10px green"}}>
                     <form style={{display: "flex", width: "100%", flexDirection: "column"}} onSubmit={handleSubmit(onSubmit)}>

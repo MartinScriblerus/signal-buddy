@@ -95,7 +95,7 @@ const Keyboard = ({chuckHook, keysVisible, keysReady, organizeRows, organizeLoca
                 chuckHook && Object.values(chuckHook).length && keysVisible
                 ?
                     <Box 
-                      sx={{position: 'absolute', right: 0, bottom: 0}}
+                      sx={{position: 'relative', right: 0, bottom: 0}}
                     >
                         <ul id="keyboard">
                             {

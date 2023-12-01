@@ -4,6 +4,7 @@ import { Chuck } from 'webchuck'
 import axios, { AxiosResponse } from 'axios';
 import { FLASK_API_URL, MIDDLE_FONT_SIZE } from '../helpers/constants';
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -330,7 +331,6 @@ export default function CreateChuck(props: any) {
     const lastTickCountRef = useRef<number>();
     lastTickCountRef.current = 0;
 
-   
     useEffect(() => {
         (async() => {
             console.log('LAST CHUCK MESSAGE! ', lastChuckMessage);
@@ -590,14 +590,10 @@ export default function CreateChuck(props: any) {
             setChuckHook(theChuckTemp); 
             
             await theChuckTemp.runFileWithArgs("testTick.ck", `${chuckTickCount.current}:${bpm}:${numeratorSignature}:${isRecProp}`);
-            // setInterval(() => {
-                    // console.log(theChuckTemp.getFloat(`totalTime`));
-                // }, 1000);
 
             return setChuckHook(theChuckTemp);      
         })();
     }, []);
-
 
     useEffect(() => {
         getFile(uploadedFiles);
@@ -1176,57 +1172,20 @@ useEffect(() => {
         <>
             {/* // this is the popover with chord & scale info (move into separate file) */}
 
-            <MingusPopup 
-                submitMingus={submitMingus}
-                audioKey={audioKey}
-                octave={octave}
-                audioScale={audioScale}
-                audioChord={audioChord}
-                handleChangeScale={handleChangeScale}
-                handleChangeChord={handleChangeChord}
-            />
-
-
-            {/* this is the viz area -- move into separate file & position relative */}
-            <Box sx={{height: "calc(100% - 13.5rem)", border: "1px solid purple", position: "absolute"}} id="vizWrapper">
+            <Grid id='getThis2' sx={{position: 'relative', boxSizing: "border-box", width: "100%", height: '100vh', border: 'solid brown 5px'}}>
                 
-                {/* // this is the top row of buttons in viz area (move into separate file) */}
-                <VizHeaderRow 
-                    vizComponent={vizComponent}
-                    vizItem={vizItem}
-                    handleChangeDataVizControls={handleChangeDataVizControls}
-                    handleToggleViz={handleToggleViz}
-                    handleChangeInput={handleChangeInput}
-                />
-
-                <GlobalTickViz numeratorSignature={numeratorSignature} denominatorSignature={denominatorSignature} currentCount={currentCountRef.current} latestCount={latestCount} />
-
-                <ParentSize id="vizParentWrapper" key={newestSetting.name}>{( { width, height } ) =>
-                    vizComponent === 0 || vizItem === 0
+                {/* this is the 2nd row down in side control bar */}
+                {
+                    vizComponent === 1
                     ?
-                        isRealtime
-                        ?
-                        <RealtimeAudioInput width={width} height={height} data={rtAudio} isRecProp={isRecProp} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
-                        :
-                        <Example width={width} height={height} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
+                        <SequencerTools 
+                            handleAddStep={handleAddStep}
+                            nextTreeItem={nextTreeItem}
+                            updateNextTreeItem={updateNextTreeItem}
+                            handleRemoveStep={handleRemoveStep}
+                            handleDrumMachine={handleDrumMachine}
+                        />
                     :
-                        <Example2 key={newestSetting.name} width={width} height={height} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />
-                }
-                </ParentSize>
-            </Box>
-
-            {/* this is the 2nd row down in side control bar */}
-            {
-                vizComponent === 1
-                ?
-                    <SequencerTools 
-                        handleAddStep={handleAddStep}
-                        nextTreeItem={nextTreeItem}
-                        updateNextTreeItem={updateNextTreeItem}
-                        handleRemoveStep={handleRemoveStep}
-                        handleDrumMachine={handleDrumMachine}
-                    />
-                :
                         <SampleTools
                             bpm={bpm}
                             sampleLength={sampleLength}
@@ -1238,111 +1197,154 @@ useEffect(() => {
                             handleChangeSampleRates={handleChangeSampleRates}
                             handleDrumMachine={handleDrumMachine}
                         />
-            }
+                }
 
-            {/* this is the 3rd row down in side control bar */}          
-            {
-                chuckHook && Object.values(chuckHook).length && instrumentsVisible
-                ?
-                <FormControl sx={{left: 0, width: "100%"}} id="instrumentBuilderWrapper">
-                    <FormLabel sx={{ color: '#f6f6f6 !important', fontSize: "12px", paddingRight: "16px" }} id="controlled-radio-buttons-group-instruments">Instruments</FormLabel>
-                    <RadioGroup
-                        aria-labelledby="demo-controlled-radio-buttons-group"
-                        name="controlled-radio-buttons-group"
-                        value={playingInstrument}
-                        onChange={handleUpdateInstrument}
-                        sx={{ width: "100%" }}
-                    >
-                        <FormControlLabel className={"instrument-radio-selector"} value="clarinet" control={<Radio />} label="Clarinet" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="sitar" control={<Radio />} label="Sitar" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="plucked" control={<Radio />} label="Plucked" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="moog" control={<Radio />} label="Moog" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="rhodes" control={<Radio />} label="Rhodes" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="mandolin" control={<Radio />} label="Mandolin" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="frenchhorn" control={<Radio />} label="French Horn" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="saxofony" control={<Radio />} label="Saxofony" />
-                        <FormControlLabel className={"instrument-radio-selector"} value="sampler" control={<Radio />} label="Sampler" />
-                    </RadioGroup>
-                </FormControl>
-                :
-                <></>
-            }
+<MingusPopup 
+                    submitMingus={submitMingus}
+                    audioKey={audioKey}
+                    octave={octave}
+                    audioScale={audioScale}
+                    audioChord={audioChord}
+                    handleChangeScale={handleChangeScale}
+                    handleChangeChord={handleChangeChord}
+                />
 
-            {/* this is the 4th row down in side control bar -- PERFECT CASE FOR REUSABLE COMPONENT */} 
-            <EffectsControls 
-                playingInstrument={playingInstrument}
-                valueReed={valueReed}
-                setValueReed={setValueReed}
-                valueNoiseGain={valueNoiseGain}
-                setValueNoiseGain={setValueNoiseGain}
-                valueVibratoFreq={valueVibratoFreq}
-                setValueVibratoFreq={setValueVibratoFreq}
-                valueVibratoGain={valueVibratoGain} 
-                setValueVibratoGain={setValueVibratoGain}
-                valuePressure={valuePressure}
-                setValuePressure={setValuePressure}
-                valueReverbGain={valueReverbGain}
-                setValueReverbGain={setValueReverbGain}
-                valuePickupPosition={valuePickupPosition}
-                setValuePickupPosition={setValuePickupPosition}
-                valueSustain={valueSustain}
-                setValueSustain={setValueSustain}
-                valueStretch={valueStretch}
-                setValueStretch={setValueStretch}
-                valuePluck={valuePluck}
-                setValuePluck={setValuePluck}
-                valueBaseLoopGain={valueBaseLoopGain}
-                setValueBaseLoopGain={setValueBaseLoopGain}
-                valueReverbMix={valueReverbMix}
-                setValueReverbMix={setValueReverbMix}
-                valueMoogGain={valueMoogGain}
-                setValueMoogGain={setValueMoogGain}
-                valueFilterSweepRate={valueFilterSweepRate}
-                setValueFilterSweepRate={setValueFilterSweepRate}
-                valueLfoSpeed={valueLfoSpeed}
-                setValueLfoSpeed={setValueLfoSpeed}
-                valueLfoDepth={valueLfoDepth}
-                setValueLfoDepth={setValueLfoDepth}
-                valueFilterQ={valueFilterQ}
-                setValueFilterQ={setValueFilterQ}
-                valueAftertouch={valueAftertouch}
-                setValueAftertouch={setValueAftertouch}
-                valueModSpeed={valueModSpeed}
-                setValueModSpeed={setValueModSpeed}
-                valueModDepth={valueModDepth}
-                setValueModDepth={setValueModDepth}
-                valueOpMode={valueOpMode}
-                setValueOpMode={setValueOpMode}
-                valueBodySize={valueBodySize}
-                setValueBodySize={setValueBodySize}
-                valuePluckPos={valuePluckPos}
-                setValuePluckPos={setValuePluckPos}
-                valueStringDamping={valueStringDamping}
-                setValueStringDamping={setValueStringDamping}
-                valueStringDetune={valueStringDetune}
-                setValueStringDetune={setValueStringDetune}
-                valueStiffness={valueStiffness}
-                setValueStiffness={setValueStiffness}
-                valueAperture={valueAperture}
-                setValueAperture={setValueAperture}
-                valueBlowPosition={valueBlowPosition}
-                setValueBlowPosition={setValueBlowPosition}
-                valueControlOne={valueControlOne}
-                valueControlTwo={valueControlTwo}
-                setValueControlOne={setValueControlOne}
-                setValueControlTwo={setValueControlTwo}
-            />
+                {/* this is the 3rd row down in side control bar */}          
+                {
+                    chuckHook && Object.values(chuckHook).length && instrumentsVisible
+                    ?
+                    <FormControl sx={{left: 0, width: "100%"}} id="instrumentBuilderWrapper">
+                        <FormLabel sx={{ color: '#f6f6f6 !important', fontSize: "12px", paddingRight: "16px" }} id="controlled-radio-buttons-group-instruments">Instruments</FormLabel>
+                        <RadioGroup
+                            aria-labelledby="demo-controlled-radio-buttons-group"
+                            name="controlled-radio-buttons-group"
+                            value={playingInstrument}
+                            onChange={handleUpdateInstrument}
+                            sx={{ width: "100%" }}
+                        >
+                            <FormControlLabel className={"instrument-radio-selector"} value="clarinet" control={<Radio />} label="Clarinet" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="sitar" control={<Radio />} label="Sitar" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="plucked" control={<Radio />} label="Plucked" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="moog" control={<Radio />} label="Moog" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="rhodes" control={<Radio />} label="Rhodes" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="mandolin" control={<Radio />} label="Mandolin" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="frenchhorn" control={<Radio />} label="French Horn" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="saxofony" control={<Radio />} label="Saxofony" />
+                            <FormControlLabel className={"instrument-radio-selector"} value="sampler" control={<Radio />} label="Sampler" />
+                        </RadioGroup>
+                    </FormControl>
+                    :
+                    <></>
+                }
 
-            {/* this is the keyboard */} 
-            <Keyboard 
-                chuckHook={chuckHook}
-                keysVisible={keysVisible}
-                keysReady={keysReady}
-                organizeRows={organizeRows}
-                organizeLocalStorageRows={organizeLocalStorageRows}
-                playChuckNote={playChuckNote}
-                compare={compare}
-            /> 
+                {/* this is the 4th row down in side control bar -- PERFECT CASE FOR REUSABLE COMPONENT */} 
+                <EffectsControls 
+                    playingInstrument={playingInstrument}
+                    valueReed={valueReed}
+                    setValueReed={setValueReed}
+                    valueNoiseGain={valueNoiseGain}
+                    setValueNoiseGain={setValueNoiseGain}
+                    valueVibratoFreq={valueVibratoFreq}
+                    setValueVibratoFreq={setValueVibratoFreq}
+                    valueVibratoGain={valueVibratoGain} 
+                    setValueVibratoGain={setValueVibratoGain}
+                    valuePressure={valuePressure}
+                    setValuePressure={setValuePressure}
+                    valueReverbGain={valueReverbGain}
+                    setValueReverbGain={setValueReverbGain}
+                    valuePickupPosition={valuePickupPosition}
+                    setValuePickupPosition={setValuePickupPosition}
+                    valueSustain={valueSustain}
+                    setValueSustain={setValueSustain}
+                    valueStretch={valueStretch}
+                    setValueStretch={setValueStretch}
+                    valuePluck={valuePluck}
+                    setValuePluck={setValuePluck}
+                    valueBaseLoopGain={valueBaseLoopGain}
+                    setValueBaseLoopGain={setValueBaseLoopGain}
+                    valueReverbMix={valueReverbMix}
+                    setValueReverbMix={setValueReverbMix}
+                    valueMoogGain={valueMoogGain}
+                    setValueMoogGain={setValueMoogGain}
+                    valueFilterSweepRate={valueFilterSweepRate}
+                    setValueFilterSweepRate={setValueFilterSweepRate}
+                    valueLfoSpeed={valueLfoSpeed}
+                    setValueLfoSpeed={setValueLfoSpeed}
+                    valueLfoDepth={valueLfoDepth}
+                    setValueLfoDepth={setValueLfoDepth}
+                    valueFilterQ={valueFilterQ}
+                    setValueFilterQ={setValueFilterQ}
+                    valueAftertouch={valueAftertouch}
+                    setValueAftertouch={setValueAftertouch}
+                    valueModSpeed={valueModSpeed}
+                    setValueModSpeed={setValueModSpeed}
+                    valueModDepth={valueModDepth}
+                    setValueModDepth={setValueModDepth}
+                    valueOpMode={valueOpMode}
+                    setValueOpMode={setValueOpMode}
+                    valueBodySize={valueBodySize}
+                    setValueBodySize={setValueBodySize}
+                    valuePluckPos={valuePluckPos}
+                    setValuePluckPos={setValuePluckPos}
+                    valueStringDamping={valueStringDamping}
+                    setValueStringDamping={setValueStringDamping}
+                    valueStringDetune={valueStringDetune}
+                    setValueStringDetune={setValueStringDetune}
+                    valueStiffness={valueStiffness}
+                    setValueStiffness={setValueStiffness}
+                    valueAperture={valueAperture}
+                    setValueAperture={setValueAperture}
+                    valueBlowPosition={valueBlowPosition}
+                    setValueBlowPosition={setValueBlowPosition}
+                    valueControlOne={valueControlOne}
+                    valueControlTwo={valueControlTwo}
+                    setValueControlOne={setValueControlOne}
+                    setValueControlTwo={setValueControlTwo}
+                />
+            </Grid>
+
+            <Grid id='getThis1' sx={{height: '100vh', border: 'solid red 5px'}}>
+                {/* this is the viz area -- move into separate file & position relative */}
+                <Box sx={{height: "calc(100% - 13.5rem)", border: "1px solid purple", position: "relative"}} id="vizWrapper">
+                    
+                    {/* // this is the top row of buttons in viz area (move into separate file) */}
+                    <VizHeaderRow 
+                        vizComponent={vizComponent}
+                        vizItem={vizItem}
+                        handleChangeDataVizControls={handleChangeDataVizControls}
+                        handleToggleViz={handleToggleViz}
+                        handleChangeInput={handleChangeInput}
+                    />
+
+                    <GlobalTickViz numeratorSignature={numeratorSignature} denominatorSignature={denominatorSignature} currentCount={currentCountRef.current} latestCount={latestCount} />
+
+                    <ParentSize id="vizParentWrapper" key={newestSetting.name}>{( { width, height } ) =>
+                        vizComponent === 0 || vizItem === 0
+                        ?
+                            isRealtime
+                            ?
+                            <RealtimeAudioInput width={width} height={height} data={rtAudio} isRecProp={isRecProp} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
+                            :
+                            <Example width={width} height={height} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
+                        :
+                            <Example2 key={newestSetting.name} width={width} height={height} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />
+                    }
+                    </ParentSize>
+                </Box>
+
+                {/* this is the keyboard */} 
+                <Keyboard 
+                    chuckHook={chuckHook}
+                    keysVisible={keysVisible}
+                    keysReady={keysReady}
+                    organizeRows={organizeRows}
+                    organizeLocalStorageRows={organizeLocalStorageRows}
+                    playChuckNote={playChuckNote}
+                    compare={compare}
+                /> 
+            </Grid>
+
+
         </>
     )
 } 
