@@ -767,9 +767,27 @@ def mingus_chords():
         print('Dominant Thirteenth')
         return json.dumps(chords.dominant_thirteenth(data['audioKey'] ))
 
+@app.route('/api/semitone/<name>', methods=['POST', 'GET'])
+def get_semitone(name):
+    print('WTF : '  + name)
+    if(name):
+        lib_notes = librosa.cqt_frequencies(name.split("_")[len(name) - 1])
+        print("WTF NAME ###### ", name)
+        print("WTF NOTES ###### ", lib_notes)
+        print("WTF NAME SPLIT ###### ", name.split("_")[len(name) - 1])
+        return {"midiNote": lib_notes}
+
+@app.route('/api/microtonal/<name>', methods=['POST', 'GET'])
+def get_microtonal(name):
+    print('MICRO MICRO : '  + name)
+    if(name):
+        lib_notes = librosa.hz_to_note(float(name), cents=True)
+        return {"microNote": lib_notes}
+
+
 @app.route('/api/note/<name>', methods=['POST', 'GET'])
 def note_name(name):
-    # print('WTF : '  + name)
+    print('WTF : '  + name)
     if(name):
         lib_note = librosa.note_to_midi(name)
         lib_hz = librosa.note_to_hz(name)

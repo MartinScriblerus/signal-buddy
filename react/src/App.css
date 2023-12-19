@@ -62,7 +62,7 @@ body{
 }
 
 #fileManagerWrapper {
-  width: calc(100vw - 26rem);
+  /* width: calc(100vw - 26rem); */
   height: 12vh;
 }
 
@@ -71,16 +71,13 @@ body{
   position: absolute;
   height: 10vh;
   right: 0rem;
-  /* width: 90vw; */
   flex-direction: row;
   justify-content: center;
-  /* background: var(--black-60); */
-  top: 45vh;
+  top: 37vh;
   z-index: 20;
   max-height: 50vh;
   overflow: scroll;
   width: 100%;
-  /* padding: 1rem; */
 }
 
 #vizWrapper {
@@ -90,6 +87,8 @@ body{
   height: calc(100% - 13.5rem); 
   border: 1px solid yellow; 
   position: relative;
+  display: flex;
+  flex-direction: column-reverse;
 }
 
 #sampleToolsWrapper {
@@ -124,10 +123,26 @@ body{
   overflow: scroll;
   position: relative;
   max-height: 13.5rem;
-  width: 26rem;
+  display: inline-flex;
+  /* width: 26rem; */
   margin-top: 0rem;
   /* bottom: -14px;
   right: -22px; */
+}
+
+#keyboardWrapper::after {
+  /* Renders the styles */
+  content: "";
+  /* Fills the entire space */
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  /* Creates the gradient */
+  background-image: linear-gradient(#1a1a1a, #1560bd);
+  /* Stacks the gradient behind the image */
+  z-index: -1;
 }
 
 #demo-controlled-radio-buttons-group {
@@ -147,7 +162,7 @@ body{
   border: solid 1px blue;
   text-align: center;
   right: 20vw;
-  top: 60vh;
+  top: 51vh;
   flex-direction: row;
   /* padding-top: 24px;
   padding-left: 24px; */
@@ -217,33 +232,6 @@ body{
   #inputFileWrapper {
     flex-direction: column;
   }
-  /* #fileManagerWrapper {
-    width: calc(100vw - 52rem);
-  }
-  #vizWrapper {
-    width: 52rem;
-  }
-  #vizParentWrapper {
-    width: 52rem;
-  }
-  #sequencerWrapperOuter {
-    width: calc(100vw - 54rem);
-  }
-  #instrumentBuilderWrapper {
-    width: calc(100vw - 54rem);
-    overflow: scroll;
-  }
-  #synthControlsWrapper {
-    width: calc(100vw - 54rem);
-    overflow: scroll;
-  }
-  #sampleToolsWrapper {
-    width: calc(100vw - 54rem);
-  }
-  #sequenceToolsWrapper {
-    width: calc(100vw - 54rem);
-    /* flex-direction: column !important; */
-  /* } */
 }
 
 #keyboard li:first-child {
@@ -301,6 +289,18 @@ canvas {
   cursor: pointer;
 }
 
+.white,
+.equal_black_1 {
+  position: relative;
+  float: left;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  /* padding: .5rem 0; */
+  user-select: none;
+  cursor: pointer;
+}
+
 .white {
   height: 12.5rem;
   width: 3.5rem;
@@ -312,7 +312,7 @@ canvas {
     0 0 3px var(--black-20);
   /* background: linear-gradient(to bottom, grey 0%, black 100%); */
   background: linear-gradient(to bottom, rgba(0,0,0,.7), black 100%);
-  color: white;
+  color: var(--white-80) !important;
   margin-left: -1rem;
   font-family: monospace;
 }
@@ -369,6 +369,37 @@ canvas {
   z-index: 2;
   border: 1px solid black;
   border-radius: 0 0 3px 3px;
+  /* box-shadow: -1px -1px 2px var(--white-20) inset,
+    0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
+  background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%); */
+  background: linear-gradient(45deg, rgba(20,80,160,1) 0%, hsl(0, 0%, 23%) 2%);
+  color: white;
+  font-family: monospace;
+}
+
+.equal_black_1 {
+  height: 8rem;
+  width: 1rem;
+  margin: 0 0 0 -1.5rem;
+  z-index: 2;
+  border: 1px solid blue;
+  border-radius: 0 0 3px 3px;
+  /* box-shadow: -1px -1px 2px var(--white-20) inset,
+    0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
+  background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%); */
+  background: linear-gradient(45deg, rgba(20,80,160,1) 0%, hsl(0, 0%, 23%) 2%);
+  color: white;
+  font-family: monospace;
+}
+
+.equal_black_2 {
+  height: 8rem;
+  width: 1rem;
+  margin: 0 0 0 0.5rem;
+  z-index: 2;
+  border: 1px solid green;
+  border-radius: 0 0 3px 3px;
+  
   /* box-shadow: -1px -1px 2px var(--white-20) inset,
     0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
   background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%); */

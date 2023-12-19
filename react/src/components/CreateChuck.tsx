@@ -11,7 +11,7 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Example from './XYChartWrapper';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import { useDeferredPromise } from './DefereredPromiseHook';
-import { Button, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, InputLabel, Typography, Popover } from '@mui/material';
+import { Button, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, InputLabel, Typography, Popover, Divider } from '@mui/material';
 import rawTree from '../helpers/rawTreeNode';
 import Example2 from './TreeViz';
 import CLARINET, { CHORUS, STFKRP, SITAR, MOOG, MOOG2, RHODEY, FRNCHRN, MANDOLIN, SAXOFONY, SAMPLER } from './stkHelpers'
@@ -30,6 +30,13 @@ import VizHeaderRow from './VizHeaderRow';
 import SequencerTools from './SequencerTools';
 import MingusPopup from './MingusPopup';
 import EffectsControls from './EffectsControls';
+import { useResizable } from 'react-resizable-layout';
+import microtoneDescsData from '../microtone_descriptions.json'; 
+import {Tune} from '../tune';
+import CustomAriaLive from './MicrotonesSearch';
+// import HexbinKeyboard from './HexbinKeyboard';
+import { data } from "./data";
+import { Hexbin } from "./Hexbin";
 
 declare global {
     interface HTMLLIElement {
@@ -101,7 +108,7 @@ interface AudioContext {
 }
 
 export default function CreateChuck(props: any) {
-    const {game, datas, audioReady, uploadedFiles, writableHook, handleChangeInput, rtAudio, isRecProp, recordedFileLoaded, recordedFileToLoad} = props;
+    const {game, datas, audioReady, uploadedFiles, writableHook, handleChangeInput, rtAudio, isRecProp, recordedFileLoaded, recordedFileToLoad, handleSetInputWrapperWid} = props;
     const theChuck = useRef<any>(undefined);
     const modsTemp: any = useRef([]);
     modsTemp.current = [];
@@ -116,6 +123,7 @@ export default function CreateChuck(props: any) {
     const [latestCount, setLatestCount] = useState(0);
     const [mingusKeyboardData, setMingusKeyboardData] = useState<any>([]);
     const [mingusData, setMingusData] = useState<Array<any>>([]);
+    const [microtonalScale, setMicrotonalScale] = useState('');
     const [librosaData, setLibrosaData] = useState<LibrosaData>({
         beats: [],
         tempo: 60,
@@ -128,6 +136,7 @@ export default function CreateChuck(props: any) {
         },
     });
     const [keysExist, setKeysExist] = useState(false);
+    const [vizWid, setVizWid] = useState((`calc(100vw - 200px)`))
     // const [mingusChordsData, setMingusChordsData] = useState<any>([]);
     const [keysVisible, setKeysVisible] = useState(false);
     const [instrumentsVisible, setInstrumentsVisible] = useState(false);
@@ -192,6 +201,8 @@ export default function CreateChuck(props: any) {
     const [nextTreeItem, setNextTreeItem] = useState<any>('step');
     const [ticksDatas, setTicksDatas] = useState<any>([]);
 
+    const [isGeneralKeyboard, setIsGeneralKeyboard] = useState(true); 
+
     // const [createdFilesList, setCreatedFilesList] = useState([]);
     const currentCountRef = useRef<number>(0);
     const latestCountRef = useRef<number>(0);
@@ -210,8 +221,30 @@ export default function CreateChuck(props: any) {
     // const TreeContext = createContext<TreeContext>({newestSetting: newestSetting, setNewestSetting: () => {}});
     // const treeContext = useContext(TreeContext);
     const [keyBoard, setKeyBoard] = useState<any>();
+    const [is17EqualTemperament, setIs17EqualTemperament] = useState<boolean>(true); 
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
+    const [winWid, setWinWid] = useState(null);
+    const [winHeight, setWinHeight] = useState(null);
+    const [tune, setTune] = useState(null);
+
     const loopReady = useRef(false);
+    const containerRef = useRef<any>(null);
+
+    const selectRef: any = React.useCallback((selectedMicrotone: string, i: any) => {
+        if (selectedMicrotone) {
+            console.log('&&&selected microtone: ', selectedMicrotone);
+        }
+        if (i) {
+            console.log('wtf is i???? ', i);
+        }
+        
+    }, []);
+
+    useEffect(() => {
+        setTune(new Tune());
+    }, [])
+
+
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       setAnchorEl(event.currentTarget);
     };
@@ -570,6 +603,7 @@ export default function CreateChuck(props: any) {
                 virtualFilename: 'MinipopsHH.ck'
             },
         ];
+        console.log("WTF RANCHUCKINIT: ", ranChuckInit.current);
         if (ranChuckInit.current === true || chuckHook) {
             return;
         }
@@ -577,12 +611,14 @@ export default function CreateChuck(props: any) {
         
         (async () => {
             const gameExists = await chuckHook;  
+            console.log('what is CHUCK HOOK? ', gameExists);
             if (gameExists) {
                 return;
             }
             const theChuckTemp: any = await Chuck.init(serverFilesToPreload, undefined, 2, undefined);
             console.log("CHUCK: ", Chuck);
             handleKeysVisible();
+            console.log('%cIN BETWEEN KEYS AND INSTRUMENTS', 'color: aqua;');
             handleInstrumentsVisible();
             
             theChuckTemp.chuckPrint = (message) => { setLastChuckMessage(message) }
@@ -627,18 +663,34 @@ export default function CreateChuck(props: any) {
     
     const logOnly = [];
     const awaitNote = async (note: string) => {
+        console.log("***** ", is17EqualTemperament);
+        console.log('KR ', keysReady);
         if(keysReady) {
             return;
         }
         // const stateData = store.getState();
         // console.log("HAVE WE GOT STATE? ", stateData);
         return new Promise((resolve) => {
-            const getVals = axios.get(`${FLASK_API_URL}/note/${note}`, requestOptions);
-            resolve(getVals);
+            let getVals;
+            console.log("***** ", is17EqualTemperament);
+            if (is17EqualTemperament) {
+                // const tune = new Tune();
+                // console.log("YO MICROTONES! ", microtoneDescsData);
+                // tune.loadScale(microtoneqqqw`vgv].name)
+                // console.log('HEYA TUNE! ', tune);
+                // getVals = microtoneDescsData;
+                getVals = [];
+                resolve(getVals);
+            } else {
+                getVals = axios.get(`${FLASK_API_URL}/note/${note}`, requestOptions);
+                resolve(getVals);
+            }
         }).then(async (res: any) => {
+
             logOnly.push({'note': note, 'data': res.data});
-            if(note === `B8`) {
+            if(note === `B8` || note === `17equal_B-9`) {
                 console.log('GET THIS IN A FILE: ', JSON.stringify(logOnly));
+                // setKeysReady(true);
             }
             return await res.data;
         });
@@ -650,6 +702,7 @@ export default function CreateChuck(props: any) {
         }
         // noteReady is single note data returned from server
         const noteReady = await awaitNote(note);
+        console.log("%cTHE PROBLEM IS MINGUS", "color: red;");
         getMingusData({...noteReady, note, rowNum});
         if (noteReady) {
             setKeysReady(true);
@@ -669,6 +722,10 @@ export default function CreateChuck(props: any) {
 
     const organizeLocalStorageRows = async(theNote: any) => {
         // getMingusData({...theNote});
+                        // const tune = new Tune();
+                // console.log("YO MICROTONES! ", microtoneDescsData);
+       
+
         const parsedNote = theNote.note.charAt(1) === '♯' ? theNote.note.slice(0, 2) + "-" + theNote.note.slice(2) : theNote.note.slice(0, 1) + "-" + theNote.note.slice(1);
         const el: any = await document.getElementById(parsedNote);
         if (el && !el['data-midiNote'] && !el['data-midiHz']) {
@@ -771,14 +828,14 @@ export default function CreateChuck(props: any) {
         const keys = Array.from(document.getElementsByClassName("keyRow"));
         keys.forEach((k) => {
             if (k.classList.contains('litAscending')) {
-                setTimeout(()=>{
+                // setTimeout(()=>{
                     k.classList.remove(`litAscending`);
-                }, 2000);
+                // }, 2000);
             }
             if (k.classList.contains('litDescending')) {
-                setTimeout(()=>{
+                // setTimeout(()=>{
                     k.classList.remove(`litDescending`);
-                }, 2000);
+                // }, 2000);
             }
             
         });
@@ -1071,15 +1128,17 @@ export default function CreateChuck(props: any) {
         }
     }
         
-useEffect(() => {
-    console.log('YO VAL REED!!!! ', valueReed);
-},[valueReed])
+    useEffect(() => {
+        console.log('YO VAL REED!!!! ', valueReed);
+    },[valueReed])
 
-    const playChuckNote = (note: any) => {      
-        if (!note.target || !note.target ) { 
+    const playChuckNote = (note: any) => {  
+        console.log('NOTE! ', note);    
+        if (!note || !note.target ) { 
             return null;
         }
         console.log("NOTE IN PLAY CHUCK: ", note); 
+   
         try {
             const noteReady = note.target.attributes[2].value;
             console.log('what are options? ', note.target.attributes);
@@ -1168,11 +1227,68 @@ useEffect(() => {
         }
     }
 
+    const { position, separatorProps, setPosition, isDragging, endPosition } = useResizable({
+        axis: 'x',
+    })
+
+    useEffect(() => {
+        console.log("IS DRAGGING? ", isDragging);
+    }, [isDragging]);
+
+    useEffect(() => {
+        console.log("end position: ", endPosition);
+        setPosition(endPosition)
+    }, [endPosition]);
+
+    useEffect(() => {
+        if (!position) setPosition(200);
+        handleSetInputWrapperWid(position);
+        console.log('what is pos? ', position);
+        setVizWid(`calc(100vw - ${position}px)`);
+    }, [position]);
+
+    useEffect(() => {
+        setWinWid(window.innerWidth);
+        setWinHeight(window.innerHeight);
+        console.log('IINNER WID WINDOW', window.innerWidth);
+    }, [window, window.innerWidth, window.innerHeight]);
+
+    const currentMicroTonalScale = (scale: any) => {
+        let theScale;
+        if (typeof scale === 'string') {
+            theScale = '12-19';
+        } else {
+            console.log('and what is scale??? ', scale);
+            theScale = scale.value;
+        }
+        console.log('ok scale is coming through: ', scale.value);
+        setMicrotonalScale(scale.value);
+    };
+
     return (
         <>
             {/* // this is the popover with chord & scale info (move into separate file) */}
-
-            <Grid id='getThis2' sx={{position: 'relative', boxSizing: "border-box", width: "100%", height: '100vh', border: 'solid brown 5px'}}>
+            <Box sx={{
+                position: 'absolute',
+                zIndex: '1',
+                height: '2rem',
+                // width: '100%',
+                top: '0rem',
+                right: '0rem'
+            }}>
+                <CustomAriaLive selectRef={selectRef} tune={tune} currentMicroTonalScale={currentMicroTonalScale} />
+            </Box>
+            <Grid  
+                ref={containerRef} 
+                // id="mainSeparator"
+                {...separatorProps} 
+                id='getThis2' 
+                className="left-block" 
+                sx={{position: 'relative', 
+                boxSizing: "border-box", 
+                width: position || '100vw', 
+                height: '100vh', 
+                border: 'solid brown 5px'}}>
                 
                 {/* this is the 2nd row down in side control bar */}
                 {
@@ -1199,7 +1315,7 @@ useEffect(() => {
                         />
                 }
 
-<MingusPopup 
+                <MingusPopup 
                     submitMingus={submitMingus}
                     audioKey={audioKey}
                     octave={octave}
@@ -1208,7 +1324,6 @@ useEffect(() => {
                     handleChangeScale={handleChangeScale}
                     handleChangeChord={handleChangeChord}
                 />
-
                 {/* this is the 3rd row down in side control bar */}          
                 {
                     chuckHook && Object.values(chuckHook).length && instrumentsVisible
@@ -1303,48 +1418,64 @@ useEffect(() => {
                 />
             </Grid>
 
-            <Grid id='getThis1' sx={{height: '100vh', border: 'solid red 5px'}}>
+            <Grid className="right-block" id='getThis1' sx={{overflow: 'scroll', height: '100vh', border: 'solid red 5px', width: vizWid || '100vw' }}>
                 {/* this is the viz area -- move into separate file & position relative */}
-                <Box sx={{height: "calc(100% - 13.5rem)", border: "1px solid purple", position: "relative"}} id="vizWrapper">
-                    
-                    {/* // this is the top row of buttons in viz area (move into separate file) */}
-                    <VizHeaderRow 
-                        vizComponent={vizComponent}
-                        vizItem={vizItem}
-                        handleChangeDataVizControls={handleChangeDataVizControls}
-                        handleToggleViz={handleToggleViz}
-                        handleChangeInput={handleChangeInput}
-                    />
 
-                    <GlobalTickViz numeratorSignature={numeratorSignature} denominatorSignature={denominatorSignature} currentCount={currentCountRef.current} latestCount={latestCount} />
-
-                    <ParentSize id="vizParentWrapper" key={newestSetting.name}>{( { width, height } ) =>
-                        vizComponent === 0 || vizItem === 0
-                        ?
-                            isRealtime
-                            ?
-                            <RealtimeAudioInput width={width} height={height} data={rtAudio} isRecProp={isRecProp} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
-                            :
-                            <Example width={width} height={height} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
-                        :
-                            <Example2 key={newestSetting.name} width={width} height={height} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />
-                    }
-                    </ParentSize>
-                </Box>
 
                 {/* this is the keyboard */} 
-                <Keyboard 
-                    chuckHook={chuckHook}
-                    keysVisible={keysVisible}
-                    keysReady={keysReady}
-                    organizeRows={organizeRows}
-                    organizeLocalStorageRows={organizeLocalStorageRows}
-                    playChuckNote={playChuckNote}
-                    compare={compare}
-                /> 
+                {
+                    isGeneralKeyboard
+                    ?
+                    <span style={{ color: 'white', marginLeft: '0', width: '100%', position: 'relative', minHeight: isGeneralKeyboard ? '100vh' : '' }}>
+                        {/* <HexbinKeyboard /> */}
+                        <Hexbin width={winWid} height={winHeight} tune={tune} microtonalScale={microtonalScale} audioKey={audioKey} />
+                    </span>
+                    :
+
+                    <>
+                        <Box sx={{height: "calc(100% - 13.5rem)", border: "1px solid purple", position: "relative"}} id="vizWrapper">
+                            
+                            {/* // this is the top row of buttons in viz area (move into separate file) */}
+                            <VizHeaderRow 
+                                vizComponent={vizComponent}
+                                vizItem={vizItem}
+                                handleChangeDataVizControls={handleChangeDataVizControls}
+                                handleToggleViz={handleToggleViz}
+                                handleChangeInput={handleChangeInput}
+                            />
+
+                            <GlobalTickViz numeratorSignature={numeratorSignature} denominatorSignature={denominatorSignature} currentCount={currentCountRef.current} latestCount={latestCount} />
+
+                            <ParentSize id="vizParentWrapper" key={newestSetting.name}>{( { width, height } ) =>
+                                vizComponent === 0 || vizItem === 0
+                                ?
+                                    isRealtime
+                                    ?
+                                    <RealtimeAudioInput width={width} height={height} data={rtAudio} isRecProp={isRecProp} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
+                                    :
+                                    <Example width={width} height={height} librosaData={librosaData} setTicksDatas={handleUpdateTicks} ticksDatas={ticksDatas} />
+                                :
+                                    <Example2 key={newestSetting.name} width={width} height={height} rawTree={newestSetting} handleUpdateRawTree={handleUpdateRawTree} currPosData={treeAtSelected} getLatestTreeSettings={getLatestTreeSettings} handleAddStep={handleAddStep} />
+                            }
+                            </ParentSize>
+                        </Box>
+                        
+                        <Keyboard 
+                            chuckHook={chuckHook}
+                            keysVisible={keysVisible}
+                            keysReady={keysReady}
+                            organizeRows={organizeRows}
+                            organizeLocalStorageRows={organizeLocalStorageRows}
+                            playChuckNote={playChuckNote}
+                            compare={compare}
+                            keyWid={vizWid}
+                            is17EqualTemperament={is17EqualTemperament}
+                        />
+
+                    </> 
+                }
+
             </Grid>
-
-
         </>
     )
 } 

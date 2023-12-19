@@ -14,7 +14,7 @@ const GlobalTickViz = ({numeratorSignature, denominatorSignature, currentCount, 
         const defaultColor = (f: number) => ((f % (numeratorSignature * 2) === 0) && f !== currentCount || f === 0) ? 'yellow' : 'blue';
         if (circles.current.length < numberOfCircles) {
             for (let i = 0; i < numberOfCircles; i++) {
-                const ids = circles.current.length > 0 && (circles.current.map((c:any) => c));
+                // const ids = circles.current.length > 0 && (circles.current.map((c:any) => c));
                 circles.current.push(<circle key={`tick_circle_${i}`} id={`tick_circle_${i}`} cx={((i) % (numberOfCircles / 4)) + 'rem'} cy={'1vh'} r={'1vh'} fill={defaultColor(i)}></circle>);
             } 
         } 
