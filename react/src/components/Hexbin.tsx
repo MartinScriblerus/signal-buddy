@@ -1,11 +1,11 @@
 import * as d3 from "d3";
-import React, {useEffect, useRef} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import { AxisLeft } from "./AxisLeft";
 import { AxisBottom } from "./AxisBottom";
 import { hexbin } from "d3-hexbin";
 import axios from 'axios';
 import { FLASK_API_URL, MIDDLE_FONT_SIZE } from '../helpers/constants';
-// import {Tune} from '../microtones/tune/tune';
+import {Tune} from '../tune';
 
 const MARGIN = { top: 0, right: 0, bottom: 0, left: 0 };
 const BIN_SIZE = 1;
@@ -23,6 +23,7 @@ type HexbinProps = {
 export const Hexbin = ({ width, height, tune, microtonalScale, audioKey }: HexbinProps) => {
   const boundsWidth = width - MARGIN.right - MARGIN.left;
   const boundsHeight = height - MARGIN.top - MARGIN.bottom;
+  const [hexbinData, setHexbinData] = useState([]);
   const octaveCounter = useRef(0);
   const radVal = 100;
 
@@ -43,9 +44,30 @@ export const Hexbin = ({ width, height, tune, microtonalScale, audioKey }: Hexbi
   let el;
   useEffect(() => {
     if (!microtonalScale) return;
+    let numVal;
+    const num = microtonalScale.split('-')[microtonalScale.split('-').length - 1];
+    // if (typeof num === 'number') {
+    //   numVal = num;
+    // } else { 
+    //   numVal = 17;
+    // }
     (async()=>{
+      const data = [];
       tune.loadScale(microtonalScale);
-      for (let i = 0; i < (13 * 13); i++){
+      for(let j = 0; j < 12; j++) {
+        for(let i = 0; i < ((9/2) * (tune.scale.length + Math.ceil(tune.scale.length/12))); i++) {
+    
+          data.push({
+            x: j % 2 === 0 ? boundsWidth/14 * i : boundsWidth/14 * i +  boundsWidth/28,
+            y: (boundsWidth/16) * j,
+            id: `${i}_${j}`
+          });
+        }
+      }
+      setHexbinData(data.map((item) => [item.x, item.y]))
+
+      // tune.loadScale(microtonalScale);
+      for (let i = 0; i < 12 * ((9/2) * (tune.scale.length + Math.ceil(tune.scale.length/12))); i++){
         let note = tune.note(i);
         console.log("NOTE FREQ: ", note);
         const getVals = await axios.get(`${FLASK_API_URL}/microtonal/${note}`, requestOptions);
@@ -61,14 +83,15 @@ export const Hexbin = ({ width, height, tune, microtonalScale, audioKey }: Hexbi
         } catch (e) {
           console.log('could not find ' + (i));
         }
-        console.log('YO YO YO ', el.parentNode.childNodes[1]);
+        //console.log('YO YO YO ', el.parentNode.childNodes[1]);
         // el.parentNode.childNodes[1].;
-        if (getVals.data.microNote.split('+')[0] && getVals.data.microNote.split(splitter)[1]) {
+        if (el && el.parentNode && el.parentNode.childNodes.length > 1 && getVals.data.microNote.split(splitter)[0] && getVals.data.microNote.split(splitter)[1]) {
           el.parentNode.childNodes[1].innerText =
           el.parentNode.childNodes[1].innerHTML =
             `
     
-              ${getVals.data.microNote.split(splitter)[0]}
+              ${getVals.data.microNote.split(splitter)[0]} / 
+              ${note.toFixed(0)}
     
     
             `;
@@ -111,17 +134,17 @@ export const Hexbin = ({ width, height, tune, microtonalScale, audioKey }: Hexbi
 
 
 
-  const data = [];
-  for(let j = 0; j < 13; j++) {
-    for(let i = 0; i < 13; i++) {
+  // const data = [];
+  // for(let j = 0; j < 53; j++) {
+  //   for(let i = 0; i < 53; i++) {
 
-      data.push({
-        x: j % 2 === 0 ? boundsWidth/14 * i : boundsWidth/14 * i +  boundsWidth/28,
-        y: (boundsWidth/16) * j,
-        id: `${i}_${j}`
-      });
-    }
-  }
+  //     data.push({
+  //       x: j % 2 === 0 ? boundsWidth/14 * i : boundsWidth/14 * i +  boundsWidth/28,
+  //       y: (boundsWidth/16) * j,
+  //       id: `${i}_${j}`
+  //     });
+  //   }
+  // }
 
   // Scales
   const yScale = d3.scaleLinear().domain([0, boundsHeight]).range([boundsHeight, 0]);
@@ -131,7 +154,7 @@ export const Hexbin = ({ width, height, tune, microtonalScale, audioKey }: Hexbi
     .radius(boundsWidth/24)
     .extent([[0, 0],  [boundsWidth, boundsHeight]])
 
-  const hexbinData = data.map((item) => [item.x, item.y])
+  // const hexbinData = data.map((item) => [item.x, item.y])
 
   //   const maxItemPerBin = Math.max(...hexbinData.map((hex) => hex.length));
   const maxItemPerBin = 1;
@@ -207,7 +230,7 @@ export const Hexbin = ({ width, height, tune, microtonalScale, audioKey }: Hexbi
 
   return (
     <div style={{boxSizing:"border-box", position:'relative'}}>
-      <svg viewBox={`-0 -10 ${boundsWidth} ${boundsHeight + 1}`} style={{width:boundsWidth, height:boundsHeight, position: 'absolute', bottom:'0', left: '0', top: '0', right: '0'}}>
+      <svg viewBox={`-0 -10 ${boundsWidth * 4} ${boundsHeight + 1}`} style={{width:boundsWidth * 4, height:boundsHeight, position: 'absolute', bottom:'0', left: '0', top: '0', right: '0'}}>
           {allShapes}
       </svg>
     </div>

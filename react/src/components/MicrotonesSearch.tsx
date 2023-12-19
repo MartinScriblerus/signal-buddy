@@ -107,7 +107,7 @@ export default function CustomAriaLive({selectRef, tune, currentMicroTonalScale}
 
     if (val && ariaFocusMessage) {
       console.log('hey val value ', val.value);
-      currentMicrotonalScale(val.value)
+      currentMicroTonalScale(val.value)
       // console.log('val ', val);
       // console.log('ARI FDO MES ', ariaFocusMessage);
       // tune.loadScale(val.value);
