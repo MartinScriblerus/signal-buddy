@@ -13,20 +13,42 @@ const theme = createTheme({
   typography: {
     fontFamily: 'monospace',
   },
-  palette: {
-    background: {
-      // paper: 'rgb(56, 64, 93)',
-      paper: 'rgba(0,0,0,0.91)',
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          // backgroundColor: '#FAACA8',
+          backgroundImage: `linear-gradient(19deg, #FAACA8 0%, #DDD6F3 100%)`,
+        },
+      },
     },
-    text: {
-      primary: '#f6f6f6',
-      secondary: 'rgb(56, 64, 93)',
-    },
-    primary: {
-      main: '#f6f6f6',
-    }
   },
-});
+  palette: {
+    primary: {
+      main: 'rgba(30,34,26,0.96)',
+      // light: will be calculated from palette.primary.main,
+      // dark: will be calculated from palette.primary.main,
+      contrastText: '#f5f5f5', //
+      // contrastText: will be calculated to contrast with palette.primary.main
+    },
+    secondary: {
+      main: 'rgba(30,34,26,0.96)',
+      light: ' rgba(17,110,246,0.96)',
+      // dark: will be calculated from palette.secondary.main,
+      contrastText: '#000000',
+    },
+    background: {
+      // paper: 'rgb(0, 49, 28, 0.19)',
+      paper: 'rgba(51,108,214, 0.88)',
+    },
+  //  info: '#f5f5f5',
+  //     secondary: 'rgba(0, 224, 204, 0.88)',
+  //   },
+  //   primary: {
+  //     main: 'rgba(17,110,224,0.88)',
+  //   }
+    }
+  });
 declare module "*.module.css";
 declare module "*.module.scss";
 
@@ -52,7 +74,10 @@ function App() {
   const [rtAudio, setRtAudio] = useState<any>(null);
   const [recordedFileToLoad, setRecordedFileToLoad] = useState(false);
   const [inputWrapperWid, setInputWrapperWid] = useState<number>(200);
+  const [lastFileUpload, setLastFileUpload] = useState('');
+
   const deviceLabels = useRef<any>([]);
+  const inputFileWrapperRef = useRef<any>(null);
   const audioInputDeviceId = useRef<any>(null);
 
   const [deviceLabelsOpen, setDeviceLabelsOpen] = useState(false);
@@ -64,31 +89,51 @@ function App() {
   const suggestedNameRef = useRef<string>("");
 
   const nav: any = navigator;
-  const [data, setData] = useState<any>([]);
 
   const onSubmit = async(files: any) => {
     console.log("WHAT ARE FILES? ", files);
     console.log('data out!!! ', files.file[0]);
+    
     const file = files.file[0];
-    console.log('FILE: ', file)
+    console.log('FILE: ', file);
+
     uploadedFilesRef.current.push(file);
     const fileName = files.file[0].name; 
     let data = new FormData();
     const filename: any = await fileName.replaceAll(' ', '_').split('.')[0];
     data.append(filename, file);
 
+    try {
+      axios.post('http://localhost:8080/upload_files', data).then((res: any) => {
+        console.log('NODE RETURN: ', res);
+        setLastFileUpload(res.data.fileName)
+      });
+    } catch (e: any) {
+      console.log("c%ERROR IN NODE: ", e, "color:red;")
+    }
     axios.post(`${process.env.REACT_APP_FLASK_API_URL}/onsets/${filename}`, data, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    }).then(({data}) => setDatas(data));
+    }).then(({data}) => { setDatas(data); return; });
   }
+
+  useEffect(() => {
+    (async() => {
+      console.log('madde it here');
+      if (!inputFileWrapperRef.current) return;
+      await inputFileWrapperRef.current.click();
+    })();
+  }, [datas]);
 
   function handleChangeFileControls() {
     setFileControlsVisible(!fileControlsVisible);
   }
 
-  function handleUpdateInputDevice(label: string, deviceId: string, selected: boolean) {
+
+  
+  const handleUpdateInputDevice = (label: string, deviceId: string, selected: boolean) => {
+    console.log(`In handleUpdateInputDevice: ${label} // ${deviceId} // ${selected}`);
     if (deviceId === audioInputDeviceId.current) {
       const oldSel = document.getElementsByClassName("selected");
       if (oldSel.length > 0) {
@@ -96,9 +141,9 @@ function App() {
       }
       document.getElementById(`devicelistbtn_${deviceId}`)?.classList.add("selected");
     } else {
-      //if ( document.getElementById(`devicelistbtn_${deviceId}`)?.classList.contains("selected")) {
+
         document.getElementById(`devicelistbtn_${deviceId}`)?.classList.remove("selected");
-      //}
+
     }
   };
 
@@ -109,12 +154,14 @@ function App() {
     } else {
       setAudioReady(false);
     }
-  }
+  };
 
-  const deviceList = deviceLabels.current.filter((a: any) => a.label.length > 0).map(
+  const deviceList = deviceLabels.current && (deviceLabels.current.filter((a: any) => a.label.length > 0).map(
     (i:any, ind: number) => 
-        <ListItemButton  style={{zIndex: 3, border: i.selected ? "solid 2px magenta" : "none"}} onClick={() => {audioInputDeviceId.current = i.deviceId; handleUpdateInputDevice(i.label, i.deviceId, i.selected)}} id={`devicelistbtn_${i.deviceId}`} key={`devicelistbtn_${i.label}`}><ListItemText key={`devicelisttxt_${i.label}`} primary={i.label} /></ListItemButton>
-  )
+        <ListItemButton key={`devicelistbtn_${i.label}`} style={{zIndex: 3, border: i.selected ? "solid 2px magenta" : "none"}} onClick={() => {audioInputDeviceId.current = i.deviceId; handleUpdateInputDevice(i.label, i.deviceId, i.selected)}} id={`devicelistbtn_${i.deviceId}`}>
+          <ListItemText key={`devicelisttxt_${i.label}`} primary={i.label} />
+          </ListItemButton>
+  ))
 
   const handleChangeInput = () => {
     setAudioInputWrapperVisible(!audioInputWrapperVisible);
@@ -130,7 +177,7 @@ function App() {
     a.style = "z-index: 1000; position: absolute; top: 0px; left: 0px; background: green";
     a.href = url;
     document.body.appendChild(a);
-    console.log("CHECK THIS FILE! ", file);
+
     uploadedFilesRef.current.push(file);
     setRecordedFileToLoad(true);
     a.download = file;
@@ -199,7 +246,23 @@ function App() {
       }
       
 
+      useEffect(() => {
+ 
+        axios.get('http://localhost:8080/').then((res: any) => {
+          if (!res.data.data) return;
 
+          res.data.data.map((f:any) => {
+            // setLastFileUpload(f.name);
+            if (f.name && lastFileUpload !== f.name) {
+              if(uploadedFilesRef.current.length === 0 || uploadedFilesRef.current.map((n:any) => n.name).indexOf(f.name) === -1){
+                uploadedFilesRef.current.push(f);
+              }
+              console.log('setting last file upload');
+            }
+          })
+          // setLastFileUpload(res.data.fileName)
+        });
+      },[audioReady]);
 
 
 
@@ -313,9 +376,13 @@ function App() {
     }
   } 
 
+  const handleAutoFile = () => {
+    inputFileWrapperRef.current.click();
+  }
+
   return (
     <ThemeProvider theme={theme}>
-      <Grid sx={{fontFamily: 'TitilliumWeb-Regular', backgroundColor: 'background.paper', height: '100vh', maxHeight: '100vh', maxWidth: "100vw", overflow: 'hidden'}} className="App">
+      <Grid id="mainGrid" sx={{fontFamily: 'TitilliumWeb-Regular', height: '100vh', maxHeight: '100vh', maxWidth: "100vw", overflow: 'hidden'}} className="App">
         <Box sx={{width: '100%', height: '100%'}}>
           {!audioReady  
           ? // this is the start screen
@@ -326,20 +393,30 @@ function App() {
             <Box sx={{top: "0", bottom: "0", left: "0", right: "0", display: "flex", flexDirection: "row"}}>
               
               {/* this is the very top of left nav (make this one special in its style / positioning) */}
-              <Box id="fileManagerWrapper" sx={{position: "absolute", left: 0, top: 0, width: `${inputWrapperWid}px`, background: 'background.paper', zIndex: "10000", boxShadow: "4px 4px 1px 1px rgba(255, 255, 255, .2)", border: "1px solid yellow"}}>
+              {/* <Box id="fileManagerWrapper" sx={{position: "absolute", left: 0, top: 0, width: `${inputWrapperWid}px`, background: 'background.paper', zIndex: "10000", boxShadow: "4px 4px 1px 1px rgba(255, 255, 255, .2)", border: "1px solid yellow"}}> */}
+              <Box id="fileManagerWrapper" sx={{position: "absolute", left: 0, top: 0, width: `6rem`, background: 'background.paper', zIndex: "10000", boxShadow: "4px 4px 1px 1px rgba(255, 255, 255, .2)", border: "1px solid yellow"}}>
                 {audioReady && fileControlsVisible && (
-                  <Box id="inputFileWrapper" sx={{color: 'text.primary', borderColor: "solid 10px green"}}>
+                  <Box id="inputFileWrapperOuter" sx={{color: 'primary.contrastText', borderColor: "primary.main"}}>
                     <form style={{display: "flex", width: "100%", flexDirection: "column"}} onSubmit={handleSubmit(onSubmit)}>
                       <Input
                         id="inputBtnForFile"
-                        sx={{width: "100%"}}
+                        sx={{color: 'secondary.contrastText', width: "100%"}}
                         className="midSizeButtons"
-                        onChange={(e) => {onSubmit((e.target as HTMLInputElement).files)}} 
+                        onClick={(e) => console.log('CHRIST ', e)}
+                        onChange={(e: any) => {
+                            // e.stopPropagation();
+                            // e.preventDefault();
+                            onSubmit((e.target as HTMLInputElement).files);
+                            // handleAutoFile();
+                          } 
+                        }
                         type="file" 
-                        {...register("file") } />
+                        {...register("file") 
+                      } />
                       <Input 
-                        id="inputBtnForSubmit" 
-                        sx={{width: "100%"}}
+                        id="inputFileWrapper"
+                        ref={inputFileWrapperRef}
+                        sx={{color: 'secondary.contrastText', width: "100%"}}
                         type="submit" 
                         className="midSizeButtons"
                       />
@@ -367,17 +444,13 @@ function App() {
                 recordedFileToLoad={recordedFileToLoad}
                 recordedFileLoaded={handleRecordedFileLoaded}
                 handleSetInputWrapperWid={handleSetInputWrapperWid}
+                lastFileUpload={lastFileUpload}
               />
-
-              {/* This is a free-floating popup for audio inputs (move out of this div) */}
-              {/* <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
-                {deviceList}
-              </List> */}
             </Box>
           }
-                        <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
-                {deviceList}
-              </List>
+          <List ref={deviceWrapper} id="deviceInputWrapper" sx={{position: "relative", maxHeight: "24vh", top: "calc(%100 - 38rem)", backgroundColor: 'background.paper', borderRadius: "0rem", zIndex: "300", border: "1px solid pink", overflowY: "scroll", display: audioInputWrapperVisible ? "inline-block": "none !important"}}>
+            {deviceList}
+          </List>
         </Box>
       </Grid>
     </ThemeProvider>

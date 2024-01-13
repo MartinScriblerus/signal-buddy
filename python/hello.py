@@ -129,7 +129,7 @@ def onsets(file_path):
         onset_env_harmonic = librosa.onset.onset_strength(y=y, sr=sr, aggregate=np.median)
         onset_times_harmonic = librosa.frames_to_time(librosa.onset.onset_detect(onset_envelope=onset_env_harmonic, sr=sr), sr=sr)
    
-        # print('beat tracked on percussive')
+        print('beat tracked on percussive')
         # # Compute MFCC features from the raw signal
         # # numpy array corresponding to track duration in frames 
         # mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=hop_length, n_mfcc=13)
@@ -141,23 +141,23 @@ def onsets(file_path):
         # # # This time, we'll use the mean value (default) instead of median
         # beat_mfcc_delta = librosa.util.sync(np.vstack([mfcc, mfcc_delta]), beats)
 
-        # # Compute chroma features from the harmonic signal
-        chromagram = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr)
+        # # # Compute chroma features from the harmonic signal
+        # chromagram = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr)
 
-        # # Aggregate chroma features between beat events
-        # # We'll use the median value of each feature between beat frames
-        beat_chroma = librosa.util.sync(chromagram, beats, aggregate=np.median)
-        segments = 20
-        if len(chromagram) < 20:
-            segments = len(chromagram)
-        bounds = librosa.segment.agglomerative(chromagram, segments)
-        bound_times = librosa.frames_to_time(bounds, sr=sr)
+        # # # Aggregate chroma features between beat events
+        # # # We'll use the median value of each feature between beat frames
+        # beat_chroma = librosa.util.sync(chromagram, beats, aggregate=np.median)
+        # segments = 20
+        # if len(chromagram) < 20:
+        #     segments = len(chromagram)
+        # bounds = librosa.segment.agglomerative(chromagram, segments)
+        # bound_times = librosa.frames_to_time(bounds, sr=sr)
         # # Finally, stack all beat-synchronous features together
         # beat_features = np.vstack([beat_chroma, beat_mfcc_delta])
 
         times = librosa.frames_to_time(beats, sr=sr)
 
-        print(onset_times_harmonic)
+        print("GOT TIMES: ", times)
 
         pV = detect_pitch(y, sr, times)
         # pV_harmonic = detect_pitch(y_harmonic, sr, onset_times_harmonic)
@@ -175,7 +175,7 @@ def onsets(file_path):
             #'beatFeatures: ': beat_features.tolist(), 
             'beats': beat_times.tolist(),
             'times': times.tolist(),
-            'boundTimes': bound_times.tolist(),
+            # 'boundTimes': bound_times.tolist(),
             # 'pYin': {
             #     'f0': p_yin[0], 
             #     'voiced_flag': p_yin[1], 

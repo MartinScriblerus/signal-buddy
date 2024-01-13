@@ -126,8 +126,8 @@ const MingusPopup = ({submitMingus, audioKey, octave, audioScale, audioChord, ha
                             '& .MuiList-root': {
                                 display: 'flex',
                                 flexDirection: 'column',
-                                background: 'var(--black-20)',
-                                color: 'var(--white-20)',
+                                background: 'rgba(30,34,26,0.96)',
+                                color: '#f5f5f5',
                             }
                         }}
                     >

@@ -62,10 +62,10 @@ useEffect(() => {
 
     return (
         <Box id="introClickBox">
-            <Button sx={{background: 'backgrounnd.paper', color: 'text.primary', padding: '0', margin: '0', height: '100vh'}} className="startButton" onClick={(e) => {
+            <Button sx={{background: 'primary.contrastText', color: 'primary.contrastText', padding: '0', margin: '0', height: '100vh'}} className="startButton" onClick={(e) => {
                 e.stopPropagation();
                 props.handleAudioReady(true)}}>
-                <List sx={{display: "flex", flexDirection: "row !important", height: "100vh", textAlign: "center", justifyContent: "center" }} className="introAnimList">
+                <List sx={{color: 'primary.contrastText', display: "flex", flexDirection: "row !important", height: "100vh", textAlign: "center", justifyContent: "center" }} className="introAnimList">
                     <ListItem key={`introAnimLetter_0`} ref={el => (introAnimLetter.current).push(el)} sx={{paddingTop: "15%", fontFamily: 'typography.fontFamily', display: "flex", flexDirection: "column"}} className="introListLetter invisible">S</ListItem>
                     <ListItem key={`introAnimLetter_1`} ref={el => (introAnimLetter.current).push(el)} sx={{paddingTop: "15%", fontFamily: 'typography.fontFamily', display: "flex", flexDirection: "column"}} className="introListLetter invisible">M</ListItem>
                     <ListItem key={`introAnimLetter_2`} ref={el => (introAnimLetter.current).push(el)} sx={{paddingTop: "15%", fontFamily: 'typography.fontFamily', display: "flex", flexDirection: "column"}} className="introListLetter invisible">A</ListItem>

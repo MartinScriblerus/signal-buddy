@@ -9,6 +9,8 @@ Std.atof(me.arg(0)) => float bpm;
 
 ((60.0 / bpm)) => float secLenBeat;
 
+// int totalSeconds = 0;
+// int beatCount = 0;
 int totalSeconds = 0;
 int beatCount = 0;
 
@@ -25,7 +27,7 @@ fun void loopBar(int numeratorSignature, string file[ ], dur beat, dur bar, int 
             0 => playSpecificCount[p];
             
             for(int a : pat_test[p][2]){ if (a == count) {1 => playSpecificCount[p]; } }
-            <<< playSpecificCount[p] >>>;
+            // <<< playSpecificCount[p] >>>;
             if ((count % pat_test[p][0][0] == 0 & count % pat_test[p][1][0] != 0) | playSpecificCount[p] == 1 ) {
                 <<< "COUNT IS: ", count >>>;
                 file[p] => string sample;

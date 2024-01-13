@@ -210,8 +210,8 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
         lastTick.current = tick.current;
         tick.current = Date.now();
         durationRef.current = tick.current - lastTick.current;
-        update();   
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        update();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [datums.current, d3Container, height, width, isRecProp]);
 
     return (
@@ -222,8 +222,8 @@ const RealtimeAudioInput = ({width,height, data, isRecProp, ticksDatas, setTicks
             width={width}
             height={height}
             ref={d3Container}
-            viewBox={`0 0 ${width} ${height}`}
-            style={{ backgroundColor: "pink", fill: "green", overflow: "scroll" }}
+            viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
+            style={{ backgroundColor: "transparent", maxHeight: "13.5rem", fill: "green", overflow: "scroll", position: "absolute" }}
         >
             <g style={{transform:'translate(0,0)'}} width={width} height={height + 2 * margin} ref={barRef}>     
                 {mappedFreq.current && mappedFreq.current.length > 0 && (mappedFreq.current.map((d: any, i: number) => {

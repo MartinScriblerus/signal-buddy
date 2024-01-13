@@ -131,7 +131,7 @@ const Keyboard = ({chuckHook, keysVisible, keysReady, organizeRows, organizeLoca
                 chuckHook && Object.values(chuckHook).length && keysVisible
                 ?
                     <Box 
-                      sx={{position: 'relative', width: keyWid, right: 0, bottom: 0}}
+                      sx={{position: 'relative', width: keyWid, right: 0, bottom: 0, zIndex: '100'}}
                     >
                         <ul id="keyboard" >
                             {

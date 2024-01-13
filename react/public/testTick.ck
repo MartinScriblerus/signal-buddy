@@ -8,6 +8,14 @@ Std.atof(me.arg(1)) => float bpm;
 0 => int beatCount;
 int startTime;
 
+
+            // SndBuf testbuf => dac;
+            // "/KEY_1.wav" => testbuf.read;
+            // 0 => testbuf.pos;
+            // 0.5 => testbuf.gain;
+            // 0.5 => testbuf.rate;
+            // <<< testbuf >>>;
+            // 10000000000::second => now;
 fun void loopBar(int numeratorSignature, float beat, dur bar, int denominatorSignature) {
     // beat => dur sixteenthBeat;
     //(secLenBeat)::second => bar;
@@ -17,8 +25,9 @@ fun void loopBar(int numeratorSignature, float beat, dur bar, int denominatorSig
         // totalSeconds + thisBeat => totalSeconds;
 
         secLenBeat / (numeratorSignature * 2) => float secLenTick;
-        <<< "READY" >>>;
+        
         for (0 => int i; i < (numeratorSignature * 2); i++) {
+            <<< "me dir", me.dir() >>>;
             <<< "subTick-", i >>>;
             (beat/4)::second => now;
             if (i == (numeratorSignature * 2) - 1) {

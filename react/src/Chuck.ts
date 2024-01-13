@@ -161,6 +161,7 @@ export default class Chuck extends window.AudioWorkletNode {
    * @param data Data to write to the file
    */
   public createFile(directory: string, filename: string, data: string | ArrayBuffer) {
+    console.log('GOD DDAMN CHECK: ', directory, filename);
     this.sendMessage(OutMessage.LOAD_FILE, {
       directory,
       filename,
@@ -176,6 +177,7 @@ export default class Chuck extends window.AudioWorkletNode {
    * @param url path or url to a file to fetch and load file
    */
   public async loadFile(url: string) {
+    console.log('WTF WTF URL ', url);
     const filename = url.split("/").pop()!;
     if (url.endsWith(".ck")) {
       return fetch(url).then((response) => response.text()).then((text) => {
@@ -183,6 +185,7 @@ export default class Chuck extends window.AudioWorkletNode {
       });
     } else {
       return fetch(url).then((response) => response.arrayBuffer()).then((buffer) => {
+        console.log('GOOD DAMNIT ', filename);
         this.createFile("", filename, new Uint8Array(buffer));
       });
     }

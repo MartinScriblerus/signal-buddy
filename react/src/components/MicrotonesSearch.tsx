@@ -108,78 +108,7 @@ export default function CustomAriaLive({selectRef, tune, currentMicroTonalScale}
     if (val && ariaFocusMessage) {
       console.log('hey val value ', val.value);
       currentMicroTonalScale(val.value)
-      // console.log('val ', val);
-      // console.log('ARI FDO MES ', ariaFocusMessage);
-      // tune.loadScale(val.value);
 
-      // const numOctaves = Math.floor(400/tune.scale.length)
-      // const octaveLen = tune.scale.length;
-
-      
-      // console.log('WHAT IS FUCKING SEL REF: ', selectRef.current);
-      // // selectRef.current.value = val.value;
-      // console.log('%cTUNE FREQ!!! ', 'color:green;', tune);
-      // let el;
-      // for (let i = 0; i < octaveLen; i++){
-        
-      //   let note = tune.note(i);
-      //   console.log("NOTE FREQ: ", note);
-      //   const getVals = await axios.get(`${FLASK_API_URL}/microtonal/${note}`, requestOptions);
-      //   console.log('get VVVVVVAAAAAAALLLLLLSSSSSSS ', getVals);
-      //   const splitter = getVals.data.microNote.indexOf('+') !== -1 ? '+' : '-';
-      //   try {
-      //     el = document.getElementById(`hexagonId_${i}`);
-      //     el.setAttribute('freq', note);
-      //     if (getVals.data.microNote.inde)
-      //     el.setAttribute('noteName', getVals.data.microNote.split(splitter)[0]);
-      //     el.setAttribute('centsName', getVals.data.microNote.split(splitter)[1]);
-              
-      //   } catch (e) {
-      //     console.log('could not find ' + i);
-      //   }
-      //   console.log('YO YO YO ', el.parentNode.childNodes[1]);
-      //   // el.parentNode.childNodes[1].;
-      //   if (getVals.data.microNote.split('+')[0] && getVals.data.microNote.split(splitter)[1]) {
-      //     el.parentNode.childNodes[1].innerText =
-      //     el.parentNode.childNodes[1].innerHTML =
-      //       `
-
-      //         ${getVals.data.microNote.split(splitter)[0]}
-    
-
-      //       `;
-      //   }
-      //   tune.mode.output = 'ratio';
-
-
-      //   console.log('%cTUNE RATIO!!! ', 'color:green;', tune);    
-
-      //   note = tune.note(i);
-      //   console.log("NOTE RATIO: ", note);
-      //   if (el) {
-      //     el.setAttribute('ratio', note);
-          
-      //     if (i % 13 === 0) {
-      //       octaveCounter.current = octaveCounter.current + 1;
-      //     }
-      //   }
-
-      //   tune.mode.output = 'MIDI';
-
-      //   // tune.loadScale(val.value);
-
-      //   console.log('%cTUNE MIDI!!! ', 'color:green;', tune);    
-      //   // for (let i = 0; i < octaveLen; i++){
-      //   note = tune.note(i);
-      //   console.log("NOTE MIDI: ", note);
-      //   if (el) {
-      //     el.setAttribute('MIDI', note);
-
-      //     // };
-      //     console.log('CHECK EL!!!!!! ', el);
-      //   }
-
-    // }
     setSelectedValue(val.value);
   }
 }

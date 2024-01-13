@@ -1,5 +1,7 @@
 // default file
-me.dir() + "readData.txt" => string filename;
+"./readData.txt" => string filename;
+
+<<< filename >>>;
 
 // // look at command line
 // if( me.args() > 0 ) me.arg(0) => filename;
@@ -29,6 +31,23 @@ me.dir() + "readData.txt" => string filename;
 //     Machine.remove( wind );
 // }
 
+Std.atof(me.arg(0)) => float bpm;
+Std.atoi(me.arg(1)) => int numeratorSignature;
+Std.atoi(me.arg(2)) => int denominatorSignature;
+me.arg(3) => string fileUpload;
+
+((60.0 / bpm)) => float secLenBeat;
+
+// secLenBeat => float beatUpdate;
+        
+(secLenBeat * denominatorSignature * numeratorSignature)::second => dur bar;
+
+// <<< div >>>;
+// <<< numeratorSignature >>>;
+// <<< denominatorSignature >>>;
+// <<< beat >>>;
+// <<< bar >>>;
+
 
 // instantiate
 FileIO fio;
@@ -36,7 +55,7 @@ StringTokenizer tok;
 // open a file
 fio.open( filename, FileIO.READ );
 
-2::second => dur beat;
+(secLenBeat)::second => dur beat;
 48 => int offset;
 
 // ensure it's ok
@@ -47,34 +66,58 @@ if( !fio.good() )
     me.exit();
 }
 
+/////////////////////////
+SndBuf buffy => LiSa lisa => dac;
+1.0 => lisa.rate;
+1 => lisa.loop;
+1 => lisa.bi;
+
+fileUpload => buffy.read;
+0 => buffy.pos;
+0.5 => buffy.gain;
+0.5 => buffy.rate;
+buffy.samples()::samp => lisa.duration;
+
+for (0 => int i; i < buffy.samples(); i++) {
+    lisa.valueAt(buffy.valueAt(i), i::samp);
+}
+1 => lisa.play;
+/////////////////////////
+
+
 // variable to read into
 int val;
-SinOsc osc => ADSR env => dac;
-(1::ms, 100::ms, 0, 1::ms) => env.set;
-// loop until end
-// while (true) {
-//     while( fio.more() )
-//     {
-//         fio.readLine() => string line;
+SinOsc osc => ADSR env => LPF lpf => Pan2 pan => dac;
+(0.5::ms, 100::ms, 0, 1::ms) => env.set;
 
-//         if (line.find("//") == 0) 
-//         {
-//             line => ProcessComment;
-//         } 
-//         else if (line.find("R") == 0)
-//         {
-//             line => ProcessRest;
-//         }
-//         else 
-//         {
-//             line => ProcessNote;
-//         }
-//     }
-//     fio.seek( 0 );
-// }
+0.2 => osc.gain;
+1000 => lpf.freq;
+4 => lpf.Q;
+
+// loop until end
+while (true) {
+    while( fio.more() )
+    {
+        fio.readLine() => string line;
+
+        if (line.find("//") == 0) 
+        {
+            line => ProcessComment;
+        } 
+        else if (line.find("R") == 0)
+        {
+            line => ProcessRest;
+        }
+        else 
+        {
+            line => ProcessNote;
+        }
+    }
+    fio.seek( 0 );
+}
 
 fun void ProcessComment(string line) {
-    // chout <= line <= IO.newline();
+    chout <= line <= IO.newline();
 }
 
 fun void ProcessRest(string line) {
@@ -92,6 +135,25 @@ fun void ProcessNote(string line) {
     tok.next() => Std.atof => float val;
     note + offset => Std.mtof => osc.freq;
     val => osc.gain;
+    ProcessExtras(tok);
     1 => env.keyOn;
     beat / div => now;
+}
+
+fun void ProcessExtras(StringTokenizer tok) {
+    while(tok.more()) {
+        tok.next() => string extra;
+        if(extra.find("P")==0)
+        {
+            extra.substring(1) => Std.atof => pan.pan;
+        }
+        if(extra.find("F")==0)
+        {
+            extra.substring(1) => Std.atof => lpf.freq;
+        }
+        if(extra.find("Q")==0)
+        {
+            extra.substring(1) => Std.atof => lpf.Q;
+        }
+    }
 }

@@ -77,7 +77,7 @@ interface ReusableSliderProps {
 
 const ReusableSlider = ({data, label, min, max, dataIndex, onChange}: ReusableSliderProps) => {
     return (
-        <Box sx={{display: "flex", flexDirection: "row",  position: "relative", alignItems: "left", justifyContent: "left" }}>
+        <Box sx={{display: "flex", position: "relative", alignItems: "left", justifyContent: "left", flexDirection: 'column' }}>
             <div style={{ scale: 0.5, position: "relative", padding: "8px" }}>
                 <CircularSlider
                     width={104}
@@ -169,7 +169,7 @@ const EffectsControls = (
 }: Props) => {
 
     return (
-        <Box id="synthControlsWrapper" sx={{overflow: 'scroll', left: 0, width: "100%", border: "solid 1px white"}}>
+        <Box id="synthControlsWrapper" sx={{overflow: 'scroll', left: 0, width: "100%", height: "100%", position: 'absolute', border: "solid 1px white"}}>
         {
             playingInstrument === 'clarinet'
             ?

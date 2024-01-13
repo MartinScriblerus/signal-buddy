@@ -22,7 +22,7 @@
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
-  /* background-color: rgba(0,0,0,0.9); */
+  background-color: rgba(0,0,0,0.9);
 }
 
 #myFile {
@@ -58,7 +58,8 @@ body{
 #vizParentWrapper {
   /* width: 26rem; */
   width: 100%;
-  height: calc(100% - 13.5rem); 
+  height: calc(100% - 13.5rem);
+  position: absolute; 
 }
 
 #fileManagerWrapper {
@@ -69,13 +70,10 @@ body{
 #sequencerWrapperOuter {
   display: inline-table;
   position: absolute;
-  height: 10vh;
   right: 0rem;
   flex-direction: row;
   justify-content: center;
-  top: 37vh;
   z-index: 20;
-  max-height: 50vh;
   overflow: scroll;
   width: 100%;
 }
@@ -86,16 +84,15 @@ body{
   right: 0;
   height: calc(100% - 13.5rem); 
   border: 1px solid yellow; 
-  position: relative;
   display: flex;
   flex-direction: column-reverse;
+  background: rgba(0,0,0,1);
+  z-index: 1;
 }
 
 #sampleToolsWrapper {
   /* width: calc(100vw - 28rem); */
   width: 100%;
-  height: 25vh;
-  top: 12vh;
   /* padding: 1rem; */
   overflow: scroll;
 }
@@ -103,19 +100,17 @@ body{
 #sequenceToolsWrapper {
   /* width: calc(100vw - 28rem); */
   width: 100%;
-  height: 25vh;
-  top: 12vh;
   /* padding: 1rem; */
   overflow: scroll;
 }
 
 #treeBuilderWrapper {
-  display: "flex";
-  flex-direction: "row";
+  display: flex;
+  flex-direction: column;
   position: relative;
   padding: 0;
   margin: 0;
-  width: 7rem;
+  /* width: 7rem; */
 }
 
 #keyboard {
@@ -130,7 +125,7 @@ body{
   right: -22px; */
 }
 
-#keyboardWrapper::after {
+#microTonesParentSpan::after {
   /* Renders the styles */
   content: "";
   /* Fills the entire space */
@@ -139,11 +134,18 @@ body{
   left: 0;
   bottom: 0;
   right: 0;
+  backdrop-filter: blur(5px);
   /* Creates the gradient */
-  background-image: linear-gradient(#1a1a1a, #1560bd);
+  background-image: linear-gradient(#1E221A, #453B52);
+  mix-blend-mode: multiply;
   /* Stacks the gradient behind the image */
   z-index: -1;
 }
+
+
+
+
+
 
 #demo-controlled-radio-buttons-group {
   overflow: scroll;
@@ -161,8 +163,6 @@ body{
   width: 100%;
   border: solid 1px blue;
   text-align: center;
-  right: 20vw;
-  top: 51vh;
   flex-direction: row;
   /* padding-top: 24px;
   padding-left: 24px; */
@@ -173,7 +173,7 @@ body{
 }
 
 #synthControlsWrapper {
-  flex-direction: row;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   /* height: 28vh; */
@@ -185,6 +185,7 @@ body{
   bottom: 0;
   /* width: calc(100vw - 26rem); */
   width: 100%;
+  height: 100%;
   text-align: center;
   /* background: var(--black-60); */
   overflow: scroll;
@@ -256,12 +257,12 @@ body{
 
 canvas {
   flex: 1 1 auto;
-  background-color: var(--black-60);
+  /* background-color: var(--black-60); */
 }
 
 #gameCanvas {
   flex: 1 1 auto;
-  background-color:orange;
+  /* background-color:rgba(17,110,224,0.88); */
   height: 100vh;
   width: 100vw;
 }
@@ -308,22 +309,22 @@ canvas {
   border-left: 1px solid hsl(0, 0%, 73%);
   border-bottom: 1px solid hsl(0, 0%, 73%);
   border-radius: 0 0 5px 5px;
-  box-shadow: -1px 0 0 var(--white-80) inset, 0 0 5px hsl(0, 0%, 80%) inset,
+  box-shadow: -1px 0 0 #f5f5f5 inset, 0 0 5px hsl(0, 0%, 80%) inset,
     0 0 3px var(--black-20);
   /* background: linear-gradient(to bottom, grey 0%, black 100%); */
   background: linear-gradient(to bottom, rgba(0,0,0,.7), black 100%);
-  color: var(--white-80) !important;
+  color: #f5f5f5 !important;
   margin-left: -1rem;
   font-family: monospace;
 }
 
 #startMicrophoneButton {
-  min-width: 12rem;
+  min-width: 6rem;
 }
 
 #inputFileWrapper {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
 }
 
 @media screen and (max-width: 800px) {
@@ -337,16 +338,11 @@ canvas {
     top: 49vh;
     height: 16vh;
   } */
-  #synthControlsWrapper {
-    top: 70vh;
-    height: 30vh;
-  }
   .instrument-group-wrapper {
     flex-direction: column;
   }
   #sampleToolsWrapper, #sequenceToolsWrapper { 
-    top: 18vh !important;
-    flex-direction: row;
+    flex-direction: column;
   }
   #sampleDropdowns {
     display: flex;
@@ -373,7 +369,7 @@ canvas {
     0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
   background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%); */
   background: linear-gradient(45deg, rgba(20,80,160,1) 0%, hsl(0, 0%, 23%) 2%);
-  color: white;
+  color: #f5f5f5;
   font-family: monospace;
 }
 
@@ -388,7 +384,7 @@ canvas {
     0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
   background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%); */
   background: linear-gradient(45deg, rgba(20,80,160,1) 0%, hsl(0, 0%, 23%) 2%);
-  color: white;
+  color: #f5f5f5;
   font-family: monospace;
 }
 
@@ -404,7 +400,7 @@ canvas {
     0 -5px 2px 3px var(--black-60) inset, 0 2px 4px var(--black-50);
   background: linear-gradient(45deg, hsl(0, 0%, 13%) 0%, hsl(0, 0%, 33%) 100%); */
   background: linear-gradient(45deg, rgba(20,80,160,1) 0%, hsl(0, 0%, 23%) 2%);
-  color: white;
+  color: #f5f5f5;
   font-family: monospace;
 }
 
@@ -457,12 +453,12 @@ ul {
 }
 
 .MuiPaper-root {
-  color: var(--white-80) !important;
-  background: var(--black-60) !important; 
+  color: #f5f5f5 !important;
+  background: rgba(30,34,26,0.96) !important; 
 }
 
 .MuiFormLabel-root {
-  color: var(--black-50) !important;
+  color: #f5f5f5 !important;
   padding-right: 3rem; 
 }
 
@@ -478,7 +474,7 @@ ul {
 
 #sequencerWrapperInner {
   justify-content: center; 
-  color: white; 
+  color: #f5f5f5; 
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -491,8 +487,9 @@ ul {
 
 #submitMingus {
   height: 44px;
-  position: relative; 
+  position: absolute; 
   z-index: 22;
+  justify-content: center;
 }
 
 .invisible {
@@ -514,7 +511,6 @@ ul {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 40vh;
   left: 0;
   /* position: absolute; */
   background: rgba(0,0,0,0.4);
@@ -532,7 +528,7 @@ ul {
   border: solid 0.5px white;
   border-radius: 4px;
   margin: 4vw;
-  color: white;
+  color: #f5f5f5;
 }
 .li-to-drag-wrapper {
   display: flex;
@@ -549,36 +545,36 @@ ul {
   border: solid 0.5px white;
   border-radius: 4px;
   margin: 4vw;
-  color: white;
+  color: #f5f5f5;
 }
 
 .MuiRadio-root {
-  color: var(--white-80) !important;
+  color: #f5f5f5 !important;
 }
 
-/* .MuiButtonBase-root {
-  color: var(--white-80) !important;
-} */
+.MuiButtonBase-root {
+  color: #f5f5f5 !important;
+}
 
 .MuiInputLabel-root {
-  color: #f6f6f6 !important;
+  color: #f5f5f5 !important;
 }
 
 .MuiTypography-root {
   font-size: 12px !important;
-  color: #f6f6f6;
+  color: #f5f5f5;
 }
 
 .MuiFormControl-root {
   position: relative;
-  color:#ffffff;
+  color:#f5f5f5;
 }
 
 .midSizeButtons {
-  background: rgba(0,0,0,0.91);
+  background: rgba(17,110,246,0.96);
   min-height: 2rem;
   width: 4rem;
-  color: #ffffff;
+  color: #f5f5f5;
   padding: 0.1rem;
   width: 12rem;
 }
@@ -603,7 +599,7 @@ ul {
 }
 
 .MuiPaper-root-MuiPopover-paper {
-  background: var(--black-60) !important;
+  background: rgba(30,34,26,0.96) !important;
   left: 0 !important;
 }
 
@@ -612,11 +608,11 @@ ul {
 }
 
 .litAscending {
-  background: linear-gradient(45deg, rgba(120,120,120,1) 0%, rgba(120,120,180,1) 40%);
-  background-color: linear-gradient(45deg, rgba(120,120,120,1) 0%, rgba(120,120,180,1) 40%);
+  background: linear-gradient(45deg, rgba(17,110,246,0.96) 0%, rgba(0,172,224,0.88) 40%);
+  background-color: linear-gradient(45deg, rgba(0,224,205,0.88) 0%, rgba(17,110,224,0.88) 40%);
 }
 
 .litDescending {
-  background: linear-gradient(45deg, rgba(70,120,120,1) 0%, rgba(70,120,180,1) 40%);
-  background-color: linear-gradient(45deg, rgba(70,120,120,1) 0%, rgba(70,120,180,1) 40%);
+  background: linear-gradient(45deg, rgba(17,110,246,0.96) 0%, rgba(0,224,205,0.88)  40%);
+  background-color: linear-gradient(45deg, rgba(0,172,224,0.88) 0%, rgba(17,110,224,0.88) 40%);
 }

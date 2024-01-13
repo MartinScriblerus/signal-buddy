@@ -20,19 +20,20 @@ const SampleTools = (props: SampleToolsProps) => {
             <Box 
                 id="sampleToolsWrapper"
                 sx={{
-                    color: 'primary.main', 
-                    left: 0, 
-                    height: "25vh", 
+                    color: 'primary.contrastText', 
+                    boxSizing: 'border-box', 
                     position: "absolute", 
                     display: 'flex', 
                     flexDirection: 'row',
-                    border: '1px solid aqua',
+                    border: '1px solid orange',
                     width: '100%',
-                    overflow: 'scroll'
+                    backgroundColor: 'primary.main',
+                    // overflow: 'scroll',
+                    // height: '100%'
                 }}
             >
                 <Typography sx={{width: "10%", paddingRight: "10px"}}>Looper Tools </Typography>
-                <Box id="sampleDropdowns" sx={{ width: "60%", display: "flex" }}>         
+                <Box id="sampleDropdowns" sx={{ display: "flex" }}>         
                     <Box
                         sx={{display: 'flex', flexDirection: 'column'}}
                     >
@@ -43,15 +44,16 @@ const SampleTools = (props: SampleToolsProps) => {
                                 }
                             }>
                                 <TextField
-                                    inputProps={{ style: { color: 'primary.main'} }}
+                                    inputProps={{ style: { color: 'primary.contrastText'} }}
                                     sx={{
-                                        input: { color: 'primary.main' },
+                                        input: { color: 'primary.contrastText' },
                                         minWidth: "2rem",
-                                        color: 'primary.main',
+                                        color: 'primary.contrastText',
                                         paddingTop: 0,
                                         paddingBottom: 0,
                                         margin: "1rem",
-                                        maxWidth: "6rem",
+                                        // maxWidth: "6rem",
+                                        width: '100%',
                                     }}
                                     label={"BPM"}
                                     placeholder="BPM"
@@ -80,13 +82,14 @@ const SampleTools = (props: SampleToolsProps) => {
                                 }}
                             >
                                 <TextField
-                                    inputProps={{ style: { color: 'primary.main'} }}
+                                    inputProps={{ style: { color: 'primary.contrastText'} }}
                                     sx={{
-                                        input: { color: 'primary.main' },
+                                        input: { color: 'primary.contrastText' },
                                         paddingTop: 0,
                                         paddingBottom: 0,
                                         margin: "1rem",
-                                        maxWidth: "6rem",
+                                        // maxWidth: "6rem",
+                                        width: '100%',
                                     }}
                                     label="Start"
                                     placeholder="Start"
@@ -116,13 +119,14 @@ const SampleTools = (props: SampleToolsProps) => {
                             e.preventDefault();
                         }}>
                             <TextField
-                                inputProps={{ style: { color: 'primary.main'} }}
+                                inputProps={{ style: { color: 'primary.contrastText'} }}
                                 sx={{
-                                    input: { color: 'primary' },
+                                    input: { color: 'primary.contrastText' },
                                     paddingTop: 0,
                                     paddingBottom: 0,
                                     margin: "1rem",
-                                    maxWidth: "6rem",
+                                    // maxWidth: "6rem",
+                                    width: '100%',
                                 }}
                                 label={"Length"}
                                 placeholder="Length"
@@ -150,13 +154,14 @@ const SampleTools = (props: SampleToolsProps) => {
                             }}
                         >
                             <TextField
-                                inputProps={{ style: { color: 'primary.main'} }}
+                                inputProps={{ style: { color: 'primary.contrastText'} }}
                                 sx={{
-                                    input: { color: 'primary.main' },
+                                    input: { color: 'primary.contrastText' },
                                     paddingTop: 0,
                                     paddingBottom: 0,
                                     margin: "1rem",
-                                    maxWidth: "6rem",
+                                    // maxWidth: "6rem",
+                                    width: '100%',
                                 }}
                                 label={"Rate"}
                                 placeholder="Rate"
